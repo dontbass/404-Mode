@@ -1,0 +1,55 @@
+name: Build luci-theme-404mode
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'luci-theme-404mode/**'
+      - '.github/workflows/build.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: SDK ${{ matrix.sdk }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk:
+          - x86_64-openwrt-24.10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build package
+        uses: openwrt/gh-action-sdk@main
+        env:
+          ARCH: ${{ matrix.sdk }}
+          FEEDNAME: theme404
+          PACKAGES: luci-theme-404mode
+          NO_REFRESH_CHECK: true
+
+      - name: Collect packages
+        run: |
+          mkdir -p dist
+          find bin/packages -name 'luci-theme-404mode*.ipk' -exec cp -v {} dist/ \;
+          ls -la dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luci-theme-404mode
+          path: dist/*.ipk
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.ipk
+          generate_release_notes: true

@@ -1,0 +1,138 @@
+{#
+ 404 Mode — cyberpunk theme for LuCI
+ Login screen ("access terminal")
+ https://github.com/dontbass/404-Mode
+ Licensed to the public under the Apache License 2.0.
+-#}
+
+{%
+	const board = ubus.call('system', 'board');
+	const host = striptags(board?.hostname ?? 'OpenWrt');
+	const model = striptags(board?.model ?? '');
+-%}
+
+{% include('header', { blank_page: true }) %}
+
+<canvas id="rain" class="login-rain" aria-hidden="true"></canvas>
+<div class="login-vignette" aria-hidden="true"></div>
+
+<div class="login">
+	<div class="login-head">
+		<div class="login-code glitch" data-text="404">404</div>
+		<div class="login-sub">
+			<span class="login-sub-line">SIGNAL NOT FOUND</span>
+			<span class="login-sub-line dim">// AUTHENTICATE TO RESTORE LINK</span>
+		</div>
+	</div>
+
+	<form method="post" class="login-card" id="login-form" autocomplete="on">
+		<div class="login-card-bar">
+			<span class="dot"></span><span class="dot"></span><span class="dot"></span>
+			<span class="login-card-title">root@{{ host }}:~$ auth</span>
+		</div>
+
+		<div class="login-card-body">
+			<h2 class="login-title">{{ _('Authorization Required') }}</h2>
+
+			{% if (fuser): %}
+			<div class="alert-message error login-error">
+				<strong>ACCESS DENIED.</strong> {{ _('Invalid username and/or password! Please try again.') }}
+			</div>
+			{% endif %}
+
+			<label class="login-field">
+				<span class="login-label">&gt; {{ _('Username') }}</span>
+				<input name="luci_username" id="luci_username" type="text" autocomplete="username" spellcheck="false" autocapitalize="off" value="{{ entityencode(duser, true) }}">
+			</label>
+
+			<label class="login-field">
+				<span class="login-label">&gt; {{ _('Password') }}</span>
+				<input name="luci_password" id="luci_password" type="password" autocomplete="current-password">
+			</label>
+
+			<button type="submit" class="btn cbi-button cbi-button-positive important login-submit">
+				<span class="login-submit-text">{{ _('Log in') }}</span>
+				<span class="login-submit-arrow" aria-hidden="true">&#x2192;</span>
+			</button>
+		</div>
+
+		<div class="login-card-foot">
+			<span>{{ model || 'OpenWrt' }}</span>
+			<span class="login-blink">_</span>
+		</div>
+	</form>
+</div>
+
+<script>
+(function() {
+	var form = document.getElementById('login-form'),
+	    pass = document.getElementById('luci_password'),
+	    user = document.getElementById('luci_username');
+
+	(user && !user.value ? user : pass).focus();
+
+	form.addEventListener('submit', function() {
+		form.classList.add('busy');
+		form.querySelector('.login-submit-text').textContent = 'JACKING IN…';
+	});
+
+	var reduce = false;
+	try {
+		reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+			localStorage.getItem('404mode.fx') === 'off';
+	} catch (e) {}
+
+	var c = document.getElementById('rain');
+	if (!c || !c.getContext || reduce) {
+		if (c) c.style.display = 'none';
+		return;
+	}
+
+	var ctx = c.getContext('2d'),
+	    glyphs = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF<>/\\#$%&*+=404',
+	    size = 16, cols = 0, drops = [], last = 0;
+
+	function resize() {
+		var dpr = Math.min(window.devicePixelRatio || 1, 2);
+		c.width = window.innerWidth * dpr;
+		c.height = window.innerHeight * dpr;
+		c.style.width = window.innerWidth + 'px';
+		c.style.height = window.innerHeight + 'px';
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		cols = Math.ceil(window.innerWidth / size);
+		drops = [];
+		for (var i = 0; i < cols; i++)
+			drops[i] = Math.random() * -60;
+	}
+
+	function frame(t) {
+		requestAnimationFrame(frame);
+		if (t - last < 50) return;
+		last = t;
+
+		ctx.fillStyle = 'rgba(5, 6, 10, 0.12)';
+		ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+		ctx.font = size + 'px monospace';
+
+		for (var i = 0; i < cols; i++) {
+			var ch = glyphs.charAt(Math.floor(Math.random() * glyphs.length)),
+			    x = i * size,
+			    y = drops[i] * size;
+
+			ctx.fillStyle = Math.random() > 0.975 ? '#ff2a6d' : (Math.random() > 0.5 ? '#00f0ff' : '#0a8f99');
+			ctx.fillText(ch, x, y);
+
+			if (y > window.innerHeight && Math.random() > 0.975)
+				drops[i] = 0;
+
+			drops[i] += 1;
+		}
+	}
+
+	window.addEventListener('resize', resize);
+	resize();
+	requestAnimationFrame(frame);
+})();
+</script>
+
+{% include('footer', { blank_page: true }) %}

@@ -1,0 +1,25 @@
+{#
+ 404 Mode — cyberpunk theme for LuCI
+ https://github.com/dontbass/404-Mode
+ Licensed to the public under the Apache License 2.0.
+-#}
+
+{% if (!blank_page): %}
+		<footer class="hud-footer">
+			<span class="hud-footer-tag">SYS//ONLINE</span>
+			<span>
+				<a href="https://github.com/openwrt/luci" target="_blank" rel="noreferrer">{{ version.luciname }} ({{ version.luciversion }})</a>
+				/
+				<a href="{{ entityencode(version.disturl ?? '#', true) }}" target="_blank" rel="noreferrer">{{ version.distname }} {{ version.distversion }} ({{ version.distrevision }})</a>
+				{% if (lua_active): %}
+				/ {{ _('Lua compatibility mode active') }}
+				{% endif %}
+			</span>
+			<a class="hud-footer-tag" href="https://github.com/dontbass/404-Mode" target="_blank" rel="noreferrer">404 MODE</a>
+		</footer>
+	</main>
+</div>
+<script>L.require('menu-404mode')</script>
+{% endif %}
+</body>
+</html>

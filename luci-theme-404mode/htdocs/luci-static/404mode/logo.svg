@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#05060a"/>
+  <path d="M4 4h14M4 4v14M60 60H46M60 60V46" stroke="#00f0ff" stroke-width="3" fill="none"/>
+  <g font-family="Menlo,Consolas,'DejaVu Sans Mono',monospace" font-weight="700" font-size="24" text-anchor="middle">
+    <text x="30.5" y="41" fill="#00f0ff" opacity=".85">404</text>
+    <text x="33.5" y="41" fill="#ff2a6d" opacity=".85">404</text>
+    <text x="32" y="41" fill="#ffffff">404</text>
+  </g>
+  <rect x="10" y="46" width="44" height="2" fill="#ff2a6d"/>
+</svg>

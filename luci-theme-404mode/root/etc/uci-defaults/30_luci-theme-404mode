@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ "$PKG_UPGRADE" != 1 ]; then
+	uci get luci.themes.404Mode >/dev/null 2>&1 || \
+	uci batch <<-EOF
+		set luci.themes.404Mode=/luci-static/404mode
+		set luci.main.mediaurlbase=/luci-static/404mode
+		commit luci
+	EOF
+fi
+
+rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache 2>/dev/null
+
+exit 0

@@ -1,0 +1,115 @@
+{#
+ 404 Mode — cyberpunk theme for LuCI
+ https://github.com/dontbass/404-Mode
+ Licensed to the public under the Apache License 2.0.
+-#}
+
+{%
+	import { getuid, getspnam } from 'luci.core';
+
+	const boardinfo = ubus.call('system', 'board');
+	const hostname = striptags(boardinfo?.hostname ?? '?');
+	const model = striptags(boardinfo?.model ?? '');
+
+	http.prepare_content('text/html; charset=UTF-8');
+-%}
+
+<!DOCTYPE html>
+<html lang="{{ dispatcher.lang }}" data-darkmode="true">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#05060a">
+	<meta name="color-scheme" content="dark">
+	<meta name="application-name" content="{{ hostname }} - LuCI">
+	<meta name="apple-mobile-web-app-title" content="{{ hostname }} - LuCI">
+	<title>{{ hostname }}{{ node?.title ? ` // ${striptags(node.title)}` : '' }} - LuCI</title>
+	<script>
+		(function() {
+			try {
+				if (localStorage.getItem('404mode.fx') === 'off')
+					document.documentElement.classList.add('no-fx');
+				if (localStorage.getItem('404mode.nav') === 'mini')
+					document.documentElement.classList.add('nav-mini');
+			} catch (e) {}
+		})();
+	</script>
+	<link rel="stylesheet" href="{{ media }}/cascade.css">
+	<link rel="stylesheet" media="screen and (max-width: 854px)" href="{{ media }}/mobile.css">
+	<link rel="icon" href="{{ media }}/logo.svg" sizes="any" type="image/svg+xml">
+	<link rel="icon" href="{{ media }}/logo_48.png" sizes="48x48">
+	{% if (node?.css): %}
+	<link rel="stylesheet" href="{{ resource }}/{{ node.css }}">
+	{% endif %}
+	{% if (css): %}
+	<style title="text/css">{{ css }}</style>
+	{% endif %}
+	<script src="{{ dispatcher.build_url('admin/translations', dispatcher.lang) }}"></script>
+	<script src="{{ resource }}/cbi.js"></script>
+</head>
+
+<body class="lang_{{ dispatcher.lang }} {{ blank_page ? 'page-blank' : '' }} {{ ctx.authsession ? 'logged-in' : '' }} {{ entityencode(striptags(node?.title ?? ''), true) }}" data-page="{{ entityencode(join('-', ctx.request_path), true) }}">
+{% if (!blank_page): %}
+<header class="hud">
+	<button type="button" class="hud-toggle" id="nav-toggle" aria-label="Menu" aria-controls="sidebar" aria-expanded="false">
+		<span></span><span></span><span></span>
+	</button>
+
+	<a class="brand" href="/" title="{{ entityencode(model, true) }}">
+		<span class="brand-code glitch" data-text="404">404</span>
+		<span class="brand-sep">://</span>
+		<span class="brand-host">{{ hostname }}</span>
+	</a>
+
+	<div class="hud-meta">
+		<span class="hud-cell hud-model">{{ model || 'OpenWrt' }}</span>
+		<span class="hud-cell hud-clock" id="hud-clock">--:--:--</span>
+	</div>
+
+	<div id="indicators" class="hud-indicators"></div>
+
+	<button type="button" class="hud-fx" id="fx-toggle" title="FX on/off" aria-label="FX on/off">FX</button>
+</header>
+
+<div class="shell">
+	<aside class="sidebar" id="sidebar">
+		<div class="sidebar-scan" aria-hidden="true"></div>
+		<nav id="mainmenu" style="display:none"></nav>
+		<ul id="modemenu" style="display:none"></ul>
+		<button type="button" class="sidebar-collapse" id="nav-collapse" aria-label="Collapse menu">
+			<span class="sidebar-collapse-icon" aria-hidden="true">&#x25C2;</span>
+			<span class="sidebar-collapse-label">MINIMIZE</span>
+		</button>
+	</aside>
+	<div class="shell-mask" id="nav-mask"></div>
+
+	<main id="maincontent">
+		{% if (getuid() == 0 && getspnam('root')?.pwdp === '' && join('/', ctx.request_path) != 'admin/system/admin'): %}
+			<div class="alert-message warning">
+				<h4>{{ _('No password set!') }}</h4>
+				<p>{{ _('There is no password set on this router. Please configure a root password to protect the web interface.') }}</p>
+				{% if (dispatcher.lookup("admin/system/admin")): %}
+				<div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/admin") }}">{{ _('Go to password configuration...') }}</a></div>
+				{% endif %}
+			</div>
+		{% endif %}
+
+		{% if (boardinfo?.rootfs_type == "initramfs"): %}
+			<div class="alert-message warning">
+				<h4>{{ _('System running in recovery (initramfs) mode.') }}</h4>
+				<p>{{ _('No changes to settings will be stored and are lost after rebooting. This mode should only be used to install a firmware upgrade') }}</p>
+				{% if (dispatcher.lookup("admin/system/flash")): %}
+				<div class="right"><a class="btn" href="{{ dispatcher.build_url("admin/system/flash") }}">{{ _('Go to firmware upgrade...') }}</a></div>
+				{% endif %}
+			</div>
+		{% endif %}
+
+		<noscript>
+			<div class="alert-message warning">
+				<h4>{{ _('JavaScript required!') }}</h4>
+				<p>{{ _('You must enable JavaScript in your browser or LuCI will not work properly.') }}</p>
+			</div>
+		</noscript>
+
+		<div id="tabmenu" style="display:none"></div>
+{% endif %}
