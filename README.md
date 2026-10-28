@@ -1,53 +1,65 @@
 # 404 MODE
 
-**Киберпанк-тема для LuCI / OpenWrt 24.10+** — неон, HUD-рамки, CRT-сканлайны, глитч и цифровой дождь на экране входа.
+**Киберпанк / пост-апокалипсис тема для LuCI (OpenWrt 24.10+).** Неон поверх пепла, колючая проволока, гранж и ощущение, что интернет больше не свободный.
 
-`SIGNAL NOT FOUND // AUTHENTICATE TO RESTORE LINK`
+`СИГНАЛ ПОТЕРЯН // СЕТЬ НЕСВОБОДНА — ПОДТВЕРДИТЕ ЛИЧНОСТЬ`
 
-![Overview](docs/overview.png)
+| ASH (тёмная) | SAMIZDAT (светлая) |
+|---|---|
+| ![Dark](docs/dark-overview.jpg) | ![Light](docs/light-overview.jpg) |
+| ![Dark settings](docs/dark-settings.jpg) | ![Light settings](docs/light-settings.jpg) |
+| ![Dark login](docs/dark-login.jpg) | ![Light login](docs/light-login.jpg) |
 
-| Настройки | Вход | Мобильная |
+![Mobile](docs/mobile.jpg)
+
+## Две темы в одном пакете
+
+| В LuCI | Путь | Поведение |
 |---|---|---|
-| ![Settings](docs/settings.png) | ![Login](docs/login.png) | ![Mobile](docs/mobile.png) |
+| **404Mode** | `/luci-static/404mode` | авто по системной теме браузера + переключатель `AUTO / DARK / LITE` в шапке |
+| **404ModeDark** | `/luci-static/404mode-dark` | всегда **ASH** — сажа, токсичный неон, ржавчина, CRT-сканлайны |
+| **404ModeLight** | `/luci-static/404mode-light` | всегда **SAMIZDAT** — ксерокопия на старой бумаге, типографская краска, красный штамп |
 
-## Что внутри
+Выбор: **System → System → Language and Style**.
 
-- **Шаблоны на ucode** (`header.ut` / `footer.ut` / `sysauth.ut`) — нативно для LuCI 24.10, без Lua-совместимости.
-- **Боковое меню** с hex-индексами (`0x01 STATUS`…), аккордеон категорий, свёрнутый «мини» режим (запоминается).
-- **HUD-шапка**: `404://hostname`, модель роутера, часы, индикаторы LuCI (автообновление, несохранённые изменения).
-- **Компоненты LuCI** — таблицы, дропдауны, dynlist, вкладки, модалки, прогресс-бары, алерты, бейджи зон — все перекрашены в неон.
-- **Экран входа** — «терминал доступа» с цифровым дождём на canvas.
-- **Кнопка FX** в шапке — выключает сканлайны/глитч/анимации (для слабых устройств, сохраняется в браузере). `prefers-reduced-motion` учитывается автоматически.
-- **Адаптив**: на телефоне меню — выезжающий drawer, таблицы — карточки.
-- Без внешних шрифтов и CDN: работает на роутере без интернета.
+## Атмосфера
+
+- **Лента цензуры** под шапкой — «ТРАФИК ДОСМАТРИВАЕТСЯ (DPI)», «РЕСУРС ЗАБЛОКИРОВАН ПО ТРЕБОВАНИЮ ████», «ТУННЕЛЬ — ЕДИНСТВЕННЫЙ ВЫХОД». Пауза при наведении. Русский/английский по языку LuCI.
+- **Колючая проволока** по краю шапки, **сигнальные ленты** на панели действий и предупреждениях.
+- **Цензурные плашки** `████` (`.redact`) — в ленте и в футере `NET//CENSORED`.
+- **Скотч** на углах панелей, **плёночное зерно**, пятна ржавчины на фоне, **мигающая неоновая вывеска** `404`.
+- **Аплинк: ФИЛЬТРУЕТСЯ** — мигающий индикатор внизу сайдбара.
+- **Экран входа**: цифровой дождь с «мёртвыми» колонками, штамп «ДОСТУП ОГРАНИЧЕН», «СЕАНС ЗАПИСЫВАЕТСЯ».
+- **FX** в шапке выключает зерно, сканлайны, ленту, глитч и анимации (для слабых устройств). `prefers-reduced-motion` учитывается автоматически.
+
+## Функционал
+
+- Шаблоны на **ucode** (`header.ut` / `footer.ut` / `sysauth.ut`) — нативно для LuCI 24.10.
+- Сайдбар с hex-индексами (`0x01 STATUS`…), аккордеон, мини-режим, drawer на телефоне.
+- Все компоненты LuCI перекрашены: таблицы, дропдауны, dynlist, вкладки, модалки, прогресс-бары, алерты, бейджи зон.
+- Без внешних шрифтов и CDN — работает на роутере без интернета.
 
 ## Установка
 
 ### Быстро (без сборки)
 
-Прямо на роутере, OpenWrt 24.10:
-
 ```sh
-uclient-fetch -qO /tmp/404.sh https://raw.githubusercontent.com/dontbass/404-Mode/main/install.sh && sh /tmp/404.sh
-```
-
-Удалить и вернуть bootstrap:
-
-```sh
-sh /tmp/404.sh --remove
+uclient-fetch -qO /tmp/404.sh https://raw.githubusercontent.com/dontbass/404-Mode/main/install.sh
+sh /tmp/404.sh            # авто
+sh /tmp/404.sh --dark     # сразу тёмная
+sh /tmp/404.sh --light    # сразу светлая
+sh /tmp/404.sh --remove   # удалить, вернуть bootstrap
 ```
 
 ### Пакетом (.ipk)
 
-Готовый `luci-theme-404mode_*_all.ipk` собирается GitHub Actions — забрать в **Releases** (для тегов `v*`) или в артефактах workflow.
+`luci-theme-404mode_*_all.ipk` собирает GitHub Actions — забрать в **Releases** (теги `v*`) или в артефактах workflow.
 
 ```sh
 opkg install /tmp/luci-theme-404mode_*_all.ipk
 ```
 
-Пакет сам регистрирует тему и делает её активной. Переключение: **System → System → Language and Style**.
-
-### Сборка в своём buildroot / SDK
+### Своя сборка
 
 ```sh
 git clone https://github.com/dontbass/404-Mode.git package/404-Mode
@@ -62,28 +74,31 @@ luci-theme-404mode/
 ├── Makefile
 ├── htdocs/luci-static/
 │   ├── 404mode/
-│   │   ├── cascade.css      # база компонентов + слой 404 MODE (палитра в :root)
-│   │   ├── mobile.css       # ≤ 854px
-│   │   ├── logo.svg / logo_48.png
-│   └── resources/menu-404mode.js   # сайдбар, вкладки, drawer, FX, часы
-├── ucode/template/themes/404mode/
-│   ├── header.ut
-│   ├── footer.ut
-│   └── sysauth.ut           # экран входа
+│   │   ├── cascade.css          # база компонентов + слой 404 MODE (токены ASH / SAMIZDAT)
+│   │   ├── mobile.css
+│   │   └── logo.svg, logo_48.png
+│   ├── 404mode-dark  -> 404mode
+│   ├── 404mode-light -> 404mode
+│   └── resources/menu-404mode.js
+├── ucode/template/themes/
+│   ├── 404mode/{header,footer,sysauth}.ut
+│   ├── 404mode-dark  -> 404mode
+│   └── 404mode-light -> 404mode
 └── root/etc/uci-defaults/30_luci-theme-404mode
 ```
 
 ## Палитра
 
-| Токен | Цвет | Где |
-|---|---|---|
-| `--n-cyan` | `#00f0ff` | основной акцент, ссылки, рамки |
-| `--n-magenta` | `#ff2a6d` | активные пункты, ошибки, удаление |
-| `--n-green` | `#05ffa1` | сохранить / применить |
-| `--n-yellow` | `#fcee0a` | предупреждения, несохранённые изменения |
-| `--n-void` | `#05060a` | фон |
+| Токен | ASH | SAMIZDAT | Где |
+|---|---|---|---|
+| `--n-cyan` | `#00e8f0` | `#00727c` | акцент, ссылки, рамки |
+| `--n-magenta` | `#ff2a6d` | `#c4122f` | активное, ошибки, штамп |
+| `--n-green` | `#39ff9c` | `#1d7a3e` | сохранить / применить |
+| `--n-yellow` | `#f2d60b` | `#e5b100` | сигнальные ленты, предупреждения |
+| `--n-rust` | `#d9622b` | `#a8471c` | ржавчина, «фильтруется» |
+| `--n-bg` | `#0b0b0a` | `#e9e4d8` | фон |
 
-Перекрасить тему — поменять токены в блоке `404 MODE LAYER → :root` в `cascade.css`.
+Перекрасить — поменять токены в блоках `ASH` / `SAMIZDAT` в `cascade.css`.
 
 ## Лицензия
 

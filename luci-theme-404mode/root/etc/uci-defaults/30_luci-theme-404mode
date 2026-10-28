@@ -1,13 +1,24 @@
 #!/bin/sh
 
-if [ "$PKG_UPGRADE" != 1 ]; then
-	uci get luci.themes.404Mode >/dev/null 2>&1 || \
-	uci batch <<-EOF
-		set luci.themes.404Mode=/luci-static/404mode
-		set luci.main.mediaurlbase=/luci-static/404mode
-		commit luci
-	EOF
+changed=0
+
+set_opt() {
+	if ! uci -q get "luci.$1" >/dev/null 2>&1; then
+		uci set "luci.$1=$2"
+		changed=1
+	fi
+}
+
+set_opt themes.404Mode /luci-static/404mode
+
+if [ "$PKG_UPGRADE" != 1 ] && [ $changed = 1 ]; then
+	uci set luci.main.mediaurlbase=/luci-static/404mode
 fi
+
+set_opt themes.404ModeDark /luci-static/404mode-dark
+set_opt themes.404ModeLight /luci-static/404mode-light
+
+[ $changed = 1 ] && uci commit luci
 
 rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache 2>/dev/null
 

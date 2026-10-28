@@ -1,7 +1,12 @@
 {#
- 404 Mode — cyberpunk theme for LuCI
+ 404 Mode — cyberpunk / post-collapse theme for LuCI
  https://github.com/dontbass/404-Mode
  Licensed to the public under the Apache License 2.0.
+
+ Variants (same files, symlinked):
+   404mode        — follows the browser (prefers-color-scheme) + in-UI switch
+   404mode-dark   — forced "ASH" dark
+   404mode-light  — forced "SAMIZDAT" light
 -#}
 
 {%
@@ -10,28 +15,89 @@
 	const boardinfo = ubus.call('system', 'board');
 	const hostname = striptags(boardinfo?.hostname ?? '?');
 	const model = striptags(boardinfo?.model ?? '');
+	const forced = (theme == '404mode-dark') ? 'dark' : ((theme == '404mode-light') ? 'light' : '');
+	const ru = (substr(dispatcher.lang ?? '', 0, 2) == 'ru');
+
+	const T = ru ? {
+		ticker_tag: 'СЕТЬ ПОД ФИЛЬТРОМ',
+		ticker: [
+			'ВНИМАНИЕ: ТРАФИК ДОСМАТРИВАЕТСЯ (DPI)',
+			'РЕСУРС ЗАБЛОКИРОВАН ПО ТРЕБОВАНИЮ <span class="redact">████████████</span>',
+			'СВОБОДНЫЙ ИНТЕРНЕТ — 404 NOT FOUND',
+			'ПРОТОКОЛ ЗАМЕДЛЕН',
+			'ЗАПИСЬ СОЕДИНЕНИЙ ВЕДЁТСЯ',
+			'РЕЖИМ БЕЛЫХ СПИСКОВ: <span class="redact">██████</span>',
+			'ТУННЕЛЬ — ЕДИНСТВЕННЫЙ ВЫХОД',
+			'ДАННЫЕ ХРАНЯТСЯ <span class="redact">████</span> ЛЕТ',
+		],
+		uplink: 'АПЛИНК',
+		uplink_state: 'ФИЛЬТРУЕТСЯ',
+		scheme: 'Тема: авто / тёмная / светлая',
+	} : {
+		ticker_tag: 'NET UNDER FILTER',
+		ticker: [
+			'WARNING: DEEP PACKET INSPECTION ACTIVE',
+			'RESOURCE BLOCKED BY ORDER OF <span class="redact">████████████</span>',
+			'FREE INTERNET — 404 NOT FOUND',
+			'PROTOCOL THROTTLED',
+			'CONNECTION LOGS RETAINED',
+			'WHITELIST MODE: <span class="redact">██████</span>',
+			'THE TUNNEL IS THE ONLY WAY OUT',
+			'DATA STORED FOR <span class="redact">████</span> YEARS',
+		],
+		uplink: 'UPLINK',
+		uplink_state: 'FILTERED',
+		scheme: 'Theme: auto / dark / light',
+	};
 
 	http.prepare_content('text/html; charset=UTF-8');
 -%}
 
 <!DOCTYPE html>
-<html lang="{{ dispatcher.lang }}" data-darkmode="true">
+<html lang="{{ dispatcher.lang }}" data-theme="{{ forced || 'dark' }}" data-darkmode="{{ forced == 'light' ? 'false' : 'true' }}" data-scheme="{{ forced || 'auto' }}"{{ forced ? ' data-scheme-lock="1"' : '' }}>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta name="theme-color" content="#05060a">
-	<meta name="color-scheme" content="dark">
+	<meta name="theme-color" content="#0b0b0a" media="(prefers-color-scheme: dark)">
+	<meta name="theme-color" content="#e9e4d8" media="(prefers-color-scheme: light)">
+	<meta name="color-scheme" content="{{ forced || 'dark light' }}">
 	<meta name="application-name" content="{{ hostname }} - LuCI">
 	<meta name="apple-mobile-web-app-title" content="{{ hostname }} - LuCI">
 	<title>{{ hostname }}{{ node?.title ? ` // ${striptags(node.title)}` : '' }} - LuCI</title>
 	<script>
 		(function() {
-			try {
-				if (localStorage.getItem('404mode.fx') === 'off')
-					document.documentElement.classList.add('no-fx');
-				if (localStorage.getItem('404mode.nav') === 'mini')
-					document.documentElement.classList.add('nav-mini');
-			} catch (e) {}
+			var root = document.documentElement,
+			    forced = root.getAttribute('data-scheme-lock') ? root.getAttribute('data-scheme') : '',
+			    mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+			function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+			function set(k, v) { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} }
+
+			function apply() {
+				var pref = forced || get('404mode.scheme') || 'auto',
+				    dark = (pref == 'dark') || (pref == 'auto' && (!mq || mq.matches));
+
+				root.setAttribute('data-scheme', pref);
+				root.setAttribute('data-theme', dark ? 'dark' : 'light');
+				root.setAttribute('data-darkmode', dark ? 'true' : 'false');
+				document.dispatchEvent(new CustomEvent('404mode-scheme', { detail: { scheme: pref, dark: dark } }));
+			}
+
+			window.__404scheme = {
+				locked: !!forced,
+				get: function() { return forced || get('404mode.scheme') || 'auto'; },
+				set: function(v) { if (!forced) { set('404mode.scheme', v == 'auto' ? null : v); apply(); } }
+			};
+
+			if (mq && mq.addEventListener)
+				mq.addEventListener('change', apply);
+
+			if (get('404mode.fx') === 'off')
+				root.classList.add('no-fx');
+			if (get('404mode.nav') === 'mini')
+				root.classList.add('nav-mini');
+
+			apply();
 		})();
 	</script>
 	<link rel="stylesheet" href="{{ media }}/cascade.css">
@@ -68,14 +134,38 @@
 
 	<div id="indicators" class="hud-indicators"></div>
 
-	<button type="button" class="hud-fx" id="fx-toggle" title="FX on/off" aria-label="FX on/off">FX</button>
+	<div class="hud-switches">
+		{% if (!forced): %}
+		<button type="button" class="hud-sw hud-scheme" id="scheme-toggle" title="{{ T.scheme }}" aria-label="{{ T.scheme }}">
+			<span class="hud-scheme-icon" aria-hidden="true"></span>
+			<span class="hud-scheme-label">AUTO</span>
+		</button>
+		{% endif %}
+		<button type="button" class="hud-sw hud-fx" id="fx-toggle" title="FX on/off" aria-label="FX on/off">FX</button>
+	</div>
 </header>
+
+<div class="hud-ticker" aria-hidden="true">
+	<span class="hud-ticker-tag">&#x26A0; {{ T.ticker_tag }}</span>
+	<div class="hud-ticker-track">
+		<div class="hud-ticker-run">
+			{% for (let pass = 0; pass < 2; pass++): %}
+			{% for (let msg in T.ticker): %}<span class="hud-ticker-msg">{{ msg }}</span>{% endfor %}
+			{% endfor %}
+		</div>
+	</div>
+</div>
 
 <div class="shell">
 	<aside class="sidebar" id="sidebar">
 		<div class="sidebar-scan" aria-hidden="true"></div>
 		<nav id="mainmenu" style="display:none"></nav>
 		<ul id="modemenu" style="display:none"></ul>
+		<div class="sidebar-uplink" aria-hidden="true">
+			<span class="sidebar-uplink-dot"></span>
+			<span class="sidebar-uplink-label">{{ T.uplink }}:</span>
+			<span class="sidebar-uplink-state">{{ T.uplink_state }}</span>
+		</div>
 		<button type="button" class="sidebar-collapse" id="nav-collapse" aria-label="Collapse menu">
 			<span class="sidebar-collapse-icon" aria-hidden="true">&#x25C2;</span>
 			<span class="sidebar-collapse-label">MINIMIZE</span>

@@ -1,5 +1,5 @@
 {#
- 404 Mode — cyberpunk theme for LuCI
+ 404 Mode — cyberpunk / post-collapse theme for LuCI
  Login screen ("access terminal")
  https://github.com/dontbass/404-Mode
  Licensed to the public under the Apache License 2.0.
@@ -9,6 +9,23 @@
 	const board = ubus.call('system', 'board');
 	const host = striptags(board?.hostname ?? 'OpenWrt');
 	const model = striptags(board?.model ?? '');
+	const ru = (substr(dispatcher.lang ?? '', 0, 2) == 'ru');
+
+	const L = ru ? {
+		lost: 'СИГНАЛ ПОТЕРЯН',
+		sub: '// СЕТЬ НЕСВОБОДНА — ПОДТВЕРДИТЕ ЛИЧНОСТЬ',
+		stamp: 'ДОСТУП ОГРАНИЧЕН',
+		denied: 'В ДОСТУПЕ ОТКАЗАНО.',
+		busy: 'ПРОБИВАЕМ ТУННЕЛЬ…',
+		watch: 'СЕАНС ЗАПИСЫВАЕТСЯ',
+	} : {
+		lost: 'SIGNAL LOST',
+		sub: '// THE NET IS NOT FREE — IDENTIFY YOURSELF',
+		stamp: 'ACCESS RESTRICTED',
+		denied: 'ACCESS DENIED.',
+		busy: 'DIGGING TUNNEL…',
+		watch: 'SESSION IS RECORDED',
+	};
 -%}
 
 {% include('header', { blank_page: true }) %}
@@ -20,12 +37,16 @@
 	<div class="login-head">
 		<div class="login-code glitch" data-text="404">404</div>
 		<div class="login-sub">
-			<span class="login-sub-line">SIGNAL NOT FOUND</span>
-			<span class="login-sub-line dim">// AUTHENTICATE TO RESTORE LINK</span>
+			<span class="login-sub-line">{{ L.lost }}</span>
+			<span class="login-sub-line dim">{{ L.sub }}</span>
 		</div>
 	</div>
 
 	<form method="post" class="login-card" id="login-form" autocomplete="on">
+		<div class="login-stamp" aria-hidden="true">{{ L.stamp }}</div>
+		<div class="login-tape login-tape-a" aria-hidden="true"></div>
+		<div class="login-tape login-tape-b" aria-hidden="true"></div>
+
 		<div class="login-card-bar">
 			<span class="dot"></span><span class="dot"></span><span class="dot"></span>
 			<span class="login-card-title">root@{{ host }}:~$ auth</span>
@@ -36,7 +57,7 @@
 
 			{% if (fuser): %}
 			<div class="alert-message error login-error">
-				<strong>ACCESS DENIED.</strong> {{ _('Invalid username and/or password! Please try again.') }}
+				<strong>{{ L.denied }}</strong> {{ _('Invalid username and/or password! Please try again.') }}
 			</div>
 			{% endif %}
 
@@ -50,7 +71,7 @@
 				<input name="luci_password" id="luci_password" type="password" autocomplete="current-password">
 			</label>
 
-			<button type="submit" class="btn cbi-button cbi-button-positive important login-submit">
+			<button type="submit" class="btn cbi-button cbi-button-positive important login-submit" data-busy="{{ L.busy }}">
 				<span class="login-submit-text">{{ _('Log in') }}</span>
 				<span class="login-submit-arrow" aria-hidden="true">&#x2192;</span>
 			</button>
@@ -58,7 +79,7 @@
 
 		<div class="login-card-foot">
 			<span>{{ model || 'OpenWrt' }}</span>
-			<span class="login-blink">_</span>
+			<span class="login-rec"><span class="login-rec-dot"></span>{{ L.watch }}</span>
 		</div>
 	</form>
 </div>
@@ -67,13 +88,14 @@
 (function() {
 	var form = document.getElementById('login-form'),
 	    pass = document.getElementById('luci_password'),
-	    user = document.getElementById('luci_username');
+	    user = document.getElementById('luci_username'),
+	    btn = form.querySelector('.login-submit');
 
 	(user && !user.value ? user : pass).focus();
 
 	form.addEventListener('submit', function() {
 		form.classList.add('busy');
-		form.querySelector('.login-submit-text').textContent = 'JACKING IN…';
+		form.querySelector('.login-submit-text').textContent = btn.getAttribute('data-busy');
 	});
 
 	var reduce = false;
@@ -89,8 +111,21 @@
 	}
 
 	var ctx = c.getContext('2d'),
-	    glyphs = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF<>/\\#$%&*+=404',
-	    size = 16, cols = 0, drops = [], last = 0;
+	    glyphs = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF<>/\\#$%&*+=404█▓▒░',
+	    size = 16, cols = 0, drops = [], last = 0, pal = {};
+
+	function readPalette() {
+		var cs = getComputedStyle(document.documentElement);
+		pal = {
+			a: cs.getPropertyValue('--n-rain-a').trim() || '#00f0ff',
+			b: cs.getPropertyValue('--n-rain-b').trim() || '#0a8f99',
+			hot: cs.getPropertyValue('--n-rain-hot').trim() || '#ff2a6d',
+			fade: cs.getPropertyValue('--n-rain-fade').trim() || 'rgba(11, 11, 10, 0.12)',
+			bg: cs.getPropertyValue('--n-bg').trim() || '#0b0b0a'
+		};
+		ctx.fillStyle = pal.bg;
+		ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+	}
 
 	function resize() {
 		var dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -100,26 +135,31 @@
 		c.style.height = window.innerHeight + 'px';
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 		cols = Math.ceil(window.innerWidth / size);
+		var rows = Math.ceil(window.innerHeight / size);
 		drops = [];
 		for (var i = 0; i < cols; i++)
-			drops[i] = Math.random() * -60;
+			drops[i] = Math.floor(Math.random() * rows * 1.2) - rows * 0.3;
+		readPalette();
 	}
 
 	function frame(t) {
 		requestAnimationFrame(frame);
-		if (t - last < 50) return;
+		if (t - last < 55) return;
 		last = t;
 
-		ctx.fillStyle = 'rgba(5, 6, 10, 0.12)';
+		ctx.fillStyle = pal.fade;
 		ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 		ctx.font = size + 'px monospace';
 
 		for (var i = 0; i < cols; i++) {
+			/* dead columns: the signal is cut here */
+			if (i % 7 == 3) continue;
+
 			var ch = glyphs.charAt(Math.floor(Math.random() * glyphs.length)),
 			    x = i * size,
 			    y = drops[i] * size;
 
-			ctx.fillStyle = Math.random() > 0.975 ? '#ff2a6d' : (Math.random() > 0.5 ? '#00f0ff' : '#0a8f99');
+			ctx.fillStyle = Math.random() > 0.975 ? pal.hot : (Math.random() > 0.5 ? pal.a : pal.b);
 			ctx.fillText(ch, x, y);
 
 			if (y > window.innerHeight && Math.random() > 0.975)
@@ -129,6 +169,7 @@
 		}
 	}
 
+	document.addEventListener('404mode-scheme', function() { setTimeout(readPalette, 0); });
 	window.addEventListener('resize', resize);
 	resize();
 	requestAnimationFrame(frame);

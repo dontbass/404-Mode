@@ -229,7 +229,34 @@ return baseclass.extend({
 		});
 
 		syncFx();
+		this.bindScheme();
 		this.startClock();
+	},
+
+	bindScheme() {
+		const btn = document.querySelector('#scheme-toggle');
+		const api = window.__404scheme;
+
+		if (!btn || !api || api.locked)
+			return;
+
+		const order = [ 'auto', 'dark', 'light' ];
+		const names = { auto: 'AUTO', dark: 'DARK', light: 'LITE' };
+		const label = btn.querySelector('.hud-scheme-label');
+
+		const sync = () => {
+			const cur = api.get();
+			label.textContent = names[cur] || 'AUTO';
+			btn.setAttribute('data-scheme', cur);
+		};
+
+		btn.addEventListener('click', () => {
+			const cur = api.get();
+			api.set(order[(order.indexOf(cur) + 1) % order.length]);
+			sync();
+		});
+
+		sync();
 	},
 
 	startClock() {

@@ -385,7 +385,7 @@
 	.table .tr,
 	.cbi-section-table .tr {
 		border: 1px solid var(--n-line);
-		background: rgba(12, 15, 24, .6);
+		background: rgba(var(--n-panel-rgb), .6);
 		margin-bottom: 8px;
 	}
 

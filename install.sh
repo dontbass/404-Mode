@@ -1,21 +1,32 @@
 #!/bin/sh
 #
-# 404 Mode — quick installer for OpenWrt 24.10 (no SDK / no .ipk needed)
+# 404 Mode — quick installer for OpenWrt 24.10+ (no SDK / no .ipk needed)
 #
-#   install:    sh -c "$(uclient-fetch -qO- https://raw.githubusercontent.com/dontbass/404-Mode/main/install.sh)"
-#   specific:   sh install.sh v1.0.0
-#   uninstall:  sh install.sh --remove
+#   install (auto dark/light):  sh install.sh
+#   force a variant:            sh install.sh --dark | --light
+#   specific git ref:           sh install.sh v1.1.0 [--dark|--light]
+#   uninstall:                  sh install.sh --remove
 #
 
 set -e
 
 REPO="dontbass/404-Mode"
-REF="${1:-main}"
+REF="main"
 NAME="404mode"
-UCI_KEY="404Mode"
-MEDIA="/luci-static/$NAME"
+VARIANT=""
+ACTION="install"
 WWW="/www/luci-static"
 UCODE="/usr/share/ucode/luci/template/themes"
+
+for arg in "$@"; do
+	case "$arg" in
+		--remove|-r) ACTION="remove" ;;
+		--dark)      VARIANT="-dark" ;;
+		--light)     VARIANT="-light" ;;
+		-*)          echo "unknown option: $arg" >&2; exit 1 ;;
+		*)           REF="$arg" ;;
+	esac
+done
 
 say() { printf '\033[1;36m[404]\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[404] %s\033[0m\n' "$*" >&2; exit 1; }
@@ -36,13 +47,17 @@ fetch() {
 	fi
 }
 
-if [ "$1" = "--remove" ] || [ "$1" = "-r" ]; then
+if [ "$ACTION" = "remove" ]; then
 	say "removing theme"
-	rm -rf "$WWW/$NAME" "$WWW/resources/menu-$NAME.js" "$UCODE/$NAME"
-	uci -q delete "luci.themes.$UCI_KEY" || true
-	if [ "$(uci -q get luci.main.mediaurlbase)" = "$MEDIA" ]; then
-		uci set luci.main.mediaurlbase=/luci-static/bootstrap
-	fi
+	rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" \
+	       "$WWW/resources/menu-$NAME.js" \
+	       "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light"
+	uci -q delete luci.themes.404Mode || true
+	uci -q delete luci.themes.404ModeDark || true
+	uci -q delete luci.themes.404ModeLight || true
+	case "$(uci -q get luci.main.mediaurlbase)" in
+		/luci-static/$NAME*) uci set luci.main.mediaurlbase=/luci-static/bootstrap ;;
+	esac
 	uci commit luci
 	clear_cache
 	say "done — back to bootstrap"
@@ -66,15 +81,24 @@ SRC="$(find "$TMP" -maxdepth 2 -type d -name 'luci-theme-404mode' | head -n1)"
 [ -n "$SRC" ] || die "package dir not found in archive"
 
 say "installing files"
-mkdir -p "$WWW" "$UCODE"
-rm -rf "$WWW/$NAME" "$UCODE/$NAME"
-cp -R "$SRC/htdocs/luci-static/." "$WWW/"
+mkdir -p "$WWW/resources" "$UCODE"
+rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light"
+cp -R "$SRC/htdocs/luci-static/$NAME" "$WWW/"
+cp "$SRC/htdocs/luci-static/resources/menu-$NAME.js" "$WWW/resources/"
 cp -R "$SRC/ucode/template/themes/$NAME" "$UCODE/"
 
-say "registering theme"
-uci set "luci.themes.$UCI_KEY=$MEDIA"
-uci set "luci.main.mediaurlbase=$MEDIA"
+for v in dark light; do
+	ln -sfn "$NAME" "$WWW/$NAME-$v"
+	ln -sfn "$NAME" "$UCODE/$NAME-$v"
+done
+
+say "registering themes: 404Mode (auto), 404ModeDark, 404ModeLight"
+uci set "luci.themes.404Mode=/luci-static/$NAME"
+uci set "luci.themes.404ModeDark=/luci-static/$NAME-dark"
+uci set "luci.themes.404ModeLight=/luci-static/$NAME-light"
+uci set "luci.main.mediaurlbase=/luci-static/$NAME$VARIANT"
 uci commit luci
 clear_cache
 
-say "done. reload LuCI (Ctrl+F5). Remove: sh install.sh --remove"
+say "active: /luci-static/$NAME$VARIANT — reload LuCI (Ctrl+F5)"
+say "switch later: System → System → Language and Style"
