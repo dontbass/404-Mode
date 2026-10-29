@@ -21,6 +21,9 @@
 	</main>
 </div>
 <script>L.require('menu-404mode')</script>
+{% if (theme == '404mode-gost'): %}
+<script>L.require('hud-404mode')</script>
+{% endif %}
 {% endif %}
 </body>
 </html>

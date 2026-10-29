@@ -34,6 +34,9 @@
 <div class="login-vignette" aria-hidden="true"></div>
 
 <div class="login">
+	{% if (theme == '404mode-gost'): %}
+	<img class="login-van" src="{{ media }}/gost/van.svg" alt="" aria-hidden="true">
+	{% endif %}
 	<div class="login-head">
 		<div class="login-code glitch" data-text="404">404</div>
 		<div class="login-sub">

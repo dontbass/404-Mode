@@ -12,13 +12,30 @@
 
 ![Mobile](docs/mobile.jpg)
 
-## Две темы в одном пакете
+### ГОСТ-24 — полевой бункер
+
+Дизельпанк-консоль: сталь с заклёпками, кремовый люминофор, сигнальный красный, реактивная «буханка» на шильдике.
+
+![ГОСТ-24](docs/gost-overview.jpg)
+
+| Настройки | Вход | Телефон |
+|---|---|---|
+| ![ГОСТ-24 settings](docs/gost-settings.jpg) | ![ГОСТ-24 login](docs/gost-login.jpg) | ![ГОСТ-24 mobile](docs/gost-mobile.jpg) |
+
+- **Шильдик** в сайдбаре: иллюстрация, `СТС • версия`, `ГОСТ-24`, `OPEN_WRT 24`.
+- **Телеметрия у каждого пункта меню**: мини-график + значение + статус (`ONLINE`, `SECURE`, `MOUNT`, `STBY`…). Status — CPU, System — RAM, Network — трафик аплинка, NAS — заполнение корня, VPN — активные туннели (WireGuard/OpenVPN/AmneziaWG…), Firewall — соединения conntrack.
+- **Радар**: DHCP-клиенты — отметки на экране, рядом хвост системного журнала, внизу температура и аплинк-время.
+- **Дашборд на странице «Обзор»**: шильдик устройства с вертикальной шкалой загрузки, графики «Загрузка ЦП» и «ОЗУ», «Телеметрия» (CPU, нагрузка, соединения, клиенты, температура, аплинк + линейка), гистограмма трафика RX/TX, таблица процессов. Родные секции LuCI (Wireless, Network, DHCP…) разложены плитками; дублирующиеся System/Memory скрыты.
+- Данные — живые, через ubus (`system info`, `luci-rpc`, `network.interface dump`, `luci getProcessList`, `/proc/stat`, термодатчик, `logread`). Нет датчика или прав — соответствующий виджет просто пустой.
+
+## Четыре темы в одном пакете
 
 | В LuCI | Путь | Поведение |
 |---|---|---|
 | **404Mode** | `/luci-static/404mode` | авто по системной теме браузера + переключатель `AUTO / DARK / LITE` в шапке |
 | **404ModeDark** | `/luci-static/404mode-dark` | всегда **ASH** — сажа, токсичный неон, ржавчина, CRT-сканлайны |
 | **404ModeLight** | `/luci-static/404mode-light` | всегда **SAMIZDAT** — ксерокопия на старой бумаге, типографская краска, красный штамп |
+| **404ModeGost** | `/luci-static/404mode-gost` | **ГОСТ-24** — дизельпанк-бункер с живой телеметрией и дашбордом |
 
 Выбор: **System → System → Language and Style**.
 
@@ -48,6 +65,7 @@ uclient-fetch -qO /tmp/404.sh https://raw.githubusercontent.com/dontbass/404-Mod
 sh /tmp/404.sh            # авто
 sh /tmp/404.sh --dark     # сразу тёмная
 sh /tmp/404.sh --light    # сразу светлая
+sh /tmp/404.sh --gost     # сразу ГОСТ-24
 sh /tmp/404.sh --remove   # удалить, вернуть bootstrap
 ```
 
@@ -76,14 +94,19 @@ luci-theme-404mode/
 │   ├── 404mode/
 │   │   ├── cascade.css          # база компонентов + слой 404 MODE (токены ASH / SAMIZDAT)
 │   │   ├── mobile.css
-│   │   └── logo.svg, logo_48.png
+│   │   ├── logo.svg, logo_48.png
+│   │   └── gost/{gost.css, van.svg}   # скин ГОСТ-24
+│   ├── 404mode-gost  -> 404mode
 │   ├── 404mode-dark  -> 404mode
 │   ├── 404mode-light -> 404mode
-│   └── resources/menu-404mode.js
+│   └── resources/
+│       ├── menu-404mode.js      # сайдбар, вкладки, drawer, FX, переключатель темы
+│       └── hud-404mode.js       # ГОСТ-24: телеметрия, радар, дашборд
 ├── ucode/template/themes/
 │   ├── 404mode/{header,footer,sysauth}.ut
 │   ├── 404mode-dark  -> 404mode
-│   └── 404mode-light -> 404mode
+│   ├── 404mode-light -> 404mode
+│   └── 404mode-gost  -> 404mode
 └── root/etc/uci-defaults/30_luci-theme-404mode
 ```
 

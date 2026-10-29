@@ -7,6 +7,7 @@
    404mode        — follows the browser (prefers-color-scheme) + in-UI switch
    404mode-dark   — forced "ASH" dark
    404mode-light  — forced "SAMIZDAT" light
+   404mode-gost   — "ГОСТ-24" dieselpunk bunker skin with live telemetry HUD
 -#}
 
 {%
@@ -15,7 +16,10 @@
 	const boardinfo = ubus.call('system', 'board');
 	const hostname = striptags(boardinfo?.hostname ?? '?');
 	const model = striptags(boardinfo?.model ?? '');
-	const forced = (theme == '404mode-dark') ? 'dark' : ((theme == '404mode-light') ? 'light' : '');
+	const gost = (theme == '404mode-gost');
+	const forced = (theme == '404mode-dark' || gost) ? 'dark' : ((theme == '404mode-light') ? 'light' : '');
+	const distver = striptags(version?.distversion ?? '');
+	const distmajor = split(distver, '.')[0] || '24';
 	const ru = (substr(dispatcher.lang ?? '', 0, 2) == 'ru');
 
 	const T = ru ? {
@@ -33,6 +37,9 @@
 		uplink: 'АПЛИНК',
 		uplink_state: 'ФИЛЬТРУЕТСЯ',
 		scheme: 'Тема: авто / тёмная / светлая',
+		temp: 'ТЕМП.',
+		uptime: 'ВРЕМЯ РАБОТЫ',
+		radar: 'РАДАР // КЛИЕНТЫ',
 	} : {
 		ticker_tag: 'NET UNDER FILTER',
 		ticker: [
@@ -48,16 +55,22 @@
 		uplink: 'UPLINK',
 		uplink_state: 'FILTERED',
 		scheme: 'Theme: auto / dark / light',
+		temp: 'TEMP.',
+		uptime: 'UPTIME',
+		radar: 'RADAR // CLIENTS',
 	};
 
 	http.prepare_content('text/html; charset=UTF-8');
 -%}
 
 <!DOCTYPE html>
-<html lang="{{ dispatcher.lang }}" data-theme="{{ forced || 'dark' }}" data-darkmode="{{ forced == 'light' ? 'false' : 'true' }}" data-scheme="{{ forced || 'auto' }}"{{ forced ? ' data-scheme-lock="1"' : '' }}>
+<html lang="{{ dispatcher.lang }}"{{ gost ? ' data-skin="gost"' : '' }} data-theme="{{ forced || 'dark' }}" data-darkmode="{{ forced == 'light' ? 'false' : 'true' }}" data-scheme="{{ forced || 'auto' }}"{{ forced ? ' data-scheme-lock="1"' : '' }}>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	{% if (gost): %}
+	<meta name="theme-color" content="#161714">
+	{% endif %}
 	<meta name="theme-color" content="#0b0b0a" media="(prefers-color-scheme: dark)">
 	<meta name="theme-color" content="#e9e4d8" media="(prefers-color-scheme: light)">
 	<meta name="color-scheme" content="{{ forced || 'dark light' }}">
@@ -102,6 +115,9 @@
 	</script>
 	<link rel="stylesheet" href="{{ media }}/cascade.css">
 	<link rel="stylesheet" media="screen and (max-width: 854px)" href="{{ media }}/mobile.css">
+	{% if (gost): %}
+	<link rel="stylesheet" href="{{ media }}/gost/gost.css">
+	{% endif %}
 	<link rel="icon" href="{{ media }}/logo.svg" sizes="any" type="image/svg+xml">
 	<link rel="icon" href="{{ media }}/logo_48.png" sizes="48x48">
 	{% if (node?.css): %}
@@ -128,6 +144,9 @@
 	</a>
 
 	<div class="hud-meta">
+		{% if (gost): %}
+		<span class="hud-cell hud-dist">{{ striptags(version?.distname ?? 'OpenWrt') }} {{ distver }}</span>
+		{% endif %}
 		<span class="hud-cell hud-model">{{ model || 'OpenWrt' }}</span>
 		<span class="hud-cell hud-clock" id="hud-clock">--:--:--</span>
 	</div>
@@ -145,6 +164,7 @@
 	</div>
 </header>
 
+{% if (!gost): %}
 <div class="hud-ticker" aria-hidden="true">
 	<span class="hud-ticker-tag">&#x26A0; {{ T.ticker_tag }}</span>
 	<div class="hud-ticker-track">
@@ -155,12 +175,37 @@
 		</div>
 	</div>
 </div>
+{% endif %}
 
 <div class="shell">
 	<aside class="sidebar" id="sidebar">
 		<div class="sidebar-scan" aria-hidden="true"></div>
+		{% if (gost): %}
+		<div class="gost-plate" aria-hidden="true">
+			<img class="gost-plate-art" src="{{ media }}/gost/van.svg" alt="">
+			<span class="gost-plate-tag gost-plate-tag-l">СТС &#x2022; {{ distver || '24' }}</span>
+			<span class="gost-plate-tag gost-plate-tag-r">ГОСТ-{{ distmajor }}</span>
+			<span class="gost-plate-title">OPEN<i>_</i>WRT <b>{{ distmajor }}</b></span>
+		</div>
+		{% endif %}
 		<nav id="mainmenu" style="display:none"></nav>
 		<ul id="modemenu" style="display:none"></ul>
+		{% if (gost): %}
+		<div class="gost-radar" id="gost-radar">
+			<div class="gost-radar-scope" aria-hidden="true">
+				<div class="gost-radar-sweep"></div>
+				<div class="gost-radar-blips" id="gost-blips"></div>
+			</div>
+			<div class="gost-radar-side">
+				<div class="gost-radar-title">{{ T.radar }}</div>
+				<ol class="gost-radar-log" id="gost-log"></ol>
+			</div>
+			<div class="gost-radar-foot">
+				<span>{{ T.temp }} <b id="gost-temp">--</b></span>
+				<span>{{ T.uptime }} <b id="gost-uptime">--</b></span>
+			</div>
+		</div>
+		{% endif %}
 		<div class="sidebar-uplink" aria-hidden="true">
 			<span class="sidebar-uplink-dot"></span>
 			<span class="sidebar-uplink-label">{{ T.uplink }}:</span>

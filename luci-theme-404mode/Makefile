@@ -8,11 +8,11 @@
 
 include $(TOPDIR)/rules.mk
 
-LUCI_TITLE:=404 Mode — cyberpunk / post-collapse theme (dark + light)
+LUCI_TITLE:=404 Mode — cyberpunk / post-collapse theme (dark, light, ГОСТ-24)
 LUCI_DEPENDS:=+luci-base
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=1.1.0
+PKG_VERSION:=1.2.0
 PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_MAINTAINER:=Vladimir <dontbass@users.noreply.github.com>
@@ -26,6 +26,7 @@ define Package/luci-theme-404mode/postrm
 	uci -q delete luci.themes.404Mode
 	uci -q delete luci.themes.404ModeDark
 	uci -q delete luci.themes.404ModeLight
+	uci -q delete luci.themes.404ModeGost
 	case "$$(uci -q get luci.main.mediaurlbase)" in
 		/luci-static/404mode*) uci -q set luci.main.mediaurlbase=/luci-static/bootstrap ;;
 	esac

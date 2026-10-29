@@ -3,8 +3,8 @@
 # 404 Mode — quick installer for OpenWrt 24.10+ (no SDK / no .ipk needed)
 #
 #   install (auto dark/light):  sh install.sh
-#   force a variant:            sh install.sh --dark | --light
-#   specific git ref:           sh install.sh v1.1.0 [--dark|--light]
+#   force a variant:            sh install.sh --dark | --light | --gost
+#   specific git ref:           sh install.sh v1.2.0 [--dark|--light|--gost]
 #   uninstall:                  sh install.sh --remove
 #
 
@@ -23,6 +23,7 @@ for arg in "$@"; do
 		--remove|-r) ACTION="remove" ;;
 		--dark)      VARIANT="-dark" ;;
 		--light)     VARIANT="-light" ;;
+		--gost)      VARIANT="-gost" ;;
 		-*)          echo "unknown option: $arg" >&2; exit 1 ;;
 		*)           REF="$arg" ;;
 	esac
@@ -49,12 +50,13 @@ fetch() {
 
 if [ "$ACTION" = "remove" ]; then
 	say "removing theme"
-	rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" \
-	       "$WWW/resources/menu-$NAME.js" \
-	       "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light"
+	rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$WWW/$NAME-gost" \
+	       "$WWW/resources/menu-$NAME.js" "$WWW/resources/hud-$NAME.js" \
+	       "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost"
 	uci -q delete luci.themes.404Mode || true
 	uci -q delete luci.themes.404ModeDark || true
 	uci -q delete luci.themes.404ModeLight || true
+	uci -q delete luci.themes.404ModeGost || true
 	case "$(uci -q get luci.main.mediaurlbase)" in
 		/luci-static/$NAME*) uci set luci.main.mediaurlbase=/luci-static/bootstrap ;;
 	esac
@@ -82,20 +84,21 @@ SRC="$(find "$TMP" -maxdepth 2 -type d -name 'luci-theme-404mode' | head -n1)"
 
 say "installing files"
 mkdir -p "$WWW/resources" "$UCODE"
-rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light"
+rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$WWW/$NAME-gost" "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost"
 cp -R "$SRC/htdocs/luci-static/$NAME" "$WWW/"
-cp "$SRC/htdocs/luci-static/resources/menu-$NAME.js" "$WWW/resources/"
+cp "$SRC/htdocs/luci-static/resources/menu-$NAME.js" "$SRC/htdocs/luci-static/resources/hud-$NAME.js" "$WWW/resources/"
 cp -R "$SRC/ucode/template/themes/$NAME" "$UCODE/"
 
-for v in dark light; do
+for v in dark light gost; do
 	ln -sfn "$NAME" "$WWW/$NAME-$v"
 	ln -sfn "$NAME" "$UCODE/$NAME-$v"
 done
 
-say "registering themes: 404Mode (auto), 404ModeDark, 404ModeLight"
+say "registering themes: 404Mode (auto), 404ModeDark, 404ModeLight, 404ModeGost"
 uci set "luci.themes.404Mode=/luci-static/$NAME"
 uci set "luci.themes.404ModeDark=/luci-static/$NAME-dark"
 uci set "luci.themes.404ModeLight=/luci-static/$NAME-light"
+uci set "luci.themes.404ModeGost=/luci-static/$NAME-gost"
 uci set "luci.main.mediaurlbase=/luci-static/$NAME$VARIANT"
 uci commit luci
 clear_cache

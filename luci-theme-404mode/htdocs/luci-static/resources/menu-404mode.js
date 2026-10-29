@@ -49,6 +49,9 @@ return baseclass.extend({
 		}
 
 		this.bindHud();
+
+		window.__404menuReady = true;
+		document.dispatchEvent(new CustomEvent('404mode-menu'));
 	},
 
 	/* ---------- mode menu (admin / other top-level trees) ---------- */
