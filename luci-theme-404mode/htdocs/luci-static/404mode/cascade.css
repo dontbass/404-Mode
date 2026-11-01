@@ -6143,13 +6143,13 @@ html.no-fx .ns-amb i { animation: none; }
 
 .ns-board {
 	position: absolute;
-	left: 50%;
-	bottom: 4vh;
-	transform: translateX(-50%);
-	width: min(1200px, calc(100vw - 48px));
+	right: 4vw;
+	bottom: 5vh;
+	z-index: 2;
+	width: min(620px, 38vw);
 	display: grid;
-	grid-template-columns: minmax(0, 1.1fr) minmax(0, .8fr) minmax(0, 1.6fr);
-	gap: 16px;
+	grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+	gap: 14px;
 	align-items: stretch;
 }
 
@@ -6246,13 +6246,151 @@ html.no-fx .ns-amb i { animation: none; }
 	overflow: hidden;
 }
 
-@media screen and (max-width: 1000px) {
-	.ns-board { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-	.ns-news { grid-column: 1 / -1; }
+/* headlines wallpaper: picture (if any) under a scrim, headline large */
+.ns-wall { position: absolute; inset: 0; z-index: 1; }
+
+.ns-slide {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	transition: opacity 1.4s ease;
 }
 
-@media screen and (max-width: 640px) {
-	.ns-board { grid-template-columns: minmax(0, 1fr); bottom: 16px; width: calc(100vw - 32px); }
-	.ns-fx, .ns-news li:nth-child(n+3) { display: none; }
-	.ns-temp { font-size: 40px; }
+.ns-slide.on { opacity: 1; }
+
+.ns-img {
+	position: absolute;
+	inset: -4%;
+	width: 108%;
+	height: 108%;
+	object-fit: cover;
+	opacity: .42;
+	filter: saturate(.85);
 }
+
+.ns-slide.on .ns-img { animation: ns-drift 16s ease-out both; }
+
+@keyframes ns-drift {
+	from { transform: scale(1) translate3d(0, 0, 0); }
+	to   { transform: scale(1.08) translate3d(-1.5%, -1%, 0); }
+}
+
+html.no-fx .ns-slide.on .ns-img { animation: none; }
+@media (prefers-reduced-motion: reduce) { .ns-slide.on .ns-img { animation: none; } }
+
+/* scrim: picture recedes, text and tiles stay readable */
+.ns-slide.has-img::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background:
+		linear-gradient(180deg, rgba(var(--n-bg-rgb), .55), rgba(var(--n-bg-rgb), .2) 35%, rgba(var(--n-bg-rgb), .35) 60%, rgba(var(--n-bg-rgb), .92)),
+		radial-gradient(80% 70% at 50% 35%, rgba(var(--n-bg-rgb), .35), transparent 70%);
+}
+
+.ns-head {
+	position: absolute;
+	left: 5vw;
+	bottom: 5vh;
+	z-index: 1;
+	width: min(980px, calc(100vw - min(620px, 38vw) - 9vw - 56px));
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.ns-head .hb-src { font-size: 11px; letter-spacing: .18em; }
+
+.ns-head p {
+	margin: 0;
+	font-family: var(--n-font-ui, inherit);
+	font-size: clamp(22px, 2.6vw, 46px);
+	font-weight: 600;
+	line-height: 1.18;
+	letter-spacing: -.01em;
+	color: var(--n-heading);
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-wrap: balance;
+}
+
+.ns-dots { display: flex; gap: 6px; margin-top: 4px; }
+
+.ns-dots i {
+	width: 18px;
+	height: 2px;
+	background: var(--n-line-strong);
+}
+
+.ns-dots i.on { background: var(--n-heading); }
+
+/* tiles of the screensaver over the wallpaper: frosted glass */
+[data-nfx~="overlay"][data-nfx-saver] [data-nfx~="surface"],
+[data-nfx~="overlay"][data-nfx-saver] [data-nfx~="note"] {
+	background: rgba(var(--n-panel-rgb), .6) !important;
+	-webkit-backdrop-filter: blur(18px) saturate(1.15) !important;
+	backdrop-filter: blur(18px) saturate(1.15) !important;
+	border: 1px solid var(--n-line) !important;
+}
+
+/* layouts, chosen by brief-404mode.js from the free space around the
+   screensaver's own content (--ns-below / --ns-side in px) */
+.n-saver[data-layout="below"] .ns-board { max-height: var(--ns-below); }
+.n-saver[data-layout="below"] .ns-head p { -webkit-line-clamp: 2; }
+
+.n-saver[data-layout="sides"] .ns-board {
+	top: 50%;
+	bottom: auto;
+	right: 16px;
+	transform: translateY(-50%);
+	width: min(320px, var(--ns-side));
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.n-saver[data-layout="sides"] .ns-head {
+	left: 16px;
+	top: 50%;
+	bottom: auto;
+	transform: translateY(-50%);
+	width: min(360px, var(--ns-side));
+}
+
+.n-saver[data-layout="sides"] .ns-head p { font-size: clamp(18px, 1.6vw, 28px); -webkit-line-clamp: 6; }
+
+.n-saver[data-layout="compact"] .ns-board { display: none; }
+.n-saver[data-layout="compact"] .ns-head { left: 16px; right: 16px; width: auto; bottom: 16px; }
+.n-saver[data-layout="compact"] .ns-head p { font-size: 18px; -webkit-line-clamp: 2; }
+
+/* narrow board: weather above rates */
+@media screen and (max-width: 1400px) {
+	.n-saver[data-layout="below"] .ns-board { width: min(340px, 30vw); grid-template-columns: minmax(0, 1fr); }
+	.n-saver[data-layout="below"] .ns-fx { display: none; }
+	.n-saver[data-layout="below"] .ns-head { width: calc(100vw - min(340px, 30vw) - 9vw - 56px); }
+}
+
+.ns-wx { flex-wrap: wrap; gap: 10px 18px; }
+.ns-wx-side { flex: 1 1 140px; }
+
+@media screen and (max-width: 700px) {
+	.n-saver[data-layout] .ns-board { display: none; }
+	.n-saver[data-layout] .ns-head { left: 16px; right: 16px; top: auto; bottom: 16px; transform: none; width: auto; }
+	.ns-head p { font-size: 18px !important; -webkit-line-clamp: 3; }
+}
+
+/* the app's own text effects (outlines, glows, strokes) go away on an
+   overlay, whatever its specificity: :not(#\#) adds id weight */
+[data-nfx~="overlay"]:not(#\#):not(#\#),
+[data-nfx~="overlay"]:not(#\#):not(#\#) * {
+	text-shadow: none !important;
+	-webkit-text-stroke: 0 !important;
+}
+
+[data-nfx~="ink"]:not(#\#):not(#\#) { color: var(--n-text) !important; }
+[data-nfx~="ink-strong"]:not(#\#):not(#\#) { color: var(--n-heading) !important; }
+[data-nfx~="ink-dim"]:not(#\#):not(#\#) { color: var(--n-text-dim) !important; }
+[data-nfx~="t-acc"]:not(#\#):not(#\#) { color: var(--n-cyan) !important; }
+[data-nfx~="t-ok"]:not(#\#):not(#\#) { color: var(--n-green) !important; }
+[data-nfx~="t-bad"]:not(#\#):not(#\#) { color: var(--n-magenta) !important; }
+[data-nfx~="t-warn"]:not(#\#):not(#\#) { color: var(--n-rust) !important; }

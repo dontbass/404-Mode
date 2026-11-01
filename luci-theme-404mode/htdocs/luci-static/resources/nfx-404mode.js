@@ -316,6 +316,69 @@
 		return tags.length ? tags.join(' ') : '';
 	}
 
+	/* ---------- mobile operator names ----------
+	 * Apps that print the raw PLMN (MCC+MNC, e.g. "25002") next to an
+	 * "operator" label get the brand name added: "МегаФон (25002)". */
+
+	var RU = (root.lang || '').substr(0, 2) == 'ru';
+
+	var PLMN = {
+		'25001': [ 'МТС', 'MTS' ], '25002': [ 'МегаФон', 'MegaFon' ], '25099': [ 'Билайн', 'Beeline' ],
+		'25028': [ 'Билайн', 'Beeline' ], '25020': [ 'T2', 'T2' ], '25011': [ 'Yota', 'Yota' ],
+		'25062': [ 'Т-Мобайл', 'T-Mobile' ], '25035': [ 'Мотив', 'Motiv' ], '25039': [ 'Ростелеком', 'Rostelecom' ],
+		'25027': [ 'Летай', 'Letai' ], '25032': [ 'Win mobile', 'Win mobile' ], '25034': [ 'Крымтелеком', 'Krymtelecom' ],
+		'25060': [ 'Волна мобайл', 'Volna mobile' ], '25008': [ 'Вайнах Телеком', 'Vainah Telecom' ],
+		'25701': [ 'A1', 'A1' ], '25702': [ 'МТС', 'MTS' ], '25704': [ 'life:)', 'life:)' ],
+		'25501': [ 'Vodafone', 'Vodafone' ], '25503': [ 'Київстар', 'Kyivstar' ], '25506': [ 'lifecell', 'lifecell' ],
+		'40101': [ 'Beeline', 'Beeline' ], '40102': [ 'Kcell', 'Kcell' ], '40107': [ 'Altel', 'Altel' ], '40177': [ 'Tele2', 'Tele2' ]
+	};
+
+	var PLMN_RE = /^\s*(\d{3})[\s-]?(\d{2,3})\s*$/;
+	var OPER_RE = /опера|operator|carrier|plmn|провайдер/i;
+
+	function opfixText(t) {
+		var m = PLMN_RE.exec(t.nodeValue || '');
+
+		if (!m)
+			return;
+
+		var name = PLMN[m[1] + m[2]];
+		var host = t.parentElement;
+
+		if (!name || !host || host.closest(SKIP))
+			return;
+
+		/* the label sits in the same row: the parent or the one above it */
+		var row = host.parentElement, ctx = (row ? row.textContent : '') || '';
+
+		if (ctx.length > 300 || !OPER_RE.test(ctx)) {
+			row = row && row.parentElement;
+			ctx = row ? (row.textContent || '') : '';
+
+			if (ctx.length > 400 || !OPER_RE.test(ctx))
+				return;
+		}
+
+		t.nodeValue = name[RU ? 0 : 1] + ' (' + m[1] + m[2] + ')';
+	}
+
+	function opfix(node) {
+		if (!node)
+			return;
+
+		if (node.nodeType == 3)
+			return opfixText(node);
+
+		if (node.nodeType != 1 || (node.closest && node.closest(SKIP)) || !/\d{5}/.test(node.textContent || ''))
+			return;
+
+		var w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT), t;
+
+		while ((t = w.nextNode()) != null)
+			if (/^\s*\d{3}[\s-]?\d{2,3}\s*$/.test(t.nodeValue))
+				opfixText(t);
+	}
+
 	/* ---------- scanning ---------- */
 
 	var seen = new WeakSet(),
@@ -435,7 +498,14 @@
 		for (var i = 0; i < muts.length; i++) {
 			var m = muts[i];
 
+			if (m.type == 'characterData') {
+				opfixText(m.target);
+				continue;
+			}
+
 			if (m.type == 'childList') {
+				opfix(m.target);
+
 				for (var j = 0; j < m.addedNodes.length; j++)
 					if (m.addedNodes[j].nodeType == 1)
 						added.push(m.addedNodes[j]);
@@ -459,6 +529,7 @@
 	}
 
 	function start() {
+		opfix(document.body);
 		scan(all(scope()), false);
 
 		/* modals, popups and overlays that apps append to <body> */
@@ -468,7 +539,7 @@
 		});
 
 		new MutationObserver(onMutations)
-			.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+			.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['class', 'style'] });
 
 		/* a scheme switch changes the palette: re-check every tagged element */
 		document.addEventListener('404mode-scheme', function() {

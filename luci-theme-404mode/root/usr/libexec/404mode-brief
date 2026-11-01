@@ -101,6 +101,32 @@ function clean(s) {
 	return trim(s);
 }
 
+/* picture for the wallpaper: enclosure / media:content / first <img> */
+function item_image(it) {
+	let body = replace(it, /&quot;/g, '"');
+	body = replace(body, /&lt;/g, '<');
+	body = replace(body, /&amp;/g, '&');
+
+	let url = null;
+
+	for (let tag in [ '<enclosure', '<media:content', '<media:thumbnail', '<img' ]) {
+		const i = index(body, tag);
+
+		if (i < 0)
+			continue;
+
+		const rest = substr(body, i, 600);
+		const m = match(rest, /(url|src)="(https:\/\/[^"]+)"/);
+
+		if (m) {
+			url = m[2];
+			break;
+		}
+	}
+
+	return (url && length(url) < 400 && !match(url, /[ <>'\\]/)) ? url : null;
+}
+
 function rss_items(xml, src, max) {
 	const out = [];
 	const parts = split(xml, '<item');
@@ -110,8 +136,15 @@ function rss_items(xml, src, max) {
 		const title = clean(between(it, '<title>', '</title>'));
 		const link = clean(between(it, '<link>', '</link>'));
 
-		if (title && link && match(link, /^https?:\/\//))
-			push(out, { t: title, l: link, s: src.name });
+		if (title && link && match(link, /^https?:\/\//)) {
+			const item = { t: title, l: link, s: src.name };
+			const img = item_image(it);
+
+			if (img)
+				item.i = img;
+
+			push(out, item);
+		}
 	}
 
 	return out;

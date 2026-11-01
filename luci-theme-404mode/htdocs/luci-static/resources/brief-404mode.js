@@ -177,10 +177,10 @@ return baseclass.extend({
 			this.saver.setAttribute('aria-hidden', 'true');
 			this.saver.innerHTML =
 				'<div class="ns-amb"><i></i><i></i><i></i></div>' +
+				'<div class="ns-wall"><div class="ns-slide"></div><div class="ns-slide"></div></div>' +
 				'<div class="ns-board">' +
 					'<section class="ns-panel ns-wx" hidden></section>' +
 					'<section class="ns-panel ns-fx" hidden></section>' +
-					'<section class="ns-panel ns-news" hidden></section>' +
 				'</div>';
 			this.saverPage = 0;
 			this.saverTick = 0;
@@ -227,10 +227,49 @@ return baseclass.extend({
 		}
 
 		ov.setAttribute('data-nfx-saver', '');
+		this.layoutSaver(ov);
 
-		/* headlines page every 12 s */
+		/* next headline on the wallpaper every 12 s */
 		if (++this.saverTick % 12 == 0)
 			this.renderSaverNews(true);
+	},
+
+	/* keep the board and the headline clear of the screensaver's own
+	   content: below it when there is room, else in the side columns,
+	   else headline only */
+	layoutSaver(ov) {
+		let top = Infinity, bottom = 0, left = Infinity, right = 0;
+
+		ov.querySelectorAll('*').forEach(el => {
+			const r = el.getBoundingClientRect();
+
+			if (r.width * r.height < 1500 || r.width > innerWidth * .95)
+				return;
+
+			top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom);
+			left = Math.min(left, r.left); right = Math.max(right, r.right);
+		});
+
+		const st = this.saver.style;
+		let mode = 'below';
+
+		if (bottom == 0) {
+			bottom = 0; left = innerWidth / 2; right = innerWidth / 2;
+		}
+
+		const below = innerHeight - bottom - 24;
+		const side = Math.min(left, innerWidth - right) - 32;
+
+		if (below >= 210)
+			mode = 'below';
+		else if (side >= 220)
+			mode = 'sides';
+		else
+			mode = 'compact';
+
+		this.saver.setAttribute('data-layout', mode);
+		st.setProperty('--ns-below', Math.max(0, below) + 'px');
+		st.setProperty('--ns-side', Math.max(0, side) + 'px');
 	},
 
 	renderSaver() {
@@ -277,22 +316,51 @@ return baseclass.extend({
 		this.renderSaverNews(false);
 	},
 
+	/* headlines as a full-screen wallpaper carousel: the article picture
+	   (when the feed has one) under a scrim, the headline set large */
 	renderSaverNews(next) {
-		const d = this.data.news, box = this.saver && this.saver.querySelector('.ns-news');
+		const d = this.data.news, wall = this.saver && this.saver.querySelector('.ns-wall');
 
-		if (!box || !d || !d.items || !d.items.length)
+		if (!wall || !d || !d.items || !d.items.length)
 			return;
 
-		const per = 4, pages = Math.ceil(d.items.length / per);
-
 		if (next)
-			this.saverPage = (this.saverPage + 1) % pages;
+			this.saverPage = (this.saverPage + 1) % d.items.length;
+		else if (wall.querySelector('.ns-slide.on'))
+			return;
 
-		const items = d.items.slice(this.saverPage * per, this.saverPage * per + per);
+		this.saverPage %= d.items.length;
 
-		box.innerHTML = '<h4>' + esc(T.s_news) + '</h4><ol>' + items.map(it =>
-			'<li><span class="hb-src">' + esc(it.s) + '</span><span>' + esc(it.t) + '</span></li>').join('') + '</ol>';
-		box.hidden = false;
+		const it = d.items[this.saverPage];
+		const slides = wall.querySelectorAll('.ns-slide');
+		const cur = wall.querySelector('.ns-slide.on');
+		const nxt = (cur === slides[0]) ? slides[1] : slides[0];
+		const dots = d.items.map((x, n) => '<i' + (n == this.saverPage ? ' class="on"' : '') + '></i>').join('');
+
+		const show = (img) => {
+			nxt.innerHTML =
+				(img ? '<img class="ns-img" alt="" referrerpolicy="no-referrer" src="' + esc(img) + '">' : '') +
+				'<div class="ns-head">' +
+					'<span class="hb-src">' + esc(it.s) + '</span>' +
+					'<p>' + esc(it.t) + '</p>' +
+					'<span class="ns-dots">' + dots + '</span>' +
+				'</div>';
+			nxt.classList.toggle('has-img', !!img);
+			nxt.classList.add('on');
+
+			if (cur)
+				cur.classList.remove('on');
+		};
+
+		if (!it.i)
+			return show(null);
+
+		/* only swap in a picture that has loaded */
+		const probe = new Image();
+		probe.referrerPolicy = 'no-referrer';
+		probe.onload = () => show(it.i);
+		probe.onerror = () => show(null);
+		probe.src = it.i;
 	},
 
 	city() {
