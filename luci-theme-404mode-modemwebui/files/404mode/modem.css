@@ -1,0 +1,908 @@
+/*!
+ * 404 MODE — skin for Modem WebUI (Ant Design Pro on :8001)
+ * Active only while <html data-404="gost|base" data-404-theme="dark|light">,
+ * which modem.js sets from the LuCI theme. Without it the panel stays stock.
+ * https://github.com/dontbass/404-Mode — Apache-2.0
+ *
+ * Layers:
+ *   1. palette per skin/scheme  (--m-*)
+ *   2. antd v5 global + component CSS variables mapped onto the palette
+ *   3. ProLayout / app-specific CSS and inline-style overrides
+ */
+
+/* ---------- 1. palettes ---------- */
+
+html[data-404="gost"][data-404-theme="dark"] {
+	--m-icon-filter: grayscale(1) sepia(.45) brightness(1.55) contrast(.95);
+	--m-icon-hot: grayscale(1) sepia(1) saturate(5) hue-rotate(-30deg) brightness(.85);
+
+	--m-bg: #141512;
+	--m-side: #181916;
+	--m-surface: #1f201d;
+	--m-head: #262722;
+	--m-elev: #262722;
+	--m-well: #10110e;
+	--m-tile: #2a2b27;
+	--m-text: #d9d3bf;
+	--m-text-2: #a39e8d;
+	--m-text-3: #7c776a;
+	--m-text-4: #5b5950;
+	--m-heading: #f1ebd8;
+	--m-border: #43443e;
+	--m-border-2: rgba(230, 220, 191, .1);
+	--m-seam: #0b0b0a;
+	--m-fill: rgba(230, 220, 191, .08);
+	--m-fill-2: rgba(230, 220, 191, .05);
+	--m-fill-3: rgba(230, 220, 191, .035);
+	--m-primary: #cf3a2b;
+	--m-primary-hover: #e04a3a;
+	--m-primary-active: #a82d21;
+	--m-primary-rgb: 207, 58, 43;
+	--m-on-primary: #fff2ea;
+	--m-accent: #e6dcbf;
+	--m-accent-rgb: 230, 220, 191;
+	--m-success: #9fb466;
+	--m-success-rgb: 159, 180, 102;
+	--m-warning: #e1a23a;
+	--m-warning-rgb: 225, 162, 58;
+	--m-error: #e5533f;
+	--m-error-rgb: 229, 83, 63;
+	--m-info: #c8bd9c;
+	--m-info-rgb: 200, 189, 156;
+	--m-radius: 2px;
+	--m-font: "Arial Narrow", "Roboto Condensed", "DejaVu Sans Condensed", "Liberation Sans Narrow", "Ubuntu Condensed", "Helvetica Neue", Arial, sans-serif;
+	--m-mono: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+	--m-shadow: 0 2px 0 #0a0a09, 0 10px 26px rgba(0, 0, 0, .5);
+	--m-inset: inset 0 1px 3px rgba(0, 0, 0, .75);
+	--m-shine: inset 0 1px 0 rgba(255, 250, 230, .07);
+	--m-rivet: radial-gradient(circle, #7a7b72 0 1.3px, #26271f 1.9px, rgba(0, 0, 0, .35) 2.6px, transparent 3.2px);
+	--m-btn-hi: #393a35;
+	--m-btn-lo: #272824;
+	--m-chart-filter: invert(.9) hue-rotate(180deg) sepia(.25) saturate(.9);
+	color-scheme: dark;
+}
+
+html[data-404="gost"][data-404-theme="light"] {
+	--m-icon-filter: grayscale(1) sepia(.35) brightness(.45);
+	--m-icon-hot: grayscale(1) sepia(1) saturate(6) hue-rotate(-30deg) brightness(.7);
+
+	--m-bg: #d6d0c1;
+	--m-side: #d4cebd;
+	--m-surface: #e7e2d4;
+	--m-head: #d8d2c1;
+	--m-elev: #ece7da;
+	--m-well: #faf8f1;
+	--m-tile: #ddd7c7;
+	--m-text: #2a2822;
+	--m-text-2: #5a5446;
+	--m-text-3: #7d7764;
+	--m-text-4: #958e7a;
+	--m-heading: #15140f;
+	--m-border: #a39b85;
+	--m-border-2: rgba(46, 43, 34, .14);
+	--m-seam: #8c846e;
+	--m-fill: rgba(46, 43, 34, .08);
+	--m-fill-2: rgba(46, 43, 34, .05);
+	--m-fill-3: rgba(46, 43, 34, .03);
+	--m-primary: #b82c1f;
+	--m-primary-hover: #cc3a2c;
+	--m-primary-active: #92271b;
+	--m-primary-rgb: 184, 44, 31;
+	--m-on-primary: #fff6ee;
+	--m-accent: #2e2b22;
+	--m-accent-rgb: 46, 43, 34;
+	--m-success: #557021;
+	--m-success-rgb: 85, 112, 33;
+	--m-warning: #a26c0c;
+	--m-warning-rgb: 162, 108, 12;
+	--m-error: #b82c1f;
+	--m-error-rgb: 184, 44, 31;
+	--m-info: #4d5a63;
+	--m-info-rgb: 77, 90, 99;
+	--m-radius: 2px;
+	--m-font: "Arial Narrow", "Roboto Condensed", "DejaVu Sans Condensed", "Liberation Sans Narrow", "Ubuntu Condensed", "Helvetica Neue", Arial, sans-serif;
+	--m-mono: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+	--m-shadow: 0 1px 0 rgba(255, 255, 255, .6), 0 8px 20px rgba(70, 60, 40, .18);
+	--m-inset: inset 0 1px 3px rgba(70, 60, 40, .28);
+	--m-shine: inset 0 1px 0 rgba(255, 255, 255, .7);
+	--m-rivet: radial-gradient(circle, #f2eee3 0 1.3px, #8a836d 1.9px, rgba(0, 0, 0, .2) 2.6px, transparent 3.2px);
+	--m-btn-hi: #f3efe4;
+	--m-btn-lo: #d8d1bd;
+	--m-chart-filter: none;
+	color-scheme: light;
+}
+
+html[data-404="base"][data-404-theme="dark"] {
+	--m-icon-filter: grayscale(1) sepia(1) hue-rotate(135deg) saturate(5) brightness(1.15);
+	--m-icon-hot: grayscale(1) sepia(1) hue-rotate(290deg) saturate(6) brightness(1.1);
+
+	--m-bg: #0b0b0a;
+	--m-side: #0d0d0c;
+	--m-surface: #151513;
+	--m-head: #151513;
+	--m-elev: #1b1b18;
+	--m-well: #080807;
+	--m-tile: #1b1b18;
+	--m-text: #d9d6cb;
+	--m-text-2: #8d897d;
+	--m-text-3: #6b675d;
+	--m-text-4: #4d4a42;
+	--m-heading: #f3f0e5;
+	--m-border: rgba(0, 232, 240, .28);
+	--m-border-2: rgba(0, 232, 240, .13);
+	--m-seam: rgba(0, 232, 240, .15);
+	--m-fill: rgba(0, 232, 240, .08);
+	--m-fill-2: rgba(0, 232, 240, .05);
+	--m-fill-3: rgba(0, 232, 240, .03);
+	--m-primary: #00e8f0;
+	--m-primary-hover: #5cf3f8;
+	--m-primary-active: #00b8bf;
+	--m-primary-rgb: 0, 232, 240;
+	--m-on-primary: #0b0b0a;
+	--m-accent: #00e8f0;
+	--m-accent-rgb: 0, 232, 240;
+	--m-success: #39ff9c;
+	--m-success-rgb: 57, 255, 156;
+	--m-warning: #f2d60b;
+	--m-warning-rgb: 242, 214, 11;
+	--m-error: #ff2a6d;
+	--m-error-rgb: 255, 42, 109;
+	--m-info: #00e8f0;
+	--m-info-rgb: 0, 232, 240;
+	--m-radius: 0px;
+	--m-font: "JetBrains Mono", "Fira Code", "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+	--m-mono: var(--m-font);
+	--m-shadow: inset 0 0 40px rgba(0, 0, 0, .3);
+	--m-inset: none;
+	--m-shine: none;
+	--m-rivet: none;
+	--m-btn-hi: rgba(0, 232, 240, .07);
+	--m-btn-lo: rgba(0, 232, 240, .07);
+	--m-chart-filter: invert(.92) hue-rotate(180deg);
+	color-scheme: dark;
+}
+
+html[data-404="base"][data-404-theme="light"] {
+	--m-icon-filter: grayscale(1) sepia(1) hue-rotate(135deg) saturate(4) brightness(.6);
+	--m-icon-hot: grayscale(1) sepia(1) hue-rotate(300deg) saturate(6) brightness(.7);
+
+	--m-bg: #e9e4d8;
+	--m-side: #e1dbcd;
+	--m-surface: #f7f4ec;
+	--m-head: #f7f4ec;
+	--m-elev: #f8f5ee;
+	--m-well: #fffdf7;
+	--m-tile: #efeadf;
+	--m-text: #24221d;
+	--m-text-2: #5e594d;
+	--m-text-3: #7a7466;
+	--m-text-4: #9a9483;
+	--m-heading: #12110e;
+	--m-border: rgba(36, 34, 29, .3);
+	--m-border-2: rgba(36, 34, 29, .14);
+	--m-seam: rgba(36, 34, 29, .2);
+	--m-fill: rgba(36, 34, 29, .08);
+	--m-fill-2: rgba(36, 34, 29, .05);
+	--m-fill-3: rgba(36, 34, 29, .03);
+	--m-primary: #00727c;
+	--m-primary-hover: #008a96;
+	--m-primary-active: #005f68;
+	--m-primary-rgb: 0, 114, 124;
+	--m-on-primary: #f8f5ee;
+	--m-accent: #00727c;
+	--m-accent-rgb: 0, 114, 124;
+	--m-success: #1d7a3e;
+	--m-success-rgb: 29, 122, 62;
+	--m-warning: #9a7400;
+	--m-warning-rgb: 154, 116, 0;
+	--m-error: #c4122f;
+	--m-error-rgb: 196, 18, 47;
+	--m-info: #00727c;
+	--m-info-rgb: 0, 114, 124;
+	--m-radius: 0px;
+	--m-font: "JetBrains Mono", "Fira Code", "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+	--m-mono: var(--m-font);
+	--m-shadow: 2px 3px 0 rgba(36, 34, 29, .12), 0 10px 26px rgba(60, 50, 30, .12);
+	--m-inset: none;
+	--m-shine: none;
+	--m-rivet: none;
+	--m-btn-hi: rgba(0, 114, 124, .07);
+	--m-btn-lo: rgba(0, 114, 124, .07);
+	--m-chart-filter: none;
+	color-scheme: light;
+}
+
+/* ---------- 2. antd tokens ---------- */
+
+html[data-404] [class*="css-var-"],
+html[data-404] .ant-app {
+	--ant-font-family: var(--m-font);
+	--ant-font-family-code: var(--m-mono);
+	--ant-border-radius: var(--m-radius);
+	--ant-border-radius-xs: var(--m-radius);
+	--ant-border-radius-sm: var(--m-radius);
+	--ant-border-radius-lg: var(--m-radius);
+	--ant-border-radius-outer: var(--m-radius);
+
+	--ant-color-primary: var(--m-primary);
+	--ant-color-primary-hover: var(--m-primary-hover);
+	--ant-color-primary-active: var(--m-primary-active);
+	--ant-color-primary-bg: rgba(var(--m-primary-rgb), .14);
+	--ant-color-primary-bg-hover: rgba(var(--m-primary-rgb), .22);
+	--ant-color-primary-border: rgba(var(--m-primary-rgb), .45);
+	--ant-color-primary-border-hover: rgba(var(--m-primary-rgb), .7);
+	--ant-color-primary-text: var(--m-primary);
+	--ant-color-primary-text-hover: var(--m-primary-hover);
+	--ant-color-primary-text-active: var(--m-primary-active);
+	--ant-color-link: var(--m-accent);
+	--ant-color-link-hover: var(--m-primary-hover);
+	--ant-color-link-active: var(--m-primary-active);
+	--ant-color-info: var(--m-info);
+	--ant-color-info-bg: rgba(var(--m-info-rgb), .1);
+	--ant-color-info-bg-hover: rgba(var(--m-info-rgb), .16);
+	--ant-color-info-border: rgba(var(--m-info-rgb), .4);
+	--ant-color-info-border-hover: rgba(var(--m-info-rgb), .6);
+	--ant-color-info-text: var(--m-info);
+	--ant-color-success: var(--m-success);
+	--ant-color-success-bg: rgba(var(--m-success-rgb), .12);
+	--ant-color-success-bg-hover: rgba(var(--m-success-rgb), .2);
+	--ant-color-success-border: rgba(var(--m-success-rgb), .45);
+	--ant-color-success-text: var(--m-success);
+	--ant-color-warning: var(--m-warning);
+	--ant-color-warning-bg: rgba(var(--m-warning-rgb), .12);
+	--ant-color-warning-bg-hover: rgba(var(--m-warning-rgb), .2);
+	--ant-color-warning-border: rgba(var(--m-warning-rgb), .45);
+	--ant-color-warning-text: var(--m-warning);
+	--ant-color-error: var(--m-error);
+	--ant-color-error-bg: rgba(var(--m-error-rgb), .12);
+	--ant-color-error-bg-hover: rgba(var(--m-error-rgb), .2);
+	--ant-color-error-bg-filled-hover: rgba(var(--m-error-rgb), .2);
+	--ant-color-error-border: rgba(var(--m-error-rgb), .45);
+	--ant-color-error-text: var(--m-error);
+	--ant-color-error-outline: rgba(var(--m-error-rgb), .2);
+	--ant-color-warning-outline: rgba(var(--m-warning-rgb), .2);
+
+	--ant-color-text: var(--m-text);
+	--ant-color-text-base: var(--m-text);
+	--ant-color-text-secondary: var(--m-text-2);
+	--ant-color-text-tertiary: var(--m-text-3);
+	--ant-color-text-quaternary: var(--m-text-4);
+	--ant-color-text-heading: var(--m-heading);
+	--ant-color-text-label: var(--m-text-2);
+	--ant-color-text-description: var(--m-text-3);
+	--ant-color-text-placeholder: var(--m-text-4);
+	--ant-color-text-disabled: var(--m-text-4);
+	--ant-color-text-light-solid: var(--m-on-primary);
+	--ant-color-icon: var(--m-text-3);
+	--ant-color-icon-hover: var(--m-heading);
+
+	--ant-color-bg-base: var(--m-surface);
+	--ant-color-bg-layout: var(--m-bg);
+	--ant-color-bg-container: var(--m-surface);
+	--ant-color-bg-elevated: var(--m-elev);
+	--ant-color-bg-spotlight: var(--m-elev);
+	--ant-color-bg-container-disabled: var(--m-fill-2);
+	--ant-color-bg-text-hover: var(--m-fill);
+	--ant-color-bg-text-active: var(--m-fill);
+	--ant-color-bg-solid: var(--m-text);
+	--ant-color-bg-mask: rgba(0, 0, 0, .55);
+
+	--ant-color-fill: var(--m-fill);
+	--ant-color-fill-secondary: var(--m-fill-2);
+	--ant-color-fill-tertiary: var(--m-fill-2);
+	--ant-color-fill-quaternary: var(--m-fill-3);
+	--ant-color-fill-alter: var(--m-fill-3);
+	--ant-color-fill-content: var(--m-fill-2);
+	--ant-color-fill-content-hover: var(--m-fill);
+
+	--ant-color-border: var(--m-border);
+	--ant-color-border-secondary: var(--m-border-2);
+	--ant-color-border-disabled: var(--m-border-2);
+	--ant-color-border-bg: var(--m-surface);
+	--ant-color-split: var(--m-border-2);
+
+	--ant-control-item-bg-hover: var(--m-fill);
+	--ant-control-item-bg-active: rgba(var(--m-primary-rgb), .16);
+	--ant-control-item-bg-active-hover: rgba(var(--m-primary-rgb), .24);
+	--ant-control-outline: rgba(var(--m-primary-rgb), .2);
+	--ant-control-tmp-outline: var(--m-fill);
+
+	--ant-box-shadow: var(--m-shadow);
+	--ant-box-shadow-secondary: var(--m-shadow);
+	--ant-box-shadow-tertiary: none;
+	--ant-box-shadow-card: none;
+
+	/* components with baked colors */
+	--ant-button-default-bg: transparent;
+	--ant-button-default-color: var(--m-text);
+	--ant-button-default-border-color: var(--m-border);
+	--ant-button-default-hover-bg: var(--m-fill);
+	--ant-button-default-hover-color: var(--m-heading);
+	--ant-button-default-hover-border-color: var(--m-primary);
+	--ant-button-default-active-bg: var(--m-fill);
+	--ant-button-default-active-color: var(--m-primary-active);
+	--ant-button-default-active-border-color: var(--m-primary-active);
+	--ant-button-default-bg-disabled: var(--m-fill-3);
+	--ant-button-default-border-color-disabled: var(--m-border-2);
+	--ant-button-border-color-disabled: var(--m-border-2);
+	--ant-button-dashed-bg-disabled: var(--m-fill-3);
+	--ant-button-primary-color: var(--m-on-primary);
+	--ant-button-solid-text-color: var(--m-on-primary);
+	--ant-button-danger-color: var(--m-on-primary);
+	--ant-button-primary-shadow: none;
+	--ant-button-default-shadow: none;
+	--ant-button-danger-shadow: none;
+	--ant-button-text-hover-bg: var(--m-fill);
+	--ant-button-text-text-color: var(--m-text);
+	--ant-button-text-text-hover-color: var(--m-heading);
+	--ant-button-text-text-active-color: var(--m-heading);
+	--ant-button-default-ghost-color: var(--m-text);
+	--ant-button-default-ghost-border-color: var(--m-border);
+	--ant-btn-text-color: var(--m-text);
+
+	--ant-card-actions-bg: var(--m-surface);
+	--ant-card-extra-color: var(--m-text);
+	--ant-card-header-bg: transparent;
+
+	--ant-descriptions-content-color: var(--m-text);
+	--ant-descriptions-extra-color: var(--m-text);
+	--ant-descriptions-label-bg: var(--m-fill-2);
+	--ant-descriptions-label-color: var(--m-text-2);
+	--ant-descriptions-title-color: var(--m-heading);
+
+	--ant-form-label-color: var(--m-text);
+	--ant-form-label-required-mark-color: var(--m-error);
+
+	--ant-input-active-bg: var(--m-well);
+	--ant-input-hover-bg: var(--m-well);
+	--ant-input-active-border-color: var(--m-primary);
+	--ant-input-hover-border-color: rgba(var(--m-primary-rgb), .6);
+	--ant-input-active-shadow: 0 0 0 2px rgba(var(--m-primary-rgb), .18);
+	--ant-input-addon-bg: var(--m-fill-2);
+
+	--ant-layout-body-bg: var(--m-bg);
+	--ant-layout-color-bg-body: var(--m-bg);
+	--ant-layout-footer-bg: var(--m-bg);
+	--ant-layout-light-sider-bg: var(--m-side);
+	--ant-layout-sider-bg: var(--m-side);
+	--ant-layout-header-bg: var(--m-head);
+	--ant-layout-header-color: var(--m-text);
+	--ant-layout-light-trigger-bg: var(--m-side);
+	--ant-layout-light-trigger-color: var(--m-text);
+
+	--ant-menu-color-item-bg: transparent;
+	--ant-menu-item-bg: transparent;
+	--ant-menu-sub-menu-item-bg: transparent;
+	--ant-menu-color-sub-item-bg: transparent;
+	--ant-menu-popup-bg: var(--m-elev);
+	--ant-menu-color-item-text: var(--m-text);
+	--ant-menu-item-color: var(--m-text-2);
+	--ant-menu-color-item-text-hover: var(--m-heading);
+	--ant-menu-item-hover-color: var(--m-heading);
+	--ant-menu-color-item-bg-hover: var(--m-fill);
+	--ant-menu-item-hover-bg: var(--m-fill);
+	--ant-menu-color-item-bg-active: var(--m-fill);
+	--ant-menu-item-active-bg: var(--m-fill);
+	--ant-menu-color-item-bg-selected: rgba(var(--m-primary-rgb), .16);
+	--ant-menu-item-selected-bg: rgba(var(--m-primary-rgb), .16);
+	--ant-menu-color-item-text-selected: var(--m-heading);
+	--ant-menu-item-selected-color: var(--m-heading);
+	--ant-menu-sub-menu-item-selected-color: var(--m-primary);
+	--ant-menu-color-group-title: var(--m-text-3);
+	--ant-menu-group-title-color: var(--m-text-3);
+	--ant-menu-color-item-text-disabled: var(--m-text-4);
+	--ant-menu-item-disabled-color: var(--m-text-4);
+
+	--ant-modal-content-bg: var(--m-elev);
+	--ant-modal-header-bg: transparent;
+	--ant-modal-title-color: var(--m-heading);
+
+	--ant-progress-circle-text-color: var(--m-heading);
+	--ant-progress-default-color: var(--m-primary);
+	--ant-progress-remaining-color: var(--m-fill);
+
+	--ant-radio-button-bg: transparent;
+	--ant-radio-button-checked-bg: rgba(var(--m-primary-rgb), .14);
+	--ant-radio-button-color: var(--m-text);
+	--ant-radio-button-solid-checked-bg: var(--m-primary);
+	--ant-radio-button-solid-checked-hover-bg: var(--m-primary-hover);
+	--ant-radio-button-solid-checked-active-bg: var(--m-primary-active);
+	--ant-radio-button-solid-checked-color: var(--m-on-primary);
+	--ant-radio-radio-bg-color: var(--m-primary);
+	--ant-radio-radio-color: var(--m-on-primary);
+
+	--ant-select-selector-bg: var(--m-well);
+	--ant-select-clear-bg: var(--m-well);
+	--ant-select-active-border-color: var(--m-primary);
+	--ant-select-hover-border-color: rgba(var(--m-primary-rgb), .6);
+	--ant-select-active-outline-color: rgba(var(--m-primary-rgb), .18);
+	--ant-select-option-active-bg: var(--m-fill);
+	--ant-select-option-selected-bg: rgba(var(--m-primary-rgb), .16);
+	--ant-select-option-selected-color: var(--m-heading);
+	--ant-select-multiple-item-bg: var(--m-fill);
+
+	--ant-switch-handle-bg: var(--m-heading);
+	--ant-switch-handle-shadow: 0 1px 2px rgba(0, 0, 0, .4);
+
+	--ant-table-header-bg: var(--m-fill-2);
+	--ant-table-header-color: var(--m-text-2);
+	--ant-table-header-split-color: var(--m-border-2);
+	--ant-table-border-color: var(--m-border-2);
+	--ant-table-row-hover-bg: var(--m-fill);
+	--ant-table-row-selected-bg: rgba(var(--m-primary-rgb), .14);
+	--ant-table-row-selected-hover-bg: rgba(var(--m-primary-rgb), .2);
+	--ant-table-row-expanded-bg: var(--m-fill-3);
+	--ant-table-body-sort-bg: var(--m-fill-3);
+	--ant-table-header-sort-active-bg: var(--m-fill);
+	--ant-table-header-sort-hover-bg: var(--m-fill);
+	--ant-table-fixed-header-sort-active-bg: var(--m-fill);
+	--ant-table-footer-bg: var(--m-fill-2);
+	--ant-table-footer-color: var(--m-text);
+	--ant-table-expand-icon-bg: var(--m-surface);
+	--ant-table-filter-dropdown-bg: var(--m-elev);
+	--ant-table-filter-dropdown-menu-bg: var(--m-elev);
+	--ant-table-header-icon-color: var(--m-text-3);
+	--ant-table-header-icon-hover-color: var(--m-text);
+
+	--ant-tag-default-bg: var(--m-fill-2);
+	--ant-tag-default-color: var(--m-text);
+	--ant-tag-solid-text-color: var(--m-on-primary);
+
+	--ant-avatar-group-border-color: var(--m-surface);
+}
+
+/* ---------- 3. layout & app ---------- */
+
+html[data-404],
+html[data-404] body {
+	background: var(--m-bg) !important;
+	color: var(--m-text);
+	font-family: var(--m-font);
+}
+
+html[data-404] ::selection {
+	background: var(--m-primary);
+	color: var(--m-on-primary);
+}
+
+html[data-404] * {
+	scrollbar-color: rgba(var(--m-accent-rgb), .3) transparent;
+	scrollbar-width: thin;
+}
+
+/* stock CDN decoration images and fonts are not wanted (often offline anyway) */
+html[data-404] .ant-pro-layout-bg-list { display: none !important; }
+
+html[data-404] .ant-pro-layout,
+html[data-404] .ant-pro-layout .ant-layout,
+html[data-404] .ant-pro-layout-container,
+html[data-404] .ant-layout-footer {
+	background: var(--m-bg) !important;
+}
+
+/* sider */
+html[data-404] .ant-pro-layout .ant-pro-sider,
+html[data-404] .ant-pro-sider.ant-layout-sider,
+html[data-404] .ant-pro-sider-fixed {
+	background: var(--m-side) !important;
+	border-inline-end: 1px solid var(--m-seam) !important;
+	box-shadow: inset -1px 0 0 rgba(var(--m-accent-rgb), .06) !important;
+}
+
+html[data-404] .ant-pro-sider-logo {
+	border-block-end: 1px solid var(--m-border-2) !important;
+}
+
+html[data-404] .ant-pro-sider-logo span,
+html[data-404] .ant-pro-sider-logo h1 {
+	color: var(--m-heading) !important;
+	font-family: var(--m-font);
+	letter-spacing: .02em;
+}
+
+html[data-404] .ant-pro-sider-collapsed-button {
+	color: var(--m-text-2) !important;
+	background: var(--m-elev) !important;
+	border: 1px solid var(--m-border);
+	box-shadow: none !important;
+}
+
+html[data-404] .ant-menu,
+html[data-404] .ant-menu-sub,
+html[data-404] .ant-menu-inline .ant-menu-sub.ant-menu-inline {
+	background: transparent !important;
+	font-family: var(--m-font);
+}
+
+html[data-404] .ant-menu-item,
+html[data-404] .ant-menu-submenu-title {
+	border-radius: var(--m-radius) !important;
+}
+
+html[data-404] .ant-menu-light .ant-menu-item-selected,
+html[data-404] .ant-pro-sider .ant-menu-item-selected {
+	color: var(--m-heading) !important;
+	box-shadow: inset 3px 0 0 var(--m-primary);
+}
+
+html[data-404] .ant-pro-sider-actions,
+html[data-404] .ant-pro-sider-actions-list-item,
+html[data-404] .ant-pro-sider-actions-list-item .anticon,
+html[data-404] .ant-pro-sider-actions-avatar {
+	color: var(--m-text-2) !important;
+}
+
+html[data-404] .ant-avatar {
+	background: var(--m-fill) !important;
+	color: var(--m-text) !important;
+}
+
+html[data-404] .ant-pro-global-footer,
+html[data-404] .ant-pro-global-footer a,
+html[data-404] .ant-pro-global-footer-copyright { color: var(--m-text-4) !important; }
+
+/* cards */
+html[data-404] .ant-card {
+	background: var(--m-surface) !important;
+	border: 1px solid var(--m-border) !important;
+	border-radius: var(--m-radius) !important;
+	box-shadow: var(--m-shine), var(--m-shadow) !important;
+	color: var(--m-text);
+}
+
+html[data-404] .ant-card .ant-card {
+	background: var(--m-tile) !important;
+	border-color: var(--m-border-2) !important;
+	box-shadow: var(--m-shine) !important;
+}
+
+html[data-404] .ant-card-head {
+	min-height: 44px;
+	background: var(--m-head) !important;
+	border-bottom: 1px solid var(--m-border) !important;
+	border-radius: 0 !important;
+	color: var(--m-heading) !important;
+	font-family: var(--m-font);
+}
+
+html[data-404] .ant-card-head-title,
+html[data-404] .ant-card-head-title h1,
+html[data-404] .ant-card-head-title h2,
+html[data-404] .ant-card-head-title h3,
+html[data-404] .ant-card-head-title h4 { color: var(--m-heading) !important; }
+
+/* ГОСТ: riveted steel plates with stamped title bars */
+html[data-404="gost"] .ant-card {
+	background-image: var(--m-rivet), var(--m-rivet), var(--m-rivet), var(--m-rivet) !important;
+	background-size: 14px 14px !important;
+	background-position: 0 0, 100% 0, 0 100%, 100% 100% !important;
+	background-repeat: no-repeat !important;
+}
+
+html[data-404="gost"] .ant-card-head {
+	background: linear-gradient(180deg, var(--m-btn-hi), var(--m-btn-lo)) !important;
+	border-bottom-color: var(--m-seam) !important;
+	font-size: 16px;
+	text-shadow: 0 1px 0 rgba(0, 0, 0, .25);
+}
+
+html[data-404="gost"][data-404-theme="dark"] .ant-card-head { background: linear-gradient(180deg, #30312c, #252622) !important; }
+
+/* 404 base: HUD brackets */
+html[data-404="base"] .ant-card {
+	--c: rgba(var(--m-accent-rgb), .7);
+	background-image:
+		linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
+		linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)) !important;
+	background-size: 14px 1px, 1px 14px, 14px 1px, 1px 14px !important;
+	background-position: 0 0, 0 0, 100% 100%, 100% 100% !important;
+	background-repeat: no-repeat !important;
+}
+
+html[data-404="base"] .ant-card-head-title,
+html[data-404="base"] .ant-card-head-title h2 {
+	text-transform: uppercase;
+	letter-spacing: .03em;
+}
+
+html[data-404="base"] .ant-card-head-title { color: var(--m-accent) !important; }
+
+/* tile cards inside the dashboard: inline "rgba(240,240,240,.5)" boxes */
+html[data-404] [style*="background: rgba(240, 240, 240"],
+html[data-404] [style*="background-color: rgba(240, 240, 240"],
+html[data-404] [style*="background: rgb(245, 245, 245)"],
+html[data-404] [style*="background: rgb(250, 250, 250)"],
+html[data-404] [style*="background-color: rgb(250, 250, 250)"],
+html[data-404] [style*="background: rgb(255, 255, 255)"],
+html[data-404] [style*="background-color: rgb(255, 255, 255)"],
+html[data-404] [style*="background: white"] {
+	background: var(--m-well) !important;
+	box-shadow: var(--m-inset);
+	border-radius: var(--m-radius) !important;
+}
+
+/* inline text colors */
+html[data-404] [style*="color: rgba(0, 0, 0, 0.88)"],
+html[data-404] [style*="color: rgba(0, 0, 0, 0.85)"],
+html[data-404] [style*="color: rgb(0, 0, 0)"],
+html[data-404] [style*="color: rgb(51, 51, 51)"],
+html[data-404] [style*="color: rgb(38, 38, 38)"] { color: var(--m-text) !important; }
+
+html[data-404] [style*="color: rgba(0, 0, 0, 0.65)"],
+html[data-404] [style*="color: rgba(0, 0, 0, 0.45)"],
+html[data-404] [style*="color: rgb(102, 102, 102)"],
+html[data-404] [style*="color: rgb(140, 140, 140)"],
+html[data-404] [style*="color: rgb(153, 153, 153)"] { color: var(--m-text-2) !important; }
+
+html[data-404] [style*="color: rgb(24, 144, 255)"],
+html[data-404] [style*="color: rgb(22, 119, 255)"] { color: var(--m-accent) !important; }
+html[data-404] [style*="color: rgb(82, 196, 26)"] { color: var(--m-success) !important; }
+html[data-404] [style*="color: rgb(250, 173, 20)"],
+html[data-404] [style*="color: rgb(250, 140, 22)"] { color: var(--m-warning) !important; }
+html[data-404] [style*="color: rgb(255, 77, 79)"],
+html[data-404] [style*="color: rgb(245, 34, 45)"] { color: var(--m-error) !important; }
+
+html[data-404] [style*="background: rgb(24, 144, 255)"],
+html[data-404] [style*="background-color: rgb(24, 144, 255)"] { background: var(--m-primary) !important; color: var(--m-on-primary) !important; }
+
+/* stats */
+html[data-404] .ant-statistic-content,
+html[data-404] .ant-statistic-title { color: var(--m-text) !important; font-family: var(--m-mono); }
+
+/* buttons */
+html[data-404] .ant-btn {
+	border-radius: var(--m-radius) !important;
+	font-family: var(--m-font);
+	box-shadow: none !important;
+}
+
+html[data-404="gost"] .ant-btn-default,
+html[data-404="gost"] .ant-btn-variant-outlined:not(.ant-btn-dangerous) {
+	background: linear-gradient(180deg, var(--m-btn-hi), var(--m-btn-lo)) !important;
+	border-color: var(--m-seam) !important;
+	color: var(--m-text) !important;
+	box-shadow: var(--m-shine), 0 1px 0 rgba(0, 0, 0, .25) !important;
+}
+
+html[data-404="gost"][data-404-theme="dark"] .ant-btn-default,
+html[data-404="gost"][data-404-theme="dark"] .ant-btn-variant-outlined:not(.ant-btn-dangerous) {
+	background: linear-gradient(180deg, #393a35, #272824) !important;
+	border-color: #0b0b0a !important;
+}
+
+html[data-404] .ant-btn-primary,
+html[data-404] .ant-btn-variant-solid.ant-btn-color-primary {
+	background: var(--m-primary) !important;
+	border-color: var(--m-primary) !important;
+	color: var(--m-on-primary) !important;
+}
+
+html[data-404="gost"] .ant-btn-primary,
+html[data-404="gost"] .ant-btn-variant-solid.ant-btn-color-primary {
+	background: linear-gradient(180deg, #b93427, #7e1f16) !important;
+	border-color: #2a0a06 !important;
+	box-shadow: inset 0 1px 0 rgba(255, 200, 180, .3) !important;
+}
+
+html[data-404] .ant-btn-primary:hover,
+html[data-404] .ant-btn-variant-solid.ant-btn-color-primary:hover { filter: brightness(1.1); }
+
+html[data-404="base"] .ant-btn {
+	text-transform: uppercase;
+	letter-spacing: .1em;
+	font-weight: 700;
+	font-size: 12px;
+}
+
+html[data-404="base"][data-404-theme="dark"] .ant-btn-primary:hover { box-shadow: 0 0 8px rgba(var(--m-primary-rgb), .55), 0 0 22px rgba(var(--m-primary-rgb), .25) !important; }
+
+/* inputs */
+html[data-404] .ant-input,
+html[data-404] .ant-input-affix-wrapper,
+html[data-404] .ant-input-number,
+html[data-404] .ant-picker,
+html[data-404] .ant-select-selector,
+html[data-404] .ant-select-outlined .ant-select-selector,
+html[data-404] .ant-select.ant-select-outlined,
+html[data-404] textarea.ant-input {
+	background: var(--m-well) !important;
+	border-color: var(--m-border) !important;
+	color: var(--m-text) !important;
+	border-radius: var(--m-radius) !important;
+	box-shadow: var(--m-inset);
+}
+
+html[data-404] .ant-input-affix-wrapper .ant-input { background: transparent !important; box-shadow: none; }
+
+html[data-404] .ant-input:focus,
+html[data-404] .ant-input-affix-wrapper-focused,
+html[data-404] .ant-select-focused .ant-select-selector,
+html[data-404] .ant-select-focused.ant-select-outlined {
+	border-color: var(--m-primary) !important;
+	box-shadow: var(--m-inset), 0 0 0 2px rgba(var(--m-primary-rgb), .18) !important;
+}
+
+html[data-404] .ant-select-dropdown,
+html[data-404] .ant-dropdown-menu,
+html[data-404] .ant-popover-inner,
+html[data-404] .ant-picker-dropdown .ant-picker-panel-container {
+	background: var(--m-elev) !important;
+	border: 1px solid var(--m-border);
+	border-radius: var(--m-radius) !important;
+}
+
+html[data-404] .ant-tooltip-inner {
+	background: var(--m-elev) !important;
+	color: var(--m-text) !important;
+	border: 1px solid var(--m-border);
+	border-radius: var(--m-radius) !important;
+}
+
+/* tags */
+html[data-404] .ant-tag {
+	border-radius: var(--m-radius) !important;
+	font-family: var(--m-mono);
+}
+
+html[data-404] .ant-tag-blue,
+html[data-404] .ant-tag-processing,
+html[data-404] .ant-tag-geekblue,
+html[data-404] .ant-tag-cyan { color: var(--m-accent) !important; background: rgba(var(--m-accent-rgb), .1) !important; border-color: rgba(var(--m-accent-rgb), .35) !important; }
+html[data-404] .ant-tag-green,
+html[data-404] .ant-tag-success { color: var(--m-success) !important; background: rgba(var(--m-success-rgb), .12) !important; border-color: rgba(var(--m-success-rgb), .4) !important; }
+html[data-404] .ant-tag-orange,
+html[data-404] .ant-tag-gold,
+html[data-404] .ant-tag-warning { color: var(--m-warning) !important; background: rgba(var(--m-warning-rgb), .12) !important; border-color: rgba(var(--m-warning-rgb), .4) !important; }
+html[data-404] .ant-tag-red,
+html[data-404] .ant-tag-volcano,
+html[data-404] .ant-tag-error,
+html[data-404] .ant-tag-magenta { color: var(--m-error) !important; background: rgba(var(--m-error-rgb), .12) !important; border-color: rgba(var(--m-error-rgb), .4) !important; }
+
+/* alerts */
+html[data-404] .ant-alert {
+	border-radius: var(--m-radius) !important;
+	border-left-width: 4px !important;
+	color: var(--m-text) !important;
+}
+
+html[data-404] .ant-alert-message,
+html[data-404] .ant-alert-description { color: var(--m-text) !important; }
+
+/* descriptions / tables */
+html[data-404] .ant-descriptions-bordered .ant-descriptions-view,
+html[data-404] .ant-descriptions-bordered .ant-descriptions-row,
+html[data-404] .ant-descriptions-bordered .ant-descriptions-item-label,
+html[data-404] .ant-descriptions-bordered .ant-descriptions-item-content {
+	border-color: var(--m-border-2) !important;
+	border-radius: 0 !important;
+}
+
+html[data-404] .ant-table,
+html[data-404] .ant-table-container,
+html[data-404] .ant-table-thead > tr > th,
+html[data-404] .ant-table-tbody > tr > td {
+	background: transparent;
+	border-radius: 0 !important;
+}
+
+html[data-404] .ant-table-thead > tr > th { font-family: var(--m-font); }
+
+html[data-404] .ant-empty-description { color: var(--m-text-3) !important; }
+html[data-404] .ant-empty-image { opacity: .55; filter: grayscale(1); }
+html[data-404] .ant-result-title,
+html[data-404] .ant-result-subtitle { color: var(--m-text) !important; }
+
+/* progress */
+html[data-404] .ant-progress-circle-rail,
+html[data-404] .ant-progress-circle-trail { stroke: var(--m-fill) !important; }
+html[data-404] .ant-progress-rail,
+html[data-404] .ant-progress-inner { background: var(--m-fill) !important; border-radius: 0 !important; }
+html[data-404] .ant-progress-track,
+html[data-404] .ant-progress-bg { border-radius: 0 !important; }
+
+/* modal / drawer */
+html[data-404] .ant-modal-content,
+html[data-404] .ant-drawer-content {
+	background: var(--m-elev) !important;
+	border: 1px solid var(--m-border);
+	border-radius: var(--m-radius) !important;
+}
+
+
+/* stock blue SVG icons shipped as <img>: recolor to the palette */
+html[data-404] img[src*="/icons/up"],
+html[data-404] img[src*="/icons/down"],
+html[data-404] img[src*="/icons/trend_"],
+html[data-404] img[src*="/icons/network.svg"],
+html[data-404] img[src*="/icons/empty"],
+html[data-404] img[src*="wuxinxi"],
+html[data-404] .ant-pro-sider-logo img {
+	filter: var(--m-icon-filter);
+}
+
+html[data-404] img[src*="/icons/up_speed"],
+html[data-404] img[src*="/icons/up.svg"],
+html[data-404] img[src*="/icons/trend_up"] { filter: var(--m-icon-hot); }
+
+/* alerts with baked colors */
+html[data-404] .ant-alert-info { background: rgba(var(--m-info-rgb), .08) !important; border-color: rgba(var(--m-info-rgb), .45) !important; }
+html[data-404] .ant-alert-info .ant-alert-icon { color: var(--m-info) !important; }
+html[data-404] .ant-alert-success { background: rgba(var(--m-success-rgb), .08) !important; border-color: rgba(var(--m-success-rgb), .45) !important; }
+html[data-404] .ant-alert-success .ant-alert-icon { color: var(--m-success) !important; }
+html[data-404] .ant-alert-warning { background: rgba(var(--m-warning-rgb), .08) !important; border-color: rgba(var(--m-warning-rgb), .45) !important; }
+html[data-404] .ant-alert-warning .ant-alert-icon { color: var(--m-warning) !important; }
+html[data-404] .ant-alert-error { background: rgba(var(--m-error-rgb), .08) !important; border-color: rgba(var(--m-error-rgb), .45) !important; }
+html[data-404] .ant-alert-error .ant-alert-icon { color: var(--m-error) !important; }
+
+html[data-404] .ant-select-input,
+html[data-404] .ant-select-selection-search-input { background: transparent !important; border-color: transparent !important; color: var(--m-text) !important; }
+
+
+/* inline SVG drawn with stock antd blues */
+html[data-404] svg [fill="#1677ff" i],
+html[data-404] svg [fill="#1890ff" i],
+html[data-404] svg [fill="#4096ff" i],
+html[data-404] svg [fill="#40a9ff" i],
+html[data-404] svg [fill="#1886ff" i] { fill: var(--m-info); }
+html[data-404] svg [fill="#1886ff" i] ~ [fill="#fff" i] { fill: var(--m-surface); }
+html[data-404] svg [stroke="#1677ff" i],
+html[data-404] svg [stroke="#1890ff" i] { stroke: var(--m-info); }
+html[data-404] [style*="border-radius: 8px"] { border-radius: var(--m-radius) !important; }
+
+
+/* "info chips" painted with candy gradients (SIM, IMSI, ICCID, voltage…) */
+html[data-404] [style*="background: linear-gradient(135deg"] {
+	background: var(--m-well) !important;
+	border: 1px solid var(--m-border) !important;
+	border-left: 3px solid var(--m-primary) !important;
+	border-radius: var(--m-radius) !important;
+	box-shadow: var(--m-inset);
+	color: var(--m-text) !important;
+}
+
+html[data-404] [style*="background: linear-gradient(135deg"] * {
+	color: var(--m-text) !important;
+	text-shadow: none !important;
+}
+
+html[data-404] [style*="background: linear-gradient(135deg"] > :first-child {
+	color: var(--m-heading) !important;
+	font-family: var(--m-mono);
+}
+
+html[data-404] [style*="background: linear-gradient(135deg"] svg,
+html[data-404] [style*="background: linear-gradient(135deg"] .anticon { color: var(--m-text-3) !important; opacity: .7; }
+
+
+/* dashboard speed/traffic tiles: Russian labels are longer than the original
+   Chinese — shrink and let them wrap instead of running under the icons */
+html[data-404] [style*="font-size: 18px; font-weight: 600"] {
+	font-size: 13px !important;
+	line-height: 1.2 !important;
+	letter-spacing: 0 !important;
+	min-width: 0;
+}
+
+html[data-404] img[style*="width: 36px; height: 36px"] {
+	width: 28px !important;
+	height: 28px !important;
+	flex: 0 0 auto;
+}
+
+/* charts (G2, canvas): invert on dark schemes so axes stay readable */
+html[data-404] .ant-card-body canvas { filter: var(--m-chart-filter); }
+
+/* AT terminal / code */
+html[data-404] pre,
+html[data-404] code,
+html[data-404] .ant-typography code { font-family: var(--m-mono); }
+
+/* loading screen (scripts/loading.js) */
+html[data-404] #root > .page-loading-warp,
+html[data-404] .loading-title,
+html[data-404] .loading-sub-title { color: var(--m-text-2) !important; }
+
+/* LuCI embeds the panel; FX off from LuCI turns transitions off here too */
+html[data-404].m404-nofx *,
+html[data-404].m404-nofx *::before,
+html[data-404].m404-nofx *::after { transition-duration: 0s !important; animation-duration: 0s !important; }

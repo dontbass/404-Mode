@@ -6,6 +6,7 @@ on:
     tags: ['v*']
     paths:
       - 'luci-theme-404mode/**'
+      - 'luci-theme-404mode-modemwebui/**'
       - '.github/workflows/build.yml'
   pull_request:
   workflow_dispatch:
@@ -32,7 +33,7 @@ jobs:
         env:
           ARCH: ${{ matrix.sdk }}
           FEEDNAME: theme404
-          PACKAGES: luci-theme-404mode
+          PACKAGES: luci-theme-404mode luci-theme-404mode-modemwebui
           NO_REFRESH_CHECK: true
 
       - name: Collect packages

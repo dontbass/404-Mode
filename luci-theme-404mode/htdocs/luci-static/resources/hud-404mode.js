@@ -215,6 +215,7 @@ const CATS = {
 	nas: s => ({ spark: s.h.disk, max: 100, val: s.disk != null ? Math.round(s.disk) + '%' : '—', pill: 'MOUNT', st: 'idle' }),
 	vpn: s => ({ spark: s.h.tx, val: s.vpn ? s.vpn + ' LINK' : '—', pill: s.vpn ? 'SECURE' : 'OPEN', st: s.vpn ? 'ok' : 'warn' }),
 	firewall: s => ({ spark: s.h.conn, val: s.conn != null ? String(s.conn) : '—', pill: 'SECURE', st: 'ok' }),
+	modem: s => ({ spark: s.h.rx, val: s.wanUp ? 'LINK' : '—', pill: s.wanUp ? 'ONLINE' : 'SEARCH', st: s.wanUp ? 'ok' : 'warn' }),
 	statistics: s => ({ spark: s.h.cpu, max: 100, val: '', pill: 'REC', st: 'idle' }),
 	docker: s => ({ spark: s.h.load, val: '', pill: 'RUN', st: 'idle' }),
 	logout: s => ({ spark: null, val: '', pill: 'STBY', st: 'idle' }),

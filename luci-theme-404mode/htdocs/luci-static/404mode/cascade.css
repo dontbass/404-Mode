@@ -5241,3 +5241,28 @@ html.no-fx .login-rec-dot { animation: none; }
 	.brand-sep { display: none; }
 	.hud-fx { display: none; }
 }
+
+/* ---------- embedded Modem WebUI (luci-app-modemwebui) ---------- */
+/* the stock page pins its iframe to top:0 / left:240px over the theme chrome */
+
+body[data-page="admin-modem-modemwebui"] #maincontent { padding: 0; }
+body[data-page="admin-modem-modemwebui"] footer.hud-footer { display: none; }
+
+body[data-page="admin-modem-modemwebui"] #embedded-iframe {
+	position: fixed !important;
+	top: var(--n-top) !important;
+	left: var(--n-side-w) !important;
+	width: calc(100% - var(--n-side-w)) !important;
+	height: calc(100vh - var(--n-top)) !important;
+	z-index: 10 !important;
+	border: 0 !important;
+	background: var(--n-bg);
+	transition: left .25s var(--n-ease), width .25s var(--n-ease) !important;
+}
+
+@media screen and (max-width: 854px) {
+	body[data-page="admin-modem-modemwebui"] #embedded-iframe {
+		left: 0 !important;
+		width: 100% !important;
+	}
+}

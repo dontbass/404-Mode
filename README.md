@@ -27,6 +27,36 @@
 - **Радар**: DHCP-клиенты — отметки на экране, рядом хвост системного журнала, внизу температура и аплинк-время.
 - **Дашборд на странице «Обзор»**: шильдик устройства с вертикальной шкалой загрузки, графики «Загрузка ЦП» и «ОЗУ», «Телеметрия» (CPU, нагрузка, соединения, клиенты, температура, аплинк + линейка), гистограмма трафика RX/TX, таблица процессов. Родные секции LuCI (Wireless, Network, DHCP…) разложены плитками; дублирующиеся System/Memory скрыты.
 - Данные — живые, через ubus (`system info`, `luci-rpc`, `network.interface dump`, `luci getProcessList`, `/proc/stat`, термодатчик, `logread`). Нет датчика или прав — соответствующий виджет просто пустой.
+- **Тёмная и светлая.** По умолчанию тёмная; кнопка `DARK / LITE / AUTO` в шапке переключает на светлую «эмаль приборной панели» или на системную тему. Шильдик и радар остаются тёмными «экранами» в обеих.
+
+| ГОСТ-24 светлая | Вход |
+|---|---|
+| ![ГОСТ-24 light](docs/gost-light-overview.jpg) | ![ГОСТ-24 light login](docs/gost-light-login.jpg) |
+
+## Панель модема (Modem WebUI, порт 8001)
+
+Для роутеров с `luci-app-modemwebui` (Hiveton H5000M и др.) панель модема на `:8001` перекрашивается под активную тему: ГОСТ-24, ASH или SAMIZDAT, тёмная или светлая. Внутри LuCI (*Modem → ModemWebUI*) она переключается вместе с кнопкой схемы в шапке; открытая напрямую на `:8001` — запоминает последний вариант. Совместима с русским переводом [hiveton-h5000m-ru](https://github.com/dontbass/hiveton-h5000m-ru).
+
+| ГОСТ-24 в LuCI | ГОСТ-24 светлая |
+|---|---|
+| ![modem gost](docs/modem-gost.jpg) | ![modem gost light](docs/modem-gost-light.jpg) |
+| **ASH** | **SAMIZDAT** |
+| ![modem ash](docs/modem-ash.jpg) | ![modem samizdat](docs/modem-samizdat.jpg) |
+
+Как устроено:
+- в каждый `index.html` панели (`/www/webui/webui000/web`, `webui5700/web`) перед `</head>` добавляется одна помеченная строка `<!--404mode-->…<!--/404mode-->` со ссылками на `404mode/modem.css` и `modem.js`; больше в панели ничего не меняется, удаление возвращает файлы байт в байт;
+- `modem.css` переопределяет CSS-переменные Ant Design 5 и стили ProLayout, перекрашивает зашитые в код цвета и иконки;
+- тема LuCI сообщает iframe свой вариант через `postMessage`; если LuCI на другой теме — панель остаётся стоковой;
+- iframe страницы *ModemWebUI* встаёт под шапку и рядом с меню (стоковая страница кладёт его поверх темы);
+- после обновления `luci-app-modemwebui` хук восстанавливается при загрузке (`/etc/init.d/404mode-modemwebui`).
+
+```sh
+/usr/libexec/404mode-modemwebui status    # что подключено
+/usr/libexec/404mode-modemwebui apply     # подключить заново
+/usr/libexec/404mode-modemwebui remove    # убрать
+```
+
+`install.sh` ставит хук сам, если на роутере есть `/www/webui`. Пакетом — `luci-theme-404mode-modemwebui`.
 
 ## Четыре темы в одном пакете
 
@@ -35,7 +65,7 @@
 | **404Mode** | `/luci-static/404mode` | авто по системной теме браузера + переключатель `AUTO / DARK / LITE` в шапке |
 | **404ModeDark** | `/luci-static/404mode-dark` | всегда **ASH** — сажа, токсичный неон, ржавчина, CRT-сканлайны |
 | **404ModeLight** | `/luci-static/404mode-light` | всегда **SAMIZDAT** — ксерокопия на старой бумаге, типографская краска, красный штамп |
-| **404ModeGost** | `/luci-static/404mode-gost` | **ГОСТ-24** — дизельпанк-бункер с живой телеметрией и дашбордом |
+| **404ModeGost** | `/luci-static/404mode-gost` | **ГОСТ-24** — дизельпанк-бункер с живой телеметрией и дашбордом; тёмная по умолчанию, светлая — кнопкой в шапке |
 
 Выбор: **System → System → Language and Style**.
 
@@ -75,6 +105,7 @@ sh /tmp/404.sh --remove   # удалить, вернуть bootstrap
 
 ```sh
 opkg install /tmp/luci-theme-404mode_*_all.ipk
+opkg install /tmp/luci-theme-404mode-modemwebui_*_all.ipk   # если есть панель модема
 ```
 
 ### Своя сборка
@@ -108,6 +139,13 @@ luci-theme-404mode/
 │   ├── 404mode-light -> 404mode
 │   └── 404mode-gost  -> 404mode
 └── root/etc/uci-defaults/30_luci-theme-404mode
+
+luci-theme-404mode-modemwebui/          # скин панели модема (:8001)
+├── Makefile
+└── files/
+    ├── 404mode/{modem.css, modem.js}
+    ├── 404mode-modemwebui              # apply / remove / status
+    └── 404mode-modemwebui.init
 ```
 
 ## Палитра
@@ -121,7 +159,7 @@ luci-theme-404mode/
 | `--n-rust` | `#d9622b` | `#a8471c` | ржавчина, «фильтруется» |
 | `--n-bg` | `#0b0b0a` | `#e9e4d8` | фон |
 
-Перекрасить — поменять токены в блоках `ASH` / `SAMIZDAT` в `cascade.css`.
+Перекрасить — поменять токены в блоках `ASH` / `SAMIZDAT` в `cascade.css`, ГОСТ-24 — в `gost/gost.css` (блоки dark / light), панель модема — палитры `--m-*` в `modem.css`.
 
 ## Лицензия
 

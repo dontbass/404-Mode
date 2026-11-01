@@ -1,0 +1,9 @@
+#!/bin/sh /etc/rc.common
+# Re-hook Modem WebUI pages at boot (after a luci-app-modemwebui upgrade
+# the panel's index.html files come back stock) and refresh default.js.
+
+START=98
+
+start() {
+	/usr/libexec/404mode-modemwebui apply >/dev/null 2>&1
+}

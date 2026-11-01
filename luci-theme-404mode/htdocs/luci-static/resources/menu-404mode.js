@@ -222,7 +222,11 @@ return baseclass.extend({
 			store('404mode.nav', mini ? 'mini' : null);
 		});
 
-		const syncFx = () => fx.classList.toggle('off', root.classList.contains('no-fx'));
+		const syncFx = () => {
+			fx.classList.toggle('off', root.classList.contains('no-fx'));
+			if (window.__404scheme && window.__404scheme.broadcast)
+				window.__404scheme.broadcast();
+		};
 
 		fx.addEventListener('click', () => {
 			const off = !root.classList.contains('no-fx');

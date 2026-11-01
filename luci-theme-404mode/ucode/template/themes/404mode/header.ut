@@ -7,7 +7,8 @@
    404mode        — follows the browser (prefers-color-scheme) + in-UI switch
    404mode-dark   — forced "ASH" dark
    404mode-light  — forced "SAMIZDAT" light
-   404mode-gost   — "ГОСТ-24" dieselpunk bunker skin with live telemetry HUD
+   404mode-gost   — "ГОСТ-24" dieselpunk bunker skin with live telemetry HUD;
+                    dark by default, light via the header switch
 -#}
 
 {%
@@ -17,7 +18,8 @@
 	const hostname = striptags(boardinfo?.hostname ?? '?');
 	const model = striptags(boardinfo?.model ?? '');
 	const gost = (theme == '404mode-gost');
-	const forced = (theme == '404mode-dark' || gost) ? 'dark' : ((theme == '404mode-light') ? 'light' : '');
+	const forced = (theme == '404mode-dark') ? 'dark' : ((theme == '404mode-light') ? 'light' : '');
+	const scheme_default = gost ? 'dark' : 'auto';
 	const distver = striptags(version?.distversion ?? '');
 	const distmajor = split(distver, '.')[0] || '24';
 	const ru = (substr(dispatcher.lang ?? '', 0, 2) == 'ru');
@@ -64,7 +66,7 @@
 -%}
 
 <!DOCTYPE html>
-<html lang="{{ dispatcher.lang }}"{{ gost ? ' data-skin="gost"' : '' }} data-theme="{{ forced || 'dark' }}" data-darkmode="{{ forced == 'light' ? 'false' : 'true' }}" data-scheme="{{ forced || 'auto' }}"{{ forced ? ' data-scheme-lock="1"' : '' }}>
+<html lang="{{ dispatcher.lang }}"{{ gost ? ' data-skin="gost"' : '' }} data-theme="{{ forced || 'dark' }}" data-darkmode="{{ forced == 'light' ? 'false' : 'true' }}" data-scheme="{{ forced || scheme_default }}" data-scheme-default="{{ scheme_default }}"{{ forced ? ' data-scheme-lock="1"' : '' }}>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -81,25 +83,46 @@
 		(function() {
 			var root = document.documentElement,
 			    forced = root.getAttribute('data-scheme-lock') ? root.getAttribute('data-scheme') : '',
-			    mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+			    mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null,
+			    skin = root.getAttribute('data-skin') || 'base',
+			    key = (skin == 'gost') ? '404mode.gost.scheme' : '404mode.scheme',
+			    def = root.getAttribute('data-scheme-default') || 'auto';
 
 			function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 			function set(k, v) { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} }
 
 			function apply() {
-				var pref = forced || get('404mode.scheme') || 'auto',
+				var pref = forced || get(key) || def,
 				    dark = (pref == 'dark') || (pref == 'auto' && (!mq || mq.matches));
 
 				root.setAttribute('data-scheme', pref);
 				root.setAttribute('data-theme', dark ? 'dark' : 'light');
 				root.setAttribute('data-darkmode', dark ? 'true' : 'false');
 				document.dispatchEvent(new CustomEvent('404mode-scheme', { detail: { scheme: pref, dark: dark } }));
+				broadcast();
 			}
+
+			/* embedded apps (Modem WebUI on :8001 etc.) follow the theme via postMessage */
+			function state() {
+				return { source: '404mode', v: 1, skin: skin, theme: root.getAttribute('data-theme'), fx: !root.classList.contains('no-fx') };
+			}
+
+			function broadcast() {
+				var frames = document.getElementsByTagName('iframe');
+				for (var i = 0; i < frames.length; i++)
+					try { frames[i].contentWindow.postMessage(state(), '*'); } catch (e) {}
+			}
+
+			window.addEventListener('message', function(ev) {
+				if (ev.data && ev.data.source == '404mode-client' && ev.source)
+					try { ev.source.postMessage(state(), '*'); } catch (e) {}
+			});
 
 			window.__404scheme = {
 				locked: !!forced,
-				get: function() { return forced || get('404mode.scheme') || 'auto'; },
-				set: function(v) { if (!forced) { set('404mode.scheme', v == 'auto' ? null : v); apply(); } }
+				get: function() { return forced || get(key) || def; },
+				set: function(v) { if (!forced) { set(key, v == def ? null : v); apply(); } },
+				broadcast: broadcast
 			};
 
 			if (mq && mq.addEventListener)

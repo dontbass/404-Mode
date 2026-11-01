@@ -1,0 +1,81 @@
+#!/bin/sh
+#
+# 404 Mode — skin hook for Modem WebUI (luci-app-modemwebui, port 8001)
+#
+#   404mode-modemwebui apply    copy skin files + add tags to every index.html
+#   404mode-modemwebui remove   take everything back out (byte-exact)
+#   404mode-modemwebui status   show what is hooked
+#
+# Only two marked lines are added before </head>; nothing else in the
+# panel is touched, so it coexists with the luci-i18n-modemwebui-ru patches.
+
+SRC="${SRC_404:-/usr/share/404mode/modemwebui}"
+ROOTS="${ROOTS_404:-/www/webui/webui000/web /www/webui/webui5700/web}"
+MARK_B='<!--404mode-->'
+MARK_E='<!--/404mode-->'
+TAG="$MARK_B<link rel=\"stylesheet\" href=\"/404mode/modem.css\"><script src=\"/404mode/default.js\"></script><script src=\"/404mode/modem.js\"></script>$MARK_E"
+
+default_js() {
+	local base skin theme
+	base="$(uci -q get luci.main.mediaurlbase)"
+	case "$base" in
+		/luci-static/404mode-gost)  skin=gost; theme=dark ;;
+		/luci-static/404mode-dark)  skin=base; theme=dark ;;
+		/luci-static/404mode-light) skin=base; theme=light ;;
+		/luci-static/404mode)       skin=base; theme=auto ;;
+		*)                          skin=off;  theme=auto ;;
+	esac
+	printf 'window.__404modemDefault={skin:"%s",theme:"%s"};\n' "$skin" "$theme"
+}
+
+strip_tag() {
+	# remove our marked block (and only it) from a file
+	sed -i "s#$MARK_B.*$MARK_E##" "$1"
+}
+
+apply_root() {
+	local web="$1" f n=0
+	[ -d "$web" ] || return 0
+
+	mkdir -p "$web/404mode"
+	cp "$SRC/modem.css" "$SRC/modem.js" "$web/404mode/"
+	default_js > "$web/404mode/default.js"
+
+	for f in $(find "$web" -name index.html -type f 2>/dev/null); do
+		strip_tag "$f"
+		grep -q '</head>' "$f" || continue
+		sed -i "s#</head>#$TAG</head>#" "$f"
+		n=$((n + 1))
+	done
+
+	echo "404mode: $web — hooked $n page(s)"
+}
+
+remove_root() {
+	local web="$1" f
+	[ -d "$web" ] || return 0
+
+	for f in $(find "$web" -name index.html -type f 2>/dev/null); do
+		grep -q "$MARK_B" "$f" && strip_tag "$f"
+	done
+
+	rm -rf "$web/404mode"
+	echo "404mode: $web — unhooked"
+}
+
+status_root() {
+	local web="$1" total hooked
+	[ -d "$web" ] || return 0
+	total=$(find "$web" -name index.html -type f 2>/dev/null | wc -l)
+	hooked=$(grep -l "$MARK_B" $(find "$web" -name index.html -type f 2>/dev/null) 2>/dev/null | wc -l)
+	echo "$web: $hooked/$total pages hooked, default: $(cat "$web/404mode/default.js" 2>/dev/null || echo none)"
+}
+
+case "$1" in
+	apply)  for r in $ROOTS; do apply_root "$r"; done ;;
+	remove) for r in $ROOTS; do remove_root "$r"; done ;;
+	status) for r in $ROOTS; do status_root "$r"; done ;;
+	*) echo "usage: $0 apply|remove|status" >&2; exit 1 ;;
+esac
+
+exit 0

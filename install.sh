@@ -7,6 +7,9 @@
 #   specific git ref:           sh install.sh v1.2.0 [--dark|--light|--gost]
 #   uninstall:                  sh install.sh --remove
 #
+# If Modem WebUI (luci-app-modemwebui, :8001) is present, its skin hook is
+# installed too, so the modem panel follows the theme (dark/light, ГОСТ-24).
+#
 
 set -e
 
@@ -50,6 +53,12 @@ fetch() {
 
 if [ "$ACTION" = "remove" ]; then
 	say "removing theme"
+	if [ -x /usr/libexec/404mode-modemwebui ]; then
+		/usr/libexec/404mode-modemwebui remove || true
+		/etc/init.d/404mode-modemwebui disable 2>/dev/null || true
+		rm -f /usr/libexec/404mode-modemwebui /etc/init.d/404mode-modemwebui
+		rm -rf /usr/share/404mode
+	fi
 	rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$WWW/$NAME-gost" \
 	       "$WWW/resources/menu-$NAME.js" "$WWW/resources/hud-$NAME.js" \
 	       "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost"
@@ -102,6 +111,19 @@ uci set "luci.themes.404ModeGost=/luci-static/$NAME-gost"
 uci set "luci.main.mediaurlbase=/luci-static/$NAME$VARIANT"
 uci commit luci
 clear_cache
+
+# Modem WebUI skin hook
+MW="$(find "$TMP" -maxdepth 2 -type d -name 'luci-theme-404mode-modemwebui' | head -n1)"
+if [ -d /www/webui ] && [ -n "$MW" ] && ! opkg list-installed 2>/dev/null | grep -q '^luci-theme-404mode-modemwebui '; then
+	say "Modem WebUI found — hooking the modem panel"
+	mkdir -p /usr/share/404mode/modemwebui /usr/libexec /etc/init.d
+	cp "$MW/files/404mode/modem.css" "$MW/files/404mode/modem.js" /usr/share/404mode/modemwebui/
+	cp "$MW/files/404mode-modemwebui" /usr/libexec/404mode-modemwebui
+	cp "$MW/files/404mode-modemwebui.init" /etc/init.d/404mode-modemwebui
+	chmod +x /usr/libexec/404mode-modemwebui /etc/init.d/404mode-modemwebui
+	/etc/init.d/404mode-modemwebui enable 2>/dev/null || true
+	/usr/libexec/404mode-modemwebui apply || true
+fi
 
 say "active: /luci-static/$NAME$VARIANT — reload LuCI (Ctrl+F5)"
 say "switch later: System → System → Language and Style"
