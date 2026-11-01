@@ -127,7 +127,7 @@ if [ "$ACTION" = "remove" ]; then
 		rm -rf /usr/share/404mode
 	fi
 	rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$WWW/$NAME-gost" \
-	       "$WWW/resources/menu-$NAME.js" "$WWW/resources/hud-$NAME.js" \
+	       "$WWW/resources/menu-$NAME.js" "$WWW/resources/hud-$NAME.js" "$WWW/resources/nfx-$NAME.js" \
 	       "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost"
 	uci -q delete luci.themes.404Mode || true
 	uci -q delete luci.themes.404ModeDark || true
@@ -174,7 +174,8 @@ say "installing files"
 mkdir -p "$WWW/resources" "$UCODE"
 rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$WWW/$NAME-gost" "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost"
 cp -R "$SRC/htdocs/luci-static/$NAME" "$WWW/"
-cp "$SRC/htdocs/luci-static/resources/menu-$NAME.js" "$SRC/htdocs/luci-static/resources/hud-$NAME.js" "$WWW/resources/"
+cp "$SRC/htdocs/luci-static/resources/menu-$NAME.js" "$SRC/htdocs/luci-static/resources/hud-$NAME.js" \
+   "$SRC/htdocs/luci-static/resources/nfx-$NAME.js" "$WWW/resources/"
 cp -R "$SRC/ucode/template/themes/$NAME" "$UCODE/"
 
 for v in dark light gost; do

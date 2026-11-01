@@ -12,7 +12,9 @@ luci-theme-404mode/htdocs/luci-static/404mode/logo_48.png
 luci-theme-404mode/htdocs/luci-static/404mode/mobile.css
 luci-theme-404mode/htdocs/luci-static/resources/hud-404mode.js
 luci-theme-404mode/htdocs/luci-static/resources/menu-404mode.js
+luci-theme-404mode/htdocs/luci-static/resources/nfx-404mode.js
 luci-theme-404mode/root/etc/uci-defaults/30_luci-theme-404mode
 luci-theme-404mode/ucode/template/themes/404mode/footer.ut
 luci-theme-404mode/ucode/template/themes/404mode/header.ut
+luci-theme-404mode/ucode/template/themes/404mode/mark.ut
 luci-theme-404mode/ucode/template/themes/404mode/sysauth.ut

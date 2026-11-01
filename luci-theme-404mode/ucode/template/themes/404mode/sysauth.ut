@@ -10,6 +10,7 @@
 	const host = striptags(board?.hostname ?? 'OpenWrt');
 	const model = striptags(board?.model ?? '');
 	const ru = (substr(dispatcher.lang ?? '', 0, 2) == 'ru');
+	const emblem = match(lc(striptags(version?.distname ?? '')), /immortal/) ? 'immortal' : 'openwrt';
 
 	const L = ru ? {
 		lost: 'СИГНАЛ ПОТЕРЯН',
@@ -36,15 +37,7 @@
 <div class="login">
 	{% if (theme == '404mode-gost'): %}
 	<div class="login-mark">
-		<svg class="gm" viewBox="-14 -6 110 110" aria-hidden="true">
-			<circle class="gm-disc" cx="41" cy="48" r="53"/>
-			<circle class="gm-groove" cx="41" cy="48" r="47"/>
-			<path class="gm-ring" d="M64.9 39.7a30.2 30.2 0 1 1-48.7 0l-6.9-7a39.9 39.9 0 1 0 62.5 0z"/>
-			<path class="gm-arc gm-a1" d="M0 16.9l7 6.8a47.5 47.5 0 0 1 67.2 0l7-6.8a57.2 57.2 0 0 0-81.2 0"/>
-			<path class="gm-arc gm-a2" d="M12.5 29.2l6.8 7a30 30 0 0 1 42.6 0l6.8-7a39.7 39.7 0 0 0-56.3 0"/>
-			<path class="gm-arc gm-a3" d="M24.8 41.6l6.8 6.9a12.6 12.6 0 0 1 18 0l6.8-6.9a22.3 22.3 0 0 0-31.6 0"/>
-			<path class="gm-dot" d="M40.5 50.8a6.6 6.6 0 1 0 0 13.2 6.6 6.6 0 0 0 0-13.2"/>
-		</svg>
+		{% include('themes/404mode/mark', { emblem }) %}
 	</div>
 	{% endif %}
 	<div class="login-head">

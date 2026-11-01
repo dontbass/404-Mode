@@ -572,6 +572,13 @@ return baseclass.extend({
 
 		const b = this.board;
 		el.model.textContent = b.model || b.system || 'OpenWrt';
+
+		/* "Made in OpenWrt" names the running system (ImmortalWrt, iStoreOS…) */
+		const made = document.querySelector('.gd-plaque-made'),
+		      dist = (b.release && b.release.distribution) || '';
+		if (made && dist)
+			made.textContent = T.made.replace('OpenWrt', dist);
+
 		this.drawFacts();
 	},
 

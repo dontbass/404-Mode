@@ -30,8 +30,8 @@
 }
 
 /* dark: bunker steel + cream phosphor.
- * Also used as local "instrument" tokens: the title plate, radar and login
- * mark stay dark screens in both schemes. */
+ * The title plate, radar and login mark take these as local tokens; in the
+ * light scheme they are repainted as enamel / paper (see below). */
 :root[data-skin="gost"],
 :root[data-skin="gost"][data-theme],
 :root[data-skin="gost"][data-theme][data-darkmode],
@@ -154,9 +154,13 @@
 	color-scheme: dark;
 }
 
-/* light: painted instrument enamel, ink, signal red */
+/* light: painted instrument enamel, ink, signal red.
+ * The title plate, radar and login mark follow the scheme as well. */
 :root[data-skin="gost"][data-theme="light"],
-:root[data-skin="gost"][data-theme="light"][data-darkmode] {
+:root[data-skin="gost"][data-theme="light"][data-darkmode],
+:root[data-skin="gost"][data-theme="light"] .gost-plate,
+:root[data-skin="gost"][data-theme="light"] .gost-radar,
+:root[data-skin="gost"][data-theme="light"] .login-mark {
 	--g-steel-0: #cdc6b3;
 	--g-steel-1: #d8d2c1;
 	--g-steel-2: #e7e2d4;
@@ -266,6 +270,73 @@
 
 	color-scheme: light;
 }
+
+/* light instruments: enamel plate, ink mark, paper radar screen */
+:root[data-skin="gost"][data-theme="light"] .gost-plate,
+:root[data-skin="gost"][data-theme="light"] .gost-radar,
+:root[data-skin="gost"][data-theme="light"] .login-mark {
+	--g-plate: #ebe5d5;
+	--g-phosphor: #4b5a2a;
+	--g-phosphor-rgb: 75, 90, 42;
+	--g-log: #4f5638;
+	--g-log-bad: #a3291c;
+	--g-screen-a: #f4f0e4;
+	--g-screen-b: #d9d2be;
+}
+
+:root[data-skin="gost"][data-theme="light"] .gost-plate {
+	background:
+		radial-gradient(ellipse at 22% 50%, rgba(255, 255, 255, .55), transparent 62%),
+		repeating-linear-gradient(0deg, rgba(70, 60, 40, .05) 0 1px, transparent 1px 3px),
+		var(--g-plate);
+	box-shadow: inset 0 0 0 1px var(--g-edge), inset 0 0 22px rgba(70, 60, 40, .16), 0 1px 0 var(--g-edge-hi);
+}
+
+:root[data-skin="gost"][data-theme="light"] .gm {
+	--gm-ink: #ebe5d5;
+	--gm-face: #2e2b22;
+	filter: drop-shadow(0 2px 3px rgba(70, 60, 40, .35));
+}
+
+:root[data-skin="gost"][data-theme="light"] .gm-disc { fill: #d6cfba; }
+
+:root[data-skin="gost"][data-theme="light"] .gm-ring { fill: #6a6352; }
+:root[data-skin="gost"][data-theme="light"] .gm-inf { stroke: #6a6352; }
+
+:root[data-skin="gost"][data-theme="light"] .gm-dot { filter: none; }
+
+:root[data-skin="gost"][data-theme="light"] .gost-plate-title {
+	color: #1d1b15;
+	-webkit-text-stroke: 0;
+	text-shadow: 1px 1px 0 rgba(255, 255, 255, .8);
+}
+
+:root[data-skin="gost"][data-theme="light"] .gost-plate-num {
+	-webkit-text-stroke: 0;
+	text-shadow: 1px 1px 0 rgba(255, 255, 255, .8);
+}
+
+:root[data-skin="gost"][data-theme="light"] .gost-plate-tag {
+	background: rgba(255, 255, 255, .55);
+	border-color: var(--g-edge);
+}
+
+:root[data-skin="gost"][data-theme="light"] .gost-plate-sub::before { box-shadow: none; }
+
+:root[data-skin="gost"][data-theme="light"] .gost-radar-scope {
+	background:
+		linear-gradient(rgba(var(--g-phosphor-rgb), .25), rgba(var(--g-phosphor-rgb), .25)) center / 1px 100% no-repeat,
+		linear-gradient(rgba(var(--g-phosphor-rgb), .25), rgba(var(--g-phosphor-rgb), .25)) center / 100% 1px no-repeat,
+		repeating-radial-gradient(circle, transparent 0 12px, rgba(var(--g-phosphor-rgb), .22) 12px 13px),
+		radial-gradient(circle, var(--g-screen-a), var(--g-screen-b) 75%);
+	box-shadow: 0 0 0 2px var(--g-edge), inset 0 0 12px rgba(70, 60, 40, .25);
+}
+
+:root[data-skin="gost"][data-theme="light"] .gost-radar-sweep {
+	background: conic-gradient(from 0deg, transparent 0 280deg, rgba(var(--g-phosphor-rgb), .05) 300deg, rgba(var(--g-phosphor-rgb), .38) 359deg, transparent 360deg);
+}
+
+:root[data-skin="gost"][data-theme="light"] .gost-radar-blips .blip { box-shadow: none; }
 
 /* ---------- canvas ---------- */
 
@@ -552,6 +623,22 @@
 
 .gm-arc { fill: var(--gm-face); }
 
+/* ImmortalWrt emblem: signal arcs over an infinity loop */
+.gm-inf-ink,
+.gm-inf {
+	fill: none;
+	stroke-linejoin: round;
+	stroke-linecap: round;
+}
+
+.gm-inf-ink { stroke: var(--gm-ink); stroke-width: 9.4; }
+
+.gm-inf {
+	stroke: var(--gm-face);
+	stroke: color-mix(in srgb, var(--gm-face) 72%, #8a7d5a);
+	stroke-width: 6.2;
+}
+
 .gm-dot {
 	fill: var(--gm-dot);
 	filter: drop-shadow(0 0 3px rgba(var(--g-red-rgb), .9));
@@ -621,7 +708,8 @@ html.no-fx .gm-dot { animation: none; opacity: 1; }
 
 .gost-plate-title {
 	font-family: var(--n-font-ui);
-	font-size: 25px;
+	/* long names (IMMORTAL_WRT, ISTORE_OS) shrink to fit the plate */
+	font-size: min(25px, calc(196px / var(--len, 8)));
 	font-weight: 900;
 	font-stretch: condensed;
 	letter-spacing: .02em;
@@ -1606,7 +1694,7 @@ body.gd-on #view.gd-grid .table { overflow-x: auto; }
 	.gost-plate { height: 136px; }
 	.gm { width: 100px; height: 100px; }
 	[data-skin="gost"] #mainmenu { min-height: 190px; }
-	.gost-plate-title { font-size: 22px; }
+	.gost-plate-title { font-size: min(22px, calc(172px / var(--len, 8))); }
 	.gost-plate-num { font-size: 40px; }
 
 	.gd { gap: 10px; }

@@ -5711,3 +5711,119 @@ html[lang="ru"] #app .app-list-installed:empty::before {
 	#app .app-container .app-info .app-r { max-width: calc(100% - 96px); }
 	#app .app-container .app-title { font-size: 17px; padding-top: 4px; }
 }
+
+/* ==========================================================================
+ * Foreign UI adapter (resources/nfx-404mode.js)
+ *
+ * Third-party apps that bring their own CSS get tagged by computed colour:
+ *   surface / note   white or tinted cards → panel tone, 1px edge, no shadow
+ *   btn b-*          coloured buttons      → theme button, hue kept as role
+ *   bar / track      progress bars         → accent fill on a well
+ *   badge t-*        small coloured pills  → outlined tag
+ *   t-* / ink        coloured / dark text  → accent, state colour, ink
+ *   edge             foreign rules         → theme line
+ *   chart            canvas / svg in a card → one palette tone
+ * ========================================================================== */
+
+[data-nfx~="surface"],
+[data-nfx~="note"] {
+	color: var(--n-text);
+	background: var(--qs-surface, rgb(var(--n-panel-rgb))) !important;
+	background-image: none !important;
+	border: 1px solid var(--qs-edge, var(--n-line)) !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+}
+
+[data-nfx~="surface"] [data-nfx~="surface"],
+[data-nfx~="surface"] [data-nfx~="note"],
+[data-nfx~="note"] {
+	background: var(--qs-raised, var(--n-input-bg)) !important;
+}
+
+[data-nfx~="ink"] { color: var(--n-text) !important; }
+[data-nfx~="ink-strong"] { color: var(--n-heading) !important; }
+[data-nfx~="t-acc"] { color: var(--n-cyan) !important; }
+[data-nfx~="t-ok"] { color: var(--n-green) !important; }
+[data-nfx~="t-bad"] { color: var(--n-magenta) !important; }
+[data-nfx~="t-warn"] { color: var(--n-rust) !important; }
+
+[data-nfx~="edge"] { border-color: var(--n-line-strong) !important; }
+
+[data-nfx~="badge"] {
+	background: transparent !important;
+	background-image: none !important;
+	border: 1px solid currentColor !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	text-shadow: none !important;
+}
+
+[data-nfx~="track"] {
+	background: var(--n-input-bg) !important;
+	background-image: none !important;
+	border: 1px solid var(--n-line) !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+}
+
+[data-nfx~="bar"] {
+	background: var(--n-cyan) !important;
+	background-image: none !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+}
+
+[data-nfx~="chart"] { filter: var(--qs-chart-filter); }
+
+/* buttons: the app's colour becomes the button role */
+[data-nfx~="btn"] {
+	--b: var(--n-text);
+	--b-rgb: var(--n-neutral-rgb, 128, 128, 128);
+	--b-on: var(--n-bg);
+}
+
+[data-nfx~="b-acc"] { --b: var(--n-cyan); --b-rgb: var(--n-cyan-rgb); --b-on: var(--n-on-accent); }
+[data-nfx~="b-ok"] { --b: var(--n-green); --b-rgb: var(--n-green-rgb); --b-on: var(--n-on-accent); }
+[data-nfx~="b-bad"] { --b: var(--n-magenta); --b-rgb: var(--n-magenta-rgb); --b-on: var(--n-on-accent); }
+[data-nfx~="b-warn"] { --b: var(--n-rust); --b-rgb: var(--n-rust-rgb); --b-on: var(--n-on-accent); }
+
+[data-nfx~="btn"] {
+	font-family: var(--n-font) !important;
+	color: var(--b) !important;
+	background: rgba(var(--b-rgb), .07) !important;
+	background-image: none !important;
+	border: 1px solid rgba(var(--b-rgb), .6) !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	text-shadow: none !important;
+}
+
+[data-nfx~="btn"]:hover {
+	color: var(--b-on) !important;
+	background: var(--b) !important;
+	border-color: var(--b) !important;
+}
+
+[data-skin="gost"] [data-nfx~="btn"] {
+	font-family: var(--n-font-ui) !important;
+	background: linear-gradient(180deg, var(--g-btn-hi), var(--g-btn-lo)) !important;
+	border: 1px solid var(--g-seam) !important;
+	border-radius: 2px !important;
+	box-shadow: inset 0 1px 0 var(--g-btn-shine), inset 0 0 0 1px rgba(var(--b-rgb), .3), 0 2px 0 var(--g-drop) !important;
+}
+
+[data-skin="gost"] [data-nfx~="btn"]:hover {
+	color: var(--g-hover-text) !important;
+	background: linear-gradient(180deg, var(--g-btn-hov-hi), var(--g-btn-hov-lo)) !important;
+	box-shadow: inset 0 1px 0 var(--g-btn-shine), inset 0 0 0 1px rgba(var(--b-rgb), .6), 0 2px 0 var(--g-drop) !important;
+}
+
+[data-skin="gost"] [data-nfx~="b-plain"] { --b: var(--g-btn-text); }
+
+/* status dots keep their meaning in theme colours */
+[data-nfx~="dot"] { background-image: none !important; box-shadow: none !important; }
+[data-nfx~="d-ok"] { background: var(--n-green) !important; }
+[data-nfx~="d-bad"] { background: var(--n-magenta) !important; }
+[data-nfx~="d-warn"] { background: var(--n-yellow) !important; }
+[data-nfx~="d-acc"] { background: var(--n-cyan) !important; }
