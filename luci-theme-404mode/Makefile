@@ -12,7 +12,7 @@ LUCI_TITLE:=404 Mode — cyberpunk / post-collapse theme (dark, light, ГОСТ-
 LUCI_DEPENDS:=+luci-base
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=1.4.0
+PKG_VERSION:=1.4.1
 PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_MAINTAINER:=Vladimir <dontbass@users.noreply.github.com>

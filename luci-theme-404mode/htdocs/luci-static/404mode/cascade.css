@@ -3752,7 +3752,7 @@ html.no-fx .sidebar-uplink-dot { animation: none; }
 
 #maincontent > *:not(footer) {
 	width: 100%;
-	max-width: 1280px;
+	max-width: none;
 }
 
 #view {
@@ -4365,7 +4365,7 @@ button[disabled] {
 
 .tabs, .cbi-tabmenu { --tab-bar-background-color: transparent; }
 
-#tabmenu .tabs,
+:is(#tabmenu, #app) .tabs,
 .cbi-tabmenu {
 	display: flex;
 	flex-wrap: wrap;
@@ -4393,7 +4393,7 @@ button[disabled] {
 	border-radius: 0;
 }
 
-#tabmenu .tabs > li > a,
+:is(#tabmenu, #app) .tabs > li > a,
 .cbi-tabmenu > li > a {
 	display: block;
 	padding: 9px 16px;
@@ -4412,7 +4412,7 @@ button[disabled] {
 	transition: color .15s, border-color .15s, background .15s;
 }
 
-#tabmenu .tabs > li > a:hover,
+:is(#tabmenu, #app) .tabs > li > a:hover,
 .cbi-tabmenu > li > a:hover {
 	color: var(--n-heading);
 	background: rgba(var(--n-cyan-rgb), .05);
@@ -4421,7 +4421,7 @@ button[disabled] {
 	text-decoration: none;
 }
 
-#tabmenu .tabs > li.active > a,
+:is(#tabmenu, #app) .tabs > li.active > a,
 .cbi-tabmenu > li.cbi-tab > a,
 .cbi-tabmenu > .cbi-tab > a {
 	color: var(--n-cyan);
@@ -5217,17 +5217,17 @@ html.no-fx .login-rec-dot { animation: none; }
 
 	.cbi-page-actions::before { display: none; }
 
-	#tabmenu .tabs,
+	:is(#tabmenu, #app) .tabs,
 	.cbi-tabmenu {
 		flex-wrap: nowrap;
 		overflow-x: auto;
 		scrollbar-width: none;
 	}
 
-	#tabmenu .tabs::-webkit-scrollbar,
+	:is(#tabmenu, #app) .tabs::-webkit-scrollbar,
 	.cbi-tabmenu::-webkit-scrollbar { display: none; }
 
-	#tabmenu .tabs > li > a,
+	:is(#tabmenu, #app) .tabs > li > a,
 	.cbi-tabmenu > li > a { white-space: nowrap; padding: 9px 12px; }
 
 	.hud-footer-tag:last-child { margin-left: 0; }
@@ -5258,6 +5258,14 @@ body[data-page="admin-modem-modemwebui"] #embedded-iframe {
 	border: 0 !important;
 	background: var(--n-bg);
 	transition: left .25s var(--n-ease), width .25s var(--n-ease) !important;
+}
+
+/* phones: anything an app forgets to wrap is clipped instead of widening the
+   layout viewport (which makes the browser zoom the whole page out) */
+@media screen and (max-width: 854px) {
+	#maincontent { overflow-x: clip; }
+	#view, #app, .cbi-map, .cbi-section { min-width: 0; max-width: 100%; }
+	pre, .cbi-section pre { max-width: 100%; overflow-x: auto; }
 }
 
 @media screen and (max-width: 854px) {
@@ -5539,6 +5547,167 @@ html[data-theme="dark"] body[theme] {
 
 #app .center-label { color: var(--n-heading) !important; font-family: var(--n-font); font-variant-numeric: tabular-nums; }
 
+/* links and actions hardcoded in iStore blue / violet: the theme accent */
+#app .configure,
+#app .use-url_app a,
+#app .value-data,
+#app .value-data button,
+#app .samba-item_value button,
+#app .ip_item .device,
+#app .tabs_box_g button.active,
+#app .path > span > a { color: var(--n-cyan) !important; }
+
+#app .path > span,
+#app .edit-button {
+	color: var(--n-cyan) !important;
+	background: transparent !important;
+	border: 1px solid var(--n-line-strong) !important;
+	border-radius: 0 !important;
+}
+
+#app .add-button--danger,
+#app .not_installed_btn,
+#app .next.save,
+#app .primary-btn,
+#app .tag-item.active,
+.modal-container .modal-footer .modal-button.confirm {
+	color: var(--n-on-accent, #fff) !important;
+	background: var(--n-cyan) !important;
+	border-color: var(--n-cyan) !important;
+	border-radius: 0 !important;
+}
+
+#app .module-settings__dot.is-active { background: var(--n-cyan) !important; }
+
+/* never wider than the screen: grid / flex children may shrink, long values wrap */
+#app .page-container,
+#app .grid-container > *,
+#app .grid-item > *,
+#app .network-container > *,
+#app .content .info > *,
+#app .chart_box > * { min-width: 0; }
+
+/* the lower section is a wrapping flex column on phones: its lines size to content, so cap them */
+#app .grid-container > * { max-width: 100%; }
+
+/* quick-link tiles fill the row on wide screens instead of leaving empty columns */
+@media screen and (min-width: 769px) {
+	#app .item_container { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important; }
+}
+
+#app .content .tab > .item { min-width: 0; padding-left: 8px !important; padding-right: 8px !important; text-align: center; overflow-wrap: anywhere; }
+
+#app .item1 > div { flex-wrap: wrap; justify-content: center; text-align: center; overflow-wrap: anywhere; }
+
+/* system gauges and interface list wrap instead of scrolling sideways */
+#app .chart_box { flex-wrap: wrap; justify-content: center; gap: 12px 0; overflow: visible !important; }
+#app .chart_box > .chart { flex: 1 1 140px; }
+
+#app .content:has(> .item > .icon_box) {
+	flex-wrap: wrap;
+	gap: 12px 24px;
+	overflow: visible !important;
+}
+
+#app .content:has(> .item > .icon_box) > .item { margin-right: 0; padding-right: 0; }
+#app .content:has(> .item > .icon_box) > .item::before { content: none !important; }
+
 @media screen and (max-width: 854px) {
-	#app .card-container { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+	#app .card-container { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+	#app .item1 { padding: 16px 12px !important; }
+	#app .app-container { padding: 10px 12px !important; }
+	#app .reusable-card { padding-left: 12px !important; padding-right: 12px !important; }
+}
+
+/* ==========================================================================
+ * iStore (luci-app-store, Vue): tabs, app cards, search, upload, dialogs
+ * ========================================================================== */
+
+#app > .tabs { margin-bottom: 16px; }
+
+#app > .tabs > li > a { text-transform: none; letter-spacing: .02em; }
+
+#app > .tabs > li > span { top: 6px; right: 4px; padding: 3px; background: var(--n-magenta); }
+
+#app .containers {
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)) !important;
+	gap: 16px;
+}
+
+#app .containers .app-container { margin: 0; padding: 16px; }
+
+#app .app-container .app-info { border-bottom: 1px solid var(--qs-edge); }
+
+#app .app-container .app-title { color: var(--n-heading); font-size: 20px; font-weight: 600; }
+
+#app .app-container .app-version,
+#app .app-container .app-author,
+#app .app-container .app-date,
+#app .app-container .app-description { color: var(--n-text-dim); }
+
+#app .app-container .app-tags .tag { color: var(--n-text-dim); background: var(--qs-raised); border: 1px solid var(--qs-edge); }
+
+#app .app-container .docker-icon { background: var(--n-text-dim); }
+
+#app .app-list-installed:empty::before {
+	content: "No iStore apps installed — the “all app” tab lists the catalogue";
+	grid-column: 1 / -1;
+	display: block;
+	padding: 28px 8px;
+	color: var(--n-text-dim);
+	text-align: center;
+}
+
+html[lang="ru"] #app .app-list-installed:empty::before {
+	content: "Приложения из iStore не установлены — каталог во вкладке «all app»";
+}
+
+#app form.search input { border-radius: 0; }
+
+#app .sort-container .cbi-button,
+#app .tags-container .cbi-button { margin: 0 6px 6px 0; }
+
+#app .upload-file,
+#app button.upload-button {
+	color: var(--n-heading) !important;
+	background: var(--n-input-bg) !important;
+	border: 1px dashed var(--n-line-strong) !important;
+	border-radius: 0 !important;
+}
+
+#app button.upload-button { border-style: solid !important; color: var(--n-cyan) !important; }
+
+#app .upload-file span,
+#app .upload-file .button { color: inherit !important; }
+
+#app .upload-file .button { background: transparent !important; border: 1px solid var(--n-line-strong); border-radius: 0; }
+
+#app .local .local-container .local-container1 { width: auto; max-width: 100%; height: auto; }
+
+#app em { border-bottom-color: var(--n-line) !important; }
+
+.quickinstalled-dialog_main {
+	color: var(--n-text);
+	background: var(--n-surface) !important;
+	border: 1px solid var(--n-line-strong);
+	border-radius: 0 !important;
+	box-shadow: var(--n-shadow) !important;
+	max-width: calc(100vw - 24px);
+}
+
+.quickinstalled-dialog_main-header > span,
+.quickinstalled-dialog_main .label-item_label,
+.quickinstalled-dialog_main .label-item_radio span { color: var(--n-heading) !important; }
+
+.quickinstalled-dialog_main-footer button { border-radius: 0 !important; }
+.quickinstalled-dialog_main-footer button.close { color: var(--n-text) !important; background: transparent !important; border: 1px solid var(--n-line-strong) !important; }
+.quickinstalled-dialog_main-footer button.submit { color: var(--n-on-accent, #fff) !important; background: var(--n-cyan) !important; }
+
+#tasks_dialog { border-radius: 0 !important; }
+
+@media screen and (max-width: 600px) {
+	#app .app-container .app-info .app-f { max-width: 96px; }
+	#app .app-container .app-info .app-f .app-icon { width: 72px; height: 72px; }
+	#app .app-container .app-info .app-r { max-width: calc(100% - 96px); }
+	#app .app-container .app-title { font-size: 17px; padding-top: 4px; }
 }

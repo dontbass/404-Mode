@@ -599,6 +599,8 @@ html.no-fx .gm-dot { animation: none; opacity: 1; }
 .gost-plate-tags {
 	display: flex;
 	gap: 4px;
+	max-width: 100%;
+	min-width: 0;
 	margin-bottom: 4px;
 }
 
@@ -614,7 +616,8 @@ html.no-fx .gm-dot { animation: none; opacity: 1; }
 	white-space: nowrap;
 }
 
-.gost-plate-tag-r { color: var(--g-cream); }
+.gost-plate-tag-l { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.gost-plate-tag-r { flex: 0 0 auto; color: var(--g-cream); }
 
 .gost-plate-title {
 	font-family: var(--n-font-ui);
@@ -1132,17 +1135,17 @@ html.no-fx .gost-radar-blips .blip { opacity: .8; }
 [data-skin="gost"] .cbi-page-actions::after { opacity: .7; height: 4px; }
 
 /* tabs: stamped plates */
-[data-skin="gost"] #tabmenu .tabs,
+[data-skin="gost"] :is(#tabmenu, #app) .tabs,
 [data-skin="gost"] .cbi-tabmenu { border-bottom: 1px solid var(--g-seam); box-shadow: 0 1px 0 var(--g-edge-hi); }
 
-[data-skin="gost"] #tabmenu .tabs > li > a,
+[data-skin="gost"] :is(#tabmenu, #app) .tabs > li > a,
 [data-skin="gost"] .cbi-tabmenu > li > a {
 	text-transform: none;
 	font-size: 14px;
 	letter-spacing: .02em;
 }
 
-[data-skin="gost"] #tabmenu .tabs > li.active > a,
+[data-skin="gost"] :is(#tabmenu, #app) .tabs > li.active > a,
 [data-skin="gost"] .cbi-tabmenu > li.cbi-tab > a {
 	color: var(--n-heading);
 	background: linear-gradient(180deg, var(--g-bar-hi), var(--g-bar-lo));
@@ -1238,8 +1241,8 @@ html.no-fx .gost-radar-blips .blip { opacity: .8; }
 
 /* ---------- status dashboard ---------- */
 
-body.gd-on #maincontent > .gd { max-width: 1600px; }
-body.gd-on #maincontent > #view { max-width: 1600px; }
+body.gd-on #maincontent > .gd { max-width: none; }
+body.gd-on #maincontent > #view { max-width: none; }
 
 .gd {
 	display: grid;
