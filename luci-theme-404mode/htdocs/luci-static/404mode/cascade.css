@@ -2892,7 +2892,9 @@ body {
 	font-size: 13px;
 	line-height: 1.55;
 	color: var(--n-text);
-	background-color: var(--n-bg);
+	/* the ground colour lives on <html>; body only carries translucent
+	   texture, so the ambient gradient layer (.n-ambient) shows through */
+	background-color: transparent;
 	background-image:
 		radial-gradient(520px 340px at 78% 18%, var(--n-stain), transparent 70%),
 		radial-gradient(380px 300px at 12% 82%, var(--n-stain), transparent 70%),
@@ -3819,10 +3821,11 @@ html.no-fx #view { animation: none; }
 		linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
 		linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
 		linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
-		linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c));
+		linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
+		linear-gradient(165deg, rgba(var(--n-cyan-rgb), .06), transparent 38%, transparent 70%, rgba(var(--n-magenta-rgb), .035));
 	background-repeat: no-repeat;
-	background-size: 14px 1px, 1px 14px, 14px 1px, 1px 14px, 14px 1px, 1px 14px, 14px 1px, 1px 14px;
-	background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+	background-size: 14px 1px, 1px 14px, 14px 1px, 1px 14px, 14px 1px, 1px 14px, 14px 1px, 1px 14px, 100% 100%;
+	background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%, 0 0;
 	border: 1px solid var(--n-line);
 	border-radius: 0;
 	box-shadow: inset 0 0 40px rgba(0, 0, 0, .3);
@@ -5741,6 +5744,19 @@ html[lang="ru"] #app .app-list-installed:empty::before {
 	background: var(--qs-raised, var(--n-input-bg)) !important;
 }
 
+[data-nfx~="overlay"] {
+	color: var(--n-text);
+	background: var(--n-bg) !important;
+	background-image: var(--n-ambient, none) !important;
+}
+
+[data-nfx~="ink"],
+[data-nfx~="ink-strong"],
+[data-nfx~="t-acc"],
+[data-nfx~="t-ok"],
+[data-nfx~="t-bad"],
+[data-nfx~="t-warn"] { text-shadow: none !important; -webkit-text-stroke: 0 !important; }
+
 [data-nfx~="ink"] { color: var(--n-text) !important; }
 [data-nfx~="ink-strong"] { color: var(--n-heading) !important; }
 [data-nfx~="t-acc"] { color: var(--n-cyan) !important; }
@@ -5827,3 +5843,215 @@ html[lang="ru"] #app .app-list-installed:empty::before {
 [data-nfx~="d-bad"] { background: var(--n-magenta) !important; }
 [data-nfx~="d-warn"] { background: var(--n-yellow) !important; }
 [data-nfx~="d-acc"] { background: var(--n-cyan) !important; }
+
+/* while the adapter re-checks an element its transitions are held off */
+[data-nfx-hold],
+[data-nfx-hold] * { transition: none !important; }
+
+
+/* ==========================================================================
+ * Ambient gradient: three soft light pools drifting behind the interface.
+ * Tinted by the time of day and the weather (html[data-sky], html[data-wx],
+ * set by brief-404mode.js). Static with FX off or reduced motion.
+ * ========================================================================== */
+
+:root {
+	--amb-a: var(--n-cyan-rgb);
+	--amb-b: var(--n-magenta-rgb);
+	--amb-c: var(--n-rust-rgb);
+	--amb-alpha: .2;
+	--n-ambient:
+		radial-gradient(60vmax 50vmax at 85% 0%, rgba(var(--amb-a), calc(var(--amb-alpha) * .9)), transparent 70%),
+		radial-gradient(55vmax 45vmax at 0% 100%, rgba(var(--amb-b), calc(var(--amb-alpha) * .7)), transparent 70%);
+}
+
+:root[data-theme="light"] { --amb-alpha: .18; }
+
+.n-ambient {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+	contain: strict;
+}
+
+.n-ambient i {
+	position: absolute;
+	width: 90vmax;
+	height: 90vmax;
+	border-radius: 50%;
+	will-change: transform;
+	transition: background 4s ease;
+}
+
+.n-amb-a {
+	top: -45vmax;
+	right: -30vmax;
+	background: radial-gradient(closest-side, rgba(var(--amb-a), var(--amb-alpha)), transparent);
+	animation: n-amb-a 70s ease-in-out infinite alternate;
+}
+
+.n-amb-b {
+	bottom: -50vmax;
+	left: -35vmax;
+	background: radial-gradient(closest-side, rgba(var(--amb-b), calc(var(--amb-alpha) * .8)), transparent);
+	animation: n-amb-b 90s ease-in-out infinite alternate;
+}
+
+.n-amb-c {
+	top: 20vh;
+	left: 30vw;
+	width: 70vmax;
+	height: 70vmax;
+	background: radial-gradient(closest-side, rgba(var(--amb-c), calc(var(--amb-alpha) * .55)), transparent);
+	animation: n-amb-c 110s ease-in-out infinite alternate;
+}
+
+@keyframes n-amb-a { to { transform: translate3d(-18vw, 22vh, 0) scale(1.15); } }
+@keyframes n-amb-b { to { transform: translate3d(24vw, -16vh, 0) scale(.9); } }
+@keyframes n-amb-c { to { transform: translate3d(-26vw, 18vh, 0) scale(1.2); } }
+
+html.no-fx .n-ambient i { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+	.n-ambient i { animation: none; }
+}
+
+/* time of day: the top-right pool is the "sky" */
+html:root[data-theme][data-sky="dawn"] { --amb-a: 255, 150, 110; }
+html:root[data-theme][data-sky="dusk"] { --amb-a: 255, 120, 70; --amb-c: 150, 70, 160; }
+html:root[data-theme][data-sky="night"] { --amb-a: 70, 100, 200; --amb-c: 60, 50, 140; }
+
+/* weather tints the sky pool on top of the time of day */
+html:root[data-theme][data-wx="rain"] { --amb-a: 80, 130, 175; }
+html:root[data-theme][data-wx="snow"] { --amb-a: 175, 205, 235; }
+html:root[data-theme][data-wx="fog"] { --amb-a: 150, 160, 165; }
+html:root[data-theme][data-wx="storm"] { --amb-a: 120, 80, 190; }
+html:root[data-theme][data-wx="clear"][data-sky="day"] { --amb-a: 255, 200, 110; }
+
+/* ==========================================================================
+ * Header brief (brief-404mode.js): weather · CBR rates · headlines
+ * ========================================================================== */
+
+.hud-brief {
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-left: 4px;
+	container-type: inline-size;
+	font-family: var(--n-font);
+	font-size: 11px;
+	letter-spacing: .04em;
+	color: var(--n-text-dim);
+	white-space: nowrap;
+}
+
+.hud-brief[hidden] { display: none; }
+
+.hb-cell {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 26px;
+	padding: 0 9px;
+	color: var(--n-text-dim);
+	background: rgba(var(--n-neutral-rgb, 128, 128, 128), .06);
+	border: 1px solid var(--n-line);
+	border-radius: 0;
+	text-decoration: none;
+	flex: 0 0 auto;
+}
+
+.hb-cell[hidden] { display: none; }
+
+.hb-cell b {
+	font-weight: 700;
+	color: var(--n-heading);
+	font-variant-numeric: tabular-nums;
+}
+
+.hb-ico {
+	width: 15px;
+	height: 15px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.7;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	color: var(--n-cyan);
+}
+
+.hb-city {
+	all: unset;
+	cursor: pointer;
+	color: var(--n-text-dim);
+	border-bottom: 1px dotted var(--n-line-strong);
+}
+
+.hb-city:hover,
+.hb-city:focus-visible { color: var(--n-heading); border-bottom-color: currentColor; }
+
+.hb-city-input {
+	width: 130px;
+	height: 20px !important;
+	min-height: 0 !important;
+	padding: 0 4px !important;
+	font: inherit !important;
+	font-size: 11px !important;
+}
+
+.hb-fx { display: inline-flex; gap: 6px; flex: 0 0 auto; }
+.hb-fx[hidden] { display: none; }
+
+.hb-code { color: var(--n-text-faint); }
+
+.hb-d {
+	font-style: normal;
+	font-size: 10px;
+	font-variant-numeric: tabular-nums;
+}
+
+.hb-up { color: var(--n-green); }
+.hb-dn { color: var(--n-magenta); }
+.hb-eq { color: var(--n-text-faint); }
+
+.hb-news {
+	flex: 1 1 auto;
+	min-width: 0;
+	transition: opacity .25s ease, transform .25s ease;
+}
+
+.hb-news:hover { border-color: var(--n-line-strong); text-decoration: none; }
+.hb-news:hover .hb-text { color: var(--n-heading); }
+
+.hb-news.hb-out { opacity: 0; transform: translateY(-3px); }
+
+.hb-src {
+	flex: 0 0 auto;
+	font-size: 9.5px;
+	font-weight: 700;
+	letter-spacing: .12em;
+	text-transform: uppercase;
+	color: var(--n-cyan);
+}
+
+.hb-text {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--n-text);
+}
+
+/* what fits: headline needs room, EUR / CNY go before USD */
+@container (max-width: 640px) { .hb-news { display: none !important; } }
+@container (max-width: 420px) { .hb-cny { display: none !important; } }
+@container (max-width: 320px) { .hb-eur { display: none !important; } }
+@container (max-width: 200px) { .hb-fx { display: none !important; } }
+@container (max-width: 90px) { .hb-wx { display: none !important; } }
+
+@media screen and (max-width: 854px) {
+	.hud-brief { display: none !important; }
+}

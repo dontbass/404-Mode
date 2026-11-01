@@ -38,6 +38,13 @@ done
 say() { printf '\033[1;36m[404]\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31m[404] %s\033[0m\n' "$*" >&2; exit 1; }
 
+RPCD="/usr/share/rpcd"
+LIBEXEC="/usr/libexec"
+
+reload_rpcd() {
+	/etc/init.d/rpcd reload >/dev/null 2>&1 || killall -HUP rpcd 2>/dev/null || true
+}
+
 clear_cache() {
 	rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache 2>/dev/null || true
 }
@@ -128,7 +135,9 @@ if [ "$ACTION" = "remove" ]; then
 	fi
 	rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$WWW/$NAME-gost" \
 	       "$WWW/resources/menu-$NAME.js" "$WWW/resources/hud-$NAME.js" "$WWW/resources/nfx-$NAME.js" \
+	       "$WWW/resources/brief-$NAME.js" "$RPCD/ucode/$NAME.uc" "$RPCD/acl.d/luci-theme-$NAME.json" "$LIBEXEC/$NAME-brief" /tmp/404mode-brief \
 	       "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost"
+	reload_rpcd
 	uci -q delete luci.themes.404Mode || true
 	uci -q delete luci.themes.404ModeDark || true
 	uci -q delete luci.themes.404ModeLight || true
@@ -175,8 +184,19 @@ mkdir -p "$WWW/resources" "$UCODE"
 rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$WWW/$NAME-gost" "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost"
 cp -R "$SRC/htdocs/luci-static/$NAME" "$WWW/"
 cp "$SRC/htdocs/luci-static/resources/menu-$NAME.js" "$SRC/htdocs/luci-static/resources/hud-$NAME.js" \
-   "$SRC/htdocs/luci-static/resources/nfx-$NAME.js" "$WWW/resources/"
+   "$SRC/htdocs/luci-static/resources/nfx-$NAME.js" "$SRC/htdocs/luci-static/resources/brief-$NAME.js" "$WWW/resources/"
 cp -R "$SRC/ucode/template/themes/$NAME" "$UCODE/"
+
+# header brief backend (weather / rates / headlines): rpcd ucode plugin + ACL
+if [ -d "$SRC/root/usr/share/rpcd" ]; then
+	mkdir -p "$RPCD/ucode" "$RPCD/acl.d"
+	cp "$SRC/root/usr/share/rpcd/ucode/$NAME.uc" "$RPCD/ucode/"
+	cp "$SRC/root/usr/share/rpcd/acl.d/luci-theme-$NAME.json" "$RPCD/acl.d/"
+	mkdir -p "$LIBEXEC"
+	cp "$SRC/root/usr/libexec/$NAME-brief" "$LIBEXEC/"
+	chmod +x "$LIBEXEC/$NAME-brief"
+	reload_rpcd
+fi
 
 for v in dark light gost; do
 	ln -sfn "$NAME" "$WWW/$NAME-$v"

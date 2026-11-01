@@ -1,0 +1,217 @@
+#!/usr/bin/ucode
+/*
+ * 404 Mode — header brief fetcher (run in the background by the rpcd plugin
+ * /usr/share/rpcd/ucode/404mode.uc, so slow sources never block rpcd).
+ *
+ *   404mode-brief weather <city>
+ *   404mode-brief rates
+ *   404mode-brief news
+ *
+ * Writes /tmp/404mode-brief/<key>.json; keeps the old file when a fetch fails.
+ *
+ * https://github.com/dontbass/404-Mode — Apache-2.0
+ */
+
+'use strict';
+
+import { popen, writefile, mkdir, rename, unlink } from 'fs';
+
+const DIR = '/tmp/404mode-brief';
+
+const NEWS = [
+	{ id: 'opennet', name: 'OpenNet', url: 'https://www.opennet.ru/opennews/opennews_all_utf.rss' },
+	{ id: 'habr',    name: 'Хабр',    url: 'https://habr.com/ru/rss/news/?fl=ru' }
+];
+
+function shellquote(s) {
+	return "'" + replace(s, "'", "'\\''") + "'";
+}
+
+function fetch(url) {
+	const p = popen('uclient-fetch -q -T 8 -O - ' + shellquote(url) + ' 2>/dev/null', 'r');
+
+	if (!p)
+		return null;
+
+	const data = p.read('all');
+	p.close();
+
+	return length(data) ? data : null;
+}
+
+function fetch_json(url) {
+	const data = fetch(url);
+	let res = null;
+
+	if (data)
+		try { res = json(data); } catch (e) { res = null; }
+
+	return res;
+}
+
+function urlencode(s) {
+	let out = '';
+
+	for (let i = 0; i < length(s); i++) {
+		const c = ord(s, i);
+
+		if ((c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c == 45 || c == 46 || c == 95 || c == 126)
+			out += chr(c);
+		else
+			out += sprintf('%%%02X', c);
+	}
+
+	return out;
+}
+
+function between(s, a, b) {
+	const i = index(s, a);
+
+	if (i < 0)
+		return null;
+
+	const rest = substr(s, i + length(a));
+	const j = index(rest, b);
+
+	return (j < 0) ? null : substr(rest, 0, j);
+}
+
+function clean(s) {
+	if (s == null)
+		return null;
+
+	s = trim(s);
+
+	if (index(s, '<![CDATA[') == 0)
+		s = substr(s, 9, length(s) - 12);
+
+	s = replace(s, /<[^>]*>/g, '');
+	s = replace(s, /&quot;/g, '"');
+	s = replace(s, /&#0?39;|&apos;/g, "'");
+	s = replace(s, /&laquo;/g, '«');
+	s = replace(s, /&raquo;/g, '»');
+	s = replace(s, /&nbsp;/g, ' ');
+	s = replace(s, /&mdash;/g, '—');
+	s = replace(s, /&ndash;/g, '–');
+	s = replace(s, /&lt;/g, '<');
+	s = replace(s, /&gt;/g, '>');
+	s = replace(s, /&amp;/g, '&');
+	s = replace(s, /[ \t\r\n]+/g, ' ');
+
+	return trim(s);
+}
+
+function rss_items(xml, src, max) {
+	const out = [];
+	const parts = split(xml, '<item');
+
+	for (let i = 1; i < length(parts) && length(out) < max; i++) {
+		const it = parts[i];
+		const title = clean(between(it, '<title>', '</title>'));
+		const link = clean(between(it, '<link>', '</link>'));
+
+		if (title && link && match(link, /^https?:\/\//))
+			push(out, { t: title, l: link, s: src.name });
+	}
+
+	return out;
+}
+
+function weather_key(city) {
+	return 'wx-' + substr(replace(urlencode(lc(city)), '%', ''), 0, 96);
+}
+
+function get_weather(city) {
+	const geo = fetch_json('https://geocoding-api.open-meteo.com/v1/search?count=1&language=ru&format=json&name=' + urlencode(city));
+	const place = geo?.results?.[0];
+
+	if (!place || place.latitude == null || place.longitude == null)
+		return { error: 'city' };
+
+	const wx = fetch_json(sprintf('https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f' +
+		'&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,is_day' +
+		'&wind_speed_unit=ms&timezone=auto', place.latitude, place.longitude));
+	const cur = wx?.current;
+
+	if (!cur || cur.temperature_2m == null)
+		return null;
+
+	return {
+		city: place.name, country: place.country,
+		t: cur.temperature_2m, feels: cur.apparent_temperature,
+		code: cur.weather_code, wind: cur.wind_speed_10m,
+		day: cur.is_day, time: cur.time
+	};
+}
+
+function get_rates() {
+	const cbr = fetch_json('https://www.cbr-xml-daily.ru/daily_json.js');
+	const v = cbr?.Valute;
+
+	if (!v?.USD)
+		return null;
+
+	const res = { date: cbr.Date, list: [] };
+
+	for (let code in [ 'USD', 'EUR', 'CNY' ])
+		if (v[code])
+			push(res.list, { code, v: v[code].Value / (v[code].Nominal || 1), p: v[code].Previous / (v[code].Nominal || 1) });
+
+	return res;
+}
+
+function get_news() {
+	const lists = [];
+
+	for (let src in NEWS) {
+		const xml = fetch(src.url);
+		push(lists, xml ? rss_items(xml, src, 8) : []);
+	}
+
+	/* interleave the sources */
+	const items = [];
+
+	for (let i = 0; i < 8; i++)
+		for (let l in lists)
+			if (l[i])
+				push(items, l[i]);
+
+	return length(items) ? { items } : null;
+}
+
+const kind = ARGV[0];
+let key, res;
+
+if (kind == 'weather') {
+	const city = trim(ARGV[1] ?? '');
+
+	if (!length(city) || length(city) > 64)
+		exit(1);
+
+	key = weather_key(city);
+}
+else if (kind == 'rates' || kind == 'news') {
+	key = kind;
+}
+else {
+	warn('usage: 404mode-brief weather <city> | rates | news\n');
+	exit(1);
+}
+
+mkdir(DIR);
+writefile(DIR + '/' + key + '.lock', '');
+
+if (kind == 'weather')
+	res = get_weather(trim(ARGV[1]));
+else if (kind == 'rates')
+	res = get_rates();
+else
+	res = get_news();
+
+if (res) {
+	res.ts = time();
+	writefile(DIR + '/' + key + '.json.tmp', sprintf('%J', res));
+	rename(DIR + '/' + key + '.json.tmp', DIR + '/' + key + '.json');
+}
+
+unlink(DIR + '/' + key + '.lock');

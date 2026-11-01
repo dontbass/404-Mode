@@ -172,6 +172,7 @@
 		document.addEventListener('404mode-scheme', sync);
 	})(document.body, document.documentElement);
 </script>
+<div class="n-ambient" aria-hidden="true"><i class="n-amb-a"></i><i class="n-amb-b"></i><i class="n-amb-c"></i></div>
 {% if (!blank_page): %}
 <header class="hud">
 	<button type="button" class="hud-toggle" id="nav-toggle" aria-label="Menu" aria-controls="sidebar" aria-expanded="false">
@@ -191,6 +192,8 @@
 		<span class="hud-cell hud-model">{{ model || 'OpenWrt' }}</span>
 		<span class="hud-cell hud-clock" id="hud-clock">--:--:--</span>
 	</div>
+
+	<div class="hud-brief" id="hud-brief" hidden></div>
 
 	<div id="indicators" class="hud-indicators"></div>
 

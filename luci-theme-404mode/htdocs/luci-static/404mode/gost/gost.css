@@ -341,7 +341,7 @@
 /* ---------- canvas ---------- */
 
 [data-skin="gost"] body {
-	background-color: var(--n-bg);
+	background-color: transparent;
 	background-image:
 		radial-gradient(1200px 700px at 70% 0%, rgba(var(--g-cream-rgb), .045), transparent 60%),
 		repeating-linear-gradient(90deg, var(--g-brush) 0 1px, transparent 1px 3px),
@@ -1810,3 +1810,37 @@ html[data-skin="gost"][data-theme="light"] body[theme] {
 
 [data-skin="gost"] #app .extra.badge,
 [data-skin="gost"] #app .extra.badge * { color: var(--g-red) !important; }
+
+
+/* ---------- ambient + brief ---------- */
+
+:root[data-skin="gost"] {
+	--amb-a: var(--g-cream-rgb);
+	--amb-b: var(--g-red-rgb);
+	--amb-c: 159, 180, 102;
+	--amb-alpha: .14;
+}
+
+:root[data-skin="gost"][data-theme="light"] {
+	--amb-a: 214, 160, 70;
+	--amb-c: 120, 140, 60;
+	--amb-alpha: .22;
+}
+
+/* steel plates let a breath of the ambient light through */
+[data-skin="gost"] .cbi-section,
+[data-skin="gost"] .cbi-map > fieldset,
+[data-skin="gost"] .gd-tile {
+	background-color: color-mix(in srgb, var(--g-steel-2) 90%, transparent);
+}
+
+[data-skin="gost"] .hb-cell {
+	font-family: var(--n-font);
+	background: linear-gradient(180deg, var(--g-btn-hi), var(--g-btn-lo));
+	border: 1px solid var(--g-seam);
+	border-radius: 2px;
+	box-shadow: inset 0 1px 0 var(--g-btn-shine), 0 1px 0 var(--g-drop);
+}
+
+[data-skin="gost"] .hb-ico { color: var(--g-amber); }
+[data-skin="gost"] .hb-src { color: var(--g-red); }

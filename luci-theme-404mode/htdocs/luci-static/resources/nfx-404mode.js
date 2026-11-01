@@ -25,12 +25,13 @@
 
 	/* chrome and LuCI widgets the theme already paints */
 	var SKIP = [
-		'header.hud', '.sidebar', 'footer', '.hud-ticker', '.shell-mask',
+		'header.hud', '.sidebar', 'footer', '.hud-ticker', '.shell-mask', '.n-ambient',
 		'.gd', '.gost-plate', '.gost-radar', '.login', '.login-mark',
 		'.alert-message', '.cbi-progressbar', '.ifacebox', '.zonebadge',
 		'.cbi-tooltip', '.cbi-dropdown', '.dropdown-menu', '.cbi-tabmenu',
 		'.tabs', '#tabmenu', '.cbi-page-actions', '.cbi-button.important',
-		'.btn.important', '#indicators', 'iframe', 'svg *', 'noscript'
+		'.btn.important', '#indicators', 'iframe', 'svg *', 'noscript',
+		'#app .tag_up', '#app .tag_dn'
 	].join(',');
 
 	var BTN = 'button, input[type="button"], input[type="submit"], input[type="reset"], a[class*="btn"], a[class*="button"], [role="button"], [class*="btn"], [class*="button"]';
@@ -106,14 +107,15 @@
 		for (var i = 0; i < cs.length; i++) {
 			var name = cs[i];
 
-			if (name.indexOf('--n-') && name.indexOf('--g-') && name.indexOf('--qs-'))
+			/* our tokens and the LuCI bootstrap tokens the theme maps */
+			if (!/^--(n|g|qs|text-color|border-color|background-color|primary-color|on-|error-color|success-color|warn-color|tab-bar)-?/.test(name))
 				continue;
 
-			var v = cs.getPropertyValue(name).trim(), c = null;
+			var v = cs.getPropertyValue(name).replace(/\s+/g, ' ').trim(), c = null;
 
 			if (/^\d+\s*,\s*\d+\s*,\s*\d+$/.test(v))
 				c = parse('rgb(' + v + ')');
-			else if (v && v.length < 60 && !/gradient|url\(|var\(|\s{2}/.test(v))
+			else if (v && v.length < 120 && !/gradient|url\(|var\(/.test(v))
 				c = resolve(v);
 
 			if (c)
@@ -153,7 +155,7 @@
 
 		while ((m = re.exec(img)) != null) {
 			var c = parse(m[0]);
-			if (c && c.a >= .5) out.push(c);
+			if (c && (c.a >= .5 || (c.a >= .12 && hsl(c).c > .12))) out.push(c);
 		}
 
 		return out;
@@ -180,7 +182,7 @@
 
 	function inCard(el) {
 		for (var x = el.parentElement; x; x = x.parentElement)
-			if (cards.has(x) || x.matches('[data-nfx~="surface"], [data-nfx~="note"]'))
+			if (cards.has(x) || x.matches('[data-nfx~="surface"], [data-nfx~="note"], [data-nfx~="overlay"]'))
 				return true;
 
 		return false;
@@ -202,7 +204,20 @@
 		    grad = gradientColours(cs.backgroundImage),
 		    fill = null;
 
+		/* full-screen foreign backdrop (screensavers, kiosk views): theme ground
+		   underneath, so the cards and text repainted on top stay readable */
+		if (cs.position == 'fixed' && w >= innerWidth * .9 && h >= innerHeight * .9 &&
+		    ((bg && bg.a >= .85 && !themed(bg, true)) || grad.length) &&
+		    !el.matches('#modal_overlay, .shell-mask')) {
+			cards.add(el);
+			return 'overlay';
+		}
+
 		if (bg && bg.a >= .5 && !themed(bg, true))
+			fill = bg;
+		/* tinted glass (translucent coloured cards) counts too; translucent
+		   greys are left alone, the theme uses those itself */
+		else if (bg && bg.a >= .12 && hsl(bg).c > .12 && !themed(bg, true))
 			fill = bg;
 
 		if (!fill && grad.length) {
@@ -256,8 +271,9 @@
 			if (tc && tc.a >= .95 && (card || !themed(tc))) {
 				var k3 = hsl(tc);
 
+				/* pale tints (lime, light yellow, sky) are highlights, not warnings */
 				if (k3.c > .2)
-					tags.push('t-' + hue(tc));
+					tags.push('t-' + (k3.l > .72 ? 'acc' : hue(tc)));
 				else
 					tags.push((parseInt(cs.fontWeight, 10) >= 600 && parseFloat(cs.fontSize) >= 15) ? 'ink-strong' : 'ink');
 			}
@@ -280,7 +296,7 @@
 		}
 
 		/* charts drawn inside a repainted card */
-		if ((tag == 'CANVAS' || tag == 'SVG') && w >= 120 && h >= 60 && inCard(el))
+		if ((tag == 'CANVAS' || tag == 'SVG') && w >= 40 && h >= 40 && inCard(el))
 			tags.push('chart');
 
 		if (tags.indexOf('surface') > -1 || tags.indexOf('note') > -1)
@@ -291,30 +307,27 @@
 
 	/* ---------- scanning ---------- */
 
-	var seen = new WeakSet();
+	var seen = new WeakSet(),
+	    sigs = new WeakMap();
+
+	/* what an app can change that matters to us: its classes and the colour
+	   part of its inline style (positions, sizes, opacity are ignored) */
+	function signature(el) {
+		var st = el.style || {};
+		return (el.getAttribute('class') || '') + '|' + (st.background || '') + '|' + (st.backgroundColor || '') + '|' +
+			(st.backgroundImage || '') + '|' + (st.color || '') + '|' + (st.borderColor || '') + '|' + (st.border || '');
+	}
+
+	var later = [], laterTimer = null;
+
+	function isTransition(a) {
+		return typeof CSSTransition == 'function' && a instanceof CSSTransition;
+	}
 
 	function scan(list, force) {
 		buildPalette();
 
 		var todo = [];
-
-		/* a re-check reads colours right after our tag was dropped: skip the
-		   transitions that would otherwise report a half-way colour */
-		if (force && typeof CSSTransition == 'function') {
-			for (var f = 0; f < list.length; f++) {
-				var el0 = list[f];
-
-				if (!el0.isConnected || !el0.getAnimations)
-					continue;
-
-				getComputedStyle(el0).backgroundColor;
-
-				el0.getAnimations().forEach(function(a) {
-					if (a instanceof CSSTransition)
-						try { a.finish(); } catch (e) {}
-				});
-			}
-		}
 
 		/* read phase: no DOM writes in between, so one style recalc */
 		for (var i = 0; i < list.length; i++) {
@@ -325,7 +338,15 @@
 			if (!el.isConnected || (!force && (seen.has(el) || el.hasAttribute('data-nfx'))))
 				continue;
 
+			/* mid-transition colours are neither the app's nor ours: look again
+			   once the transition has run */
+			if (!force && el.getAnimations && el.getAnimations().some(isTransition)) {
+				later.push(el);
+				continue;
+			}
+
 			seen.add(el);
+			sigs.set(el, signature(el));
 
 			var t = classify(el);
 
@@ -335,6 +356,14 @@
 
 		cards.clear();
 
+		if (later.length && !laterTimer)
+			laterTimer = window.setTimeout(function() {
+				var l = later;
+				later = [];
+				laterTimer = null;
+				scan(l, false);
+			}, 450);
+
 		/* write phase */
 		for (var j = 0; j < todo.length; j++) {
 			if (todo[j][1])
@@ -342,6 +371,35 @@
 			else
 				todo[j][0].removeAttribute('data-nfx');
 		}
+	}
+
+	/* re-check elements whose classes / colours changed. While their tag is
+	   dropped and set again, transitions are held off (data-nfx-hold), so the
+	   app's own colour never animates in for a frame — no blinking. */
+	var held = [];
+
+	function recheck(list) {
+		list = list.filter(function(el, i, a) { return el.isConnected && a.indexOf(el) == i; });
+
+		if (!list.length)
+			return;
+
+		list.forEach(function(el) {
+			el.setAttribute('data-nfx-hold', '');
+			el.removeAttribute('data-nfx');
+		});
+
+		scan(list, true);
+
+		held.push.apply(held, list);
+
+		window.requestAnimationFrame(function() {
+			window.requestAnimationFrame(function() {
+				var h = held;
+				held = [];
+				h.forEach(function(el) { el.removeAttribute('data-nfx-hold'); });
+			});
+		});
 	}
 
 	function scope() {
@@ -355,66 +413,53 @@
 		return list;
 	}
 
-	var pendingNodes = [], pendingRe = [], timer = null;
+	/* mutations are handled in the observer callback itself, which runs before
+	   the browser paints: new nodes never show up in the app's colours first */
+	function onMutations(muts) {
+		var added = [], changed = [];
 
-	function flush() {
-		timer = null;
+		for (var i = 0; i < muts.length; i++) {
+			var m = muts[i];
 
-		/* re-evaluate changed elements: drop our tag first so their own colours show */
-		if (pendingRe.length) {
-			var re = pendingRe.filter(function(el, i, a) { return a.indexOf(el) == i && el.isConnected; });
-			pendingRe = [];
-			re.forEach(function(el) { el.removeAttribute('data-nfx'); });
-			scan(re, true);
+			if (m.type == 'childList') {
+				for (var j = 0; j < m.addedNodes.length; j++)
+					if (m.addedNodes[j].nodeType == 1)
+						added.push(m.addedNodes[j]);
+			}
+			else if (m.target.nodeType == 1 && !m.target.closest(SKIP)) {
+				var el = m.target;
+
+				if (sigs.get(el) !== signature(el))
+					changed.push(el);
+			}
 		}
 
-		if (pendingNodes.length) {
-			var nodes = pendingNodes;
-			pendingNodes = [];
+		if (changed.length)
+			recheck(changed);
 
+		if (added.length) {
 			var list = [];
-			nodes.forEach(function(n) { if (n.nodeType == 1 && n.isConnected) list.push.apply(list, all(n)); });
+			added.forEach(function(n) { if (n.isConnected) list.push.apply(list, all(n)); });
 			scan(list, false);
 		}
-	}
-
-	function queue() {
-		if (!timer)
-			timer = window.setTimeout(flush, 120);
 	}
 
 	function start() {
 		scan(all(scope()), false);
 
-		/* modals and popups that apps append to <body> */
+		/* modals, popups and overlays that apps append to <body> */
 		Array.prototype.forEach.call(document.body.children, function(n) {
 			if (n !== scope() && !n.matches('header, .shell, footer, script, style') && !n.contains(scope()))
 				scan(all(n), false);
 		});
 
-		new MutationObserver(function(muts) {
-			for (var i = 0; i < muts.length; i++) {
-				var m = muts[i];
-
-				if (m.type == 'childList') {
-					for (var j = 0; j < m.addedNodes.length; j++)
-						if (m.addedNodes[j].nodeType == 1)
-							pendingNodes.push(m.addedNodes[j]);
-				}
-				else if (m.target.nodeType == 1 && !m.target.closest(SKIP)) {
-					pendingRe.push(m.target);
-				}
-			}
-
-			if (pendingNodes.length || pendingRe.length)
-				queue();
-		}).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+		new MutationObserver(onMutations)
+			.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
 
 		/* a scheme switch changes the palette: re-check every tagged element */
 		document.addEventListener('404mode-scheme', function() {
 			paletteKey = '';
-			pendingRe.push.apply(pendingRe, document.querySelectorAll('[data-nfx]'));
-			queue();
+			recheck(Array.prototype.slice.call(document.querySelectorAll('[data-nfx]')));
 		});
 	}
 
@@ -423,9 +468,9 @@
 	else
 		start();
 
+	/* late styles (fonts, app CSS loaded after the page) */
 	window.addEventListener('load', function() {
-		pendingNodes.push(scope());
 		seen = new WeakSet();
-		queue();
+		scan(all(scope()), false);
 	});
 })();

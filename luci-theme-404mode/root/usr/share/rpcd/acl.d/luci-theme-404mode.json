@@ -1,0 +1,10 @@
+{
+	"luci-theme-404mode": {
+		"description": "404 Mode theme: header brief (weather, rates, headlines)",
+		"read": {
+			"ubus": {
+				"404mode": [ "weather", "rates", "news" ]
+			}
+		}
+	}
+}
