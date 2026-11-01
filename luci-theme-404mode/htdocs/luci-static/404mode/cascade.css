@@ -5324,7 +5324,7 @@ html[data-theme] body[theme] {
 
 html[data-theme="dark"] body,
 html[data-theme="dark"] body[theme] {
-	--qs-chart-filter: grayscale(1) contrast(1.3) brightness(1.15);
+	--qs-chart-filter: grayscale(1) contrast(1.45) brightness(1.15);
 }
 
 #app .page-container {
@@ -5449,7 +5449,7 @@ html[data-theme="dark"] body[theme] {
 /* state pills (uptime, link speed, running): the state colour as text on the
    raised tone instead of a pastel green block; never wrap the figure */
 #app .status_time,
-#app .speed,
+#app .content .speed,
 #app .status-icon,
 #app .tab .memory,
 #app .item .info .name > span,
@@ -5527,10 +5527,15 @@ html[data-theme="dark"] body[theme] {
 
 /* ECharts (traffic graph, system gauges) draw blue/violet on canvas:
    one neutral tone, and the legend swatches get the very same filter */
+/* the traffic chart sits straight on the panel: no box around it; in light
+   schemes the chart's own white canvas melts into the panel (multiply) */
 #app .echart {
-	background: var(--n-input-bg);
-	border: 1px solid var(--qs-edge);
+	background: transparent;
+	border: 0;
 }
+
+html[data-theme="light"] #app .echart canvas { mix-blend-mode: multiply; }
+html[data-theme="dark"] #app .echart canvas { mix-blend-mode: lighten; }
 
 #app .title_box svg [fill]:not([fill="none"]),
 #app .title_box svg path { fill: var(--qs-icon) !important; }
@@ -6264,7 +6269,7 @@ html.no-fx .ns-amb i { animation: none; }
 	width: 108%;
 	height: 108%;
 	object-fit: cover;
-	opacity: .42;
+	opacity: .48;
 	filter: saturate(.85);
 }
 
@@ -6394,3 +6399,178 @@ html.no-fx .ns-slide.on .ns-img { animation: none; }
 [data-nfx~="t-ok"]:not(#\#):not(#\#) { color: var(--n-green) !important; }
 [data-nfx~="t-bad"]:not(#\#):not(#\#) { color: var(--n-magenta) !important; }
 [data-nfx~="t-warn"]:not(#\#):not(#\#) { color: var(--n-rust) !important; }
+
+
+/* LuCI's .label badge style must not dress up an overlay app's own
+   <span class="label"> captions */
+[data-nfx~="overlay"]:not(#\#) .label {
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: none !important;
+	box-shadow: none !important;
+	font: inherit !important;
+	letter-spacing: normal !important;
+	text-transform: none !important;
+}
+
+/* ring charts in overlay cards: no inline baseline gap under the svg */
+[data-nfx~="overlay"] .circular-progress svg,
+[data-nfx~="overlay"] svg[data-nfx~="chart"] { display: block; }
+
+.ns-dots b {
+	font-family: var(--n-font);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: .1em;
+	color: var(--n-text-dim);
+}
+
+
+/* ==========================================================================
+ * LuCI overlay (luci-overlay.js): screensaver clock + system cards, and the
+ * "please wait" screen. Styled by its own class names, so it looks right
+ * from the first frame.
+ * ========================================================================== */
+
+.luci-overlay:not([data-nfx-saver]) {
+	background: rgba(var(--n-bg-rgb), .88) !important;
+}
+
+.luci-overlay .luci-overlay-content {
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	font-family: var(--n-font-ui) !important;
+}
+
+.luci-overlay .luci-overlay-title,
+.luci-overlay .luci-overlay-time-display {
+	color: var(--n-heading) !important;
+	font-family: var(--n-font-ui) !important;
+	text-shadow: none !important;
+	-webkit-text-fill-color: currentColor !important;
+	background: none !important;
+}
+
+.luci-overlay .luci-overlay-time-display {
+	margin-bottom: 22px !important;
+	font-weight: 600 !important;
+	letter-spacing: -.03em;
+	font-variant-numeric: tabular-nums;
+}
+
+.luci-overlay .luci-overlay-message:not(:has(.luci-overlay-cards)) { color: var(--n-yellow) !important; }
+.luci-overlay .luci-overlay-tips { color: var(--n-text-dim) !important; border-top-color: var(--n-line) !important; }
+.luci-overlay .luci-overlay-spinner { border-color: var(--n-line-strong) !important; border-top-color: var(--n-cyan) !important; }
+.luci-overlay .luci-overlay-progress { background: var(--n-line) !important; border-radius: 0 !important; }
+.luci-overlay .luci-overlay-progress-bar { background: var(--n-cyan) !important; border-radius: 0 !important; }
+.luci-overlay .luci-overlay-progress-text { color: var(--n-text) !important; text-shadow: none !important; }
+
+.luci-overlay .luci-overlay-cards { gap: 14px !important; }
+
+.luci-overlay .luci-overlay-card {
+	color: var(--n-text) !important;
+	background: rgba(var(--n-panel-rgb), .64) !important;
+	-webkit-backdrop-filter: blur(18px) saturate(1.15);
+	backdrop-filter: blur(18px) saturate(1.15);
+	border: 1px solid var(--n-line) !important;
+	border-radius: 16px !important;
+	box-shadow: 0 12px 32px rgba(0, 0, 0, .28) !important;
+	padding: 14px 18px !important;
+	font-family: var(--n-font-ui) !important;
+	text-align: left;
+}
+
+.luci-overlay .card-header { gap: 10px; margin-bottom: 8px !important; }
+
+/* one line icon per card, drawn in the accent; the emoji in a coloured
+   circle is hidden */
+.luci-overlay .card-icon {
+	width: 18px !important;
+	height: 18px !important;
+	margin: 0 !important;
+	font-size: 0 !important;
+	border-radius: 0 !important;
+	background: var(--n-cyan) !important;
+	-webkit-mask: var(--lo-ico) center / contain no-repeat;
+	mask: var(--lo-ico) center / contain no-repeat;
+}
+
+.luci-overlay .card-title {
+	margin: 0 !important;
+	font-family: var(--n-font-ui) !important;
+	font-size: 15px !important;
+	font-weight: 600 !important;
+	letter-spacing: .01em;
+	color: var(--n-heading) !important;
+	text-shadow: none !important;
+}
+
+.luci-overlay .status-item {
+	gap: 14px;
+	padding: 4px 0 !important;
+	font-size: 14px !important;
+	line-height: 1.3 !important;
+	border-top: 1px solid var(--n-line);
+}
+
+.luci-overlay .status-item:first-child { border-top: 0; }
+
+.luci-overlay .status-item .label {
+	margin: 0 !important;
+	padding: 0 !important;
+	font: inherit !important;
+	font-size: 13px !important;
+	text-transform: none !important;
+	letter-spacing: 0 !important;
+	color: var(--n-text-dim) !important;
+	background: none !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	text-shadow: none !important;
+}
+
+.luci-overlay .status-item .value {
+	font-family: var(--n-font-ui) !important;
+	font-weight: 600 !important;
+	font-variant-numeric: tabular-nums;
+	color: var(--n-heading) !important;
+	text-shadow: none !important;
+}
+
+/* the app colours values by state inline: keep the meaning, theme colours */
+.luci-overlay .value[style*="4CAF50" i],
+.luci-overlay .value[style*="52c41a" i] { color: var(--n-green) !important; }
+.luci-overlay .value[style*="f44336" i],
+.luci-overlay .value[style*="f5222d" i] { color: var(--n-magenta) !important; }
+.luci-overlay .value[style*="ff9800" i],
+.luci-overlay .value[style*="faad14" i] { color: var(--n-rust) !important; }
+.luci-overlay .value[style*="1890ff" i],
+.luci-overlay .value[style*="2196F3" i] { color: var(--n-cyan) !important; }
+
+.luci-overlay .luci-overlay-card.cpu-card .card-content,
+.luci-overlay .luci-overlay-card.memory-card .card-content,
+.luci-overlay .luci-overlay-card.disk-card .card-content { gap: 22px !important; }
+
+.luci-overlay .circular-progress svg { display: block; }
+.luci-overlay .progress-ring-bg { stroke: var(--n-line-strong) !important; }
+.luci-overlay .progress-ring-circle { stroke: var(--n-cyan) !important; stroke-linecap: round; }
+.luci-overlay .circular-progress[data-color="#ff9800" i] .progress-ring-circle { stroke: var(--n-rust) !important; }
+.luci-overlay .circular-progress[data-color="#f44336" i] .progress-ring-circle { stroke: var(--n-magenta) !important; }
+
+.luci-overlay .progress-text {
+	font-family: var(--n-font-ui) !important;
+	font-size: 13px !important;
+	color: var(--n-heading) !important;
+	text-shadow: none !important;
+}
+
+.luci-overlay .value img { filter: grayscale(1); opacity: .8; }
+
+.luci-overlay .system-status-card { --lo-ico: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Ccircle%20cx=%2212%22%20cy=%2212%22%20r=%229%22/%3E%3Cpath%20d=%22M12%2011v6M12%207.5v.5%22/%3E%3C/svg%3E"); }
+.luci-overlay .cpu-card { --lo-ico: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%226%22%20y=%226%22%20width=%2212%22%20height=%2212%22%20rx=%221.5%22/%3E%3Cpath%20d=%22M9%202v4M15%202v4M9%2018v4M15%2018v4M2%209h4M2%2015h4M18%209h4M18%2015h4%22/%3E%3C/svg%3E"); }
+.luci-overlay .memory-card { --lo-ico: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%227%22%20width=%2218%22%20height=%2210%22%20rx=%221.5%22/%3E%3Cpath%20d=%22M7%207v10M11%207v10M15%207v10M6%2020v-3M18%2020v-3%22/%3E%3C/svg%3E"); }
+.luci-overlay .disk-card { --lo-ico: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cellipse%20cx=%2212%22%20cy=%226%22%20rx=%228%22%20ry=%223%22/%3E%3Cpath%20d=%22M4%206v12c0%201.7%203.6%203%208%203s8-1.3%208-3V6M4%2012c0%201.7%203.6%203%208%203s8-1.3%208-3%22/%3E%3C/svg%3E"); }
+.luci-overlay .modem-card { --lo-ico: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22M4%2020v-3M9%2020v-7M14%2020v-11M19%2020V5%22/%3E%3C/svg%3E"); }

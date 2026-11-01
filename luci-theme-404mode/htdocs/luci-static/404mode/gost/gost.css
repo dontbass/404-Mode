@@ -1732,7 +1732,7 @@ html[data-skin="gost"][data-theme] body[theme] {
 	--qs-edge: var(--g-edge);
 	--qs-edge-hover: var(--g-seam);
 	--qs-icon: var(--n-text-dim);
-	--qs-chart-filter: grayscale(1) sepia(.45) saturate(1.1) hue-rotate(-10deg) brightness(1.2) contrast(1.35);
+	--qs-chart-filter: grayscale(1) sepia(.45) saturate(1.1) hue-rotate(-10deg) brightness(1.1) contrast(1.6);
 }
 
 html[data-skin="gost"][data-theme="light"] body,
@@ -1801,11 +1801,11 @@ html[data-skin="gost"][data-theme="light"] body[theme] {
 	box-shadow: inset 0 1px 0 var(--g-btn-shine), 0 2px 0 var(--g-drop) !important;
 }
 
-/* instrument "screens" for the charts */
+/* the traffic chart sits straight on the plate, no well around it */
 [data-skin="gost"] #app .echart {
-	background: var(--g-well);
-	border: 1px solid var(--g-seam);
-	box-shadow: var(--g-inset), 0 1px 0 var(--g-edge-hi);
+	background: transparent;
+	border: 0;
+	box-shadow: none;
 }
 
 [data-skin="gost"] #app .extra.badge,

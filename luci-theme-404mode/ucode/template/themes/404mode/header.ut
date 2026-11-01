@@ -144,6 +144,35 @@
 				root.classList.add('nav-mini');
 
 			apply();
+
+			/* apps that pick dark / light from prefers-color-scheme (QuickStart
+			   charts, iStore, …) follow the theme's scheme instead of the OS */
+			if (mq) {
+				var native = window.matchMedia.bind(window);
+
+				window.matchMedia = function(q) {
+					if (!/prefers-color-scheme/.test(String(q)))
+						return native(q);
+
+					var want = /dark/.test(q) ? 'dark' : 'light', ls = [];
+					var mql = {
+						media: String(q), onchange: null,
+						get matches() { return root.getAttribute('data-theme') == want; },
+						addListener: function(f) { ls.push(f); },
+						removeListener: function(f) { ls = ls.filter(function(x) { return x !== f; }); },
+						addEventListener: function(t, f) { if (t == 'change') ls.push(f); },
+						removeEventListener: function(t, f) { ls = ls.filter(function(x) { return x !== f; }); },
+						dispatchEvent: function() { return true; }
+					};
+
+					document.addEventListener('404mode-scheme', function() {
+						var ev = { matches: mql.matches, media: mql.media };
+						ls.concat(mql.onchange ? [ mql.onchange ] : []).forEach(function(f) { try { f.call(mql, ev); } catch (e) {} });
+					});
+
+					return mql;
+				};
+			}
 		})();
 	</script>
 	<link rel="stylesheet" href="{{ media }}/cascade.css">

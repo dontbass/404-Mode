@@ -212,7 +212,13 @@ return baseclass.extend({
 		}
 
 		const cs = getComputedStyle(ov);
-		const shown = cs.display != 'none' && cs.visibility != 'hidden' && parseFloat(cs.opacity) > .05;
+
+		/* LuCI overlay (luci-overlay.js) is also the "please wait" screen:
+		   the board only goes behind its screensaver (clock + cards) */
+		const idle = !ov.classList.contains('luci-overlay') ||
+			!!ov.querySelector('.luci-overlay-cards, .luci-overlay-time-display');
+
+		const shown = idle && cs.display != 'none' && cs.visibility != 'hidden' && parseFloat(cs.opacity) > .05;
 
 		if (!shown) {
 			ov.removeAttribute('data-nfx-saver');
@@ -324,18 +330,25 @@ return baseclass.extend({
 		if (!wall || !d || !d.items || !d.items.length)
 			return;
 
+		/* pictures first: the wallpaper cycles through the headlines that
+		   have a photo, all of them only when there are too few */
+		const withImg = d.items.filter(x => x.i);
+		const pool = withImg.length >= 3 ? withImg : d.items;
+
 		if (next)
-			this.saverPage = (this.saverPage + 1) % d.items.length;
+			this.saverPage = (this.saverPage + 1) % pool.length;
 		else if (wall.querySelector('.ns-slide.on'))
 			return;
 
-		this.saverPage %= d.items.length;
+		this.saverPage %= pool.length;
 
-		const it = d.items[this.saverPage];
+		const it = pool[this.saverPage];
 		const slides = wall.querySelectorAll('.ns-slide');
 		const cur = wall.querySelector('.ns-slide.on');
 		const nxt = (cur === slides[0]) ? slides[1] : slides[0];
-		const dots = d.items.map((x, n) => '<i' + (n == this.saverPage ? ' class="on"' : '') + '></i>').join('');
+		const dots = pool.length <= 12
+			? pool.map((x, n) => '<i' + (n == this.saverPage ? ' class="on"' : '') + '></i>').join('')
+			: '<b>' + (this.saverPage + 1) + ' / ' + pool.length + '</b>';
 
 		const show = (img) => {
 			nxt.innerHTML =

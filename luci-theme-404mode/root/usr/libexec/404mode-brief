@@ -14,14 +14,26 @@
 
 'use strict';
 
-import { popen, writefile, mkdir, rename, unlink } from 'fs';
+import { popen, readfile, writefile, mkdir, rename, unlink } from 'fs';
 
 const DIR = '/tmp/404mode-brief';
 
-const NEWS = [
-	{ id: 'opennet', name: 'OpenNet', url: 'https://www.opennet.ru/opennews/opennews_all_utf.rss' },
-	{ id: 'habr',    name: 'Хабр',    url: 'https://habr.com/ru/rss/news/?fl=ru' }
+/* default feeds; /etc/404mode/feeds overrides them, one per line:
+ *   Name https://example.org/rss
+ * (empty lines and lines starting with # are skipped) */
+const NEWS_DEFAULT = [
+	{ name: 'Хабр',    url: 'https://habr.com/ru/rss/news/?fl=ru' },
+	{ name: '3DNews',  url: 'https://3dnews.ru/news/rss/' },
+	{ name: 'OpenNet', url: 'https://www.opennet.ru/opennews/opennews_all_utf.rss' },
+	{ name: 'iXBT',    url: 'https://www.ixbt.com/export/news.rss' },
+	{ name: 'Лента',   url: 'https://lenta.ru/rss/news' },
+	{ name: 'РБК',     url: 'https://rssexport.rbc.ru/rbcnews/news/30/full.rss' },
+	{ name: 'Интерфакс', url: 'https://www.interfax.ru/rss.asp' }
 ];
+
+const PER_FEED = 6;
+const MAX_ITEMS = 40;
+const OG_FETCH = 10;      /* article pages fetched per run for a missing picture */
 
 function shellquote(s) {
 	return "'" + replace(s, "'", "'\\''") + "'";
@@ -193,23 +205,151 @@ function get_rates() {
 	return res;
 }
 
+function feeds() {
+	const text = readfile('/etc/404mode/feeds');
+	const list = [];
+
+	if (text)
+		for (let line in split(text, '\n')) {
+			line = trim(line);
+
+			if (!length(line) || substr(line, 0, 1) == '#')
+				continue;
+
+			const m = match(line, /^(.*[^ \t])[ \t]+(https?:\/\/[^ \t]+)$/);
+
+			if (m)
+				push(list, { name: m[1], url: m[2] });
+		}
+
+	return length(list) ? list : NEWS_DEFAULT;
+}
+
+/* some Russian feeds are still windows-1251: convert them to UTF-8 */
+/* bytes 0x80..0xBF (0 = unmapped); 0xC0..0xFF are А..я */
+const CP1251_HI = [
+	0x0402, 0x0403, 0x201A, 0x0453, 0x201E, 0x2026, 0x2020, 0x2021,
+	0x20AC, 0x2030, 0x0409, 0x2039, 0x040A, 0x040C, 0x040B, 0x040F,
+	0x0452, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
+	0x0000, 0x2122, 0x0459, 0x203A, 0x045A, 0x045C, 0x045B, 0x045F,
+	0x00A0, 0x040E, 0x045E, 0x0408, 0x00A4, 0x0490, 0x00A6, 0x00A7,
+	0x0401, 0x00A9, 0x0404, 0x00AB, 0x00AC, 0x00AD, 0x00AE, 0x0407,
+	0x00B0, 0x00B1, 0x0406, 0x0456, 0x0491, 0x00B5, 0x00B6, 0x00B7,
+	0x0451, 0x2116, 0x0454, 0x00BB, 0x0458, 0x0405, 0x0455, 0x0457
+];
+
+function utf8(cp) {
+	if (cp < 0x80) return chr(cp);
+	if (cp < 0x800) return chr(0xC0 | (cp >> 6), 0x80 | (cp & 0x3F));
+	return chr(0xE0 | (cp >> 12), 0x80 | ((cp >> 6) & 0x3F), 0x80 | (cp & 0x3F));
+}
+
+function to_utf8(xml) {
+	const head = substr(xml, 0, 200);
+
+	if (!match(head, /encoding=["'](windows-1251|cp1251)["']/i))
+		return xml;
+
+	const out = [];
+
+	for (let i = 0; i < length(xml); i++) {
+		const b = ord(xml, i);
+
+		if (b < 0x80)
+			push(out, chr(b));
+		else if (b >= 0xC0)
+			push(out, utf8(0x0410 + b - 0xC0));
+		else if (CP1251_HI[b - 0x80])
+			push(out, utf8(CP1251_HI[b - 0x80]));
+	}
+
+	return join('', out);
+}
+
+/* og:image of an article page, for feeds that carry no pictures */
+function og_image(url) {
+	const p = popen('uclient-fetch -q -T 6 -O - ' + shellquote(url) + ' 2>/dev/null | head -c 131072', 'r');
+
+	if (!p)
+		return null;
+
+	const html = p.read('all');
+	p.close();
+
+	if (!html)
+		return null;
+
+	let m = match(html, /<meta[^>]+property=["']og:image["'][^>]*content=["']([^"']+)["']/);
+
+	if (!m)
+		m = match(html, /<meta[^>]+content=["']([^"']+)["'][^>]*property=["']og:image["']/);
+
+	const img = m ? replace(m[1], /&amp;/g, '&') : null;
+
+	return (img && match(img, /^https:\/\//) && length(img) < 400 && !match(img, /[ <>'\\]/)) ? img : null;
+}
+
 function get_news() {
 	const lists = [];
 
-	for (let src in NEWS) {
+	for (let src in feeds()) {
 		const xml = fetch(src.url);
-		push(lists, xml ? rss_items(xml, src, 8) : []);
+		push(lists, xml ? rss_items(to_utf8(xml), src, PER_FEED) : []);
 	}
 
 	/* interleave the sources */
 	const items = [];
 
-	for (let i = 0; i < 8; i++)
+	for (let i = 0; i < PER_FEED; i++)
 		for (let l in lists)
-			if (l[i])
+			if (l[i] && length(items) < MAX_ITEMS)
 				push(items, l[i]);
 
-	return length(items) ? { items } : null;
+	if (!length(items))
+		return null;
+
+	/* pictures found earlier are kept per link, so pages are fetched once */
+	let known = {};
+
+	try { known = json(readfile(DIR + '/news-img.json') ?? '{}') ?? {}; } catch (e) { known = {}; }
+
+	let budget = OG_FETCH;
+	const seen = {};
+
+	for (let it in items) {
+		if (it.i) {
+			seen[it.l] = it.i;
+			continue;
+		}
+
+		if (exists(known, it.l)) {
+			if (known[it.l])
+				it.i = known[it.l];
+
+			seen[it.l] = known[it.l];
+			continue;
+		}
+
+		if (budget-- > 0) {
+			it.i = og_image(it.l);
+			seen[it.l] = it.i ?? false;
+		}
+	}
+
+	writefile(DIR + '/news-img.json', sprintf('%J', seen));
+
+	/* the same picture on several articles is a site logo, not a photo */
+	const count = {};
+
+	for (let it in items)
+		if (it.i)
+			count[it.i] = (count[it.i] ?? 0) + 1;
+
+	for (let it in items)
+		if (!it.i || count[it.i] > 1)
+			delete it.i;
+
+	return { items };
 }
 
 const kind = ARGV[0];

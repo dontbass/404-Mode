@@ -31,7 +31,7 @@
 		'.cbi-tooltip', '.cbi-dropdown', '.dropdown-menu', '.cbi-tabmenu',
 		'.tabs', '#tabmenu', '.cbi-page-actions', '.cbi-button.important',
 		'.btn.important', '#indicators', 'iframe', 'svg *', 'noscript',
-		'#app .tag_up', '#app .tag_dn'
+		'#app .tag_up', '#app .tag_dn', '.luci-overlay *'
 	].join(',');
 
 	var BTN = 'button, input[type="button"], input[type="submit"], input[type="reset"], a[class*="btn"], a[class*="button"], [role="button"], [class*="btn"], [class*="button"]';
@@ -333,6 +333,8 @@
 		'40101': [ 'Beeline', 'Beeline' ], '40102': [ 'Kcell', 'Kcell' ], '40107': [ 'Altel', 'Altel' ], '40177': [ 'Tele2', 'Tele2' ]
 	};
 
+	var OPSKIP = 'header.hud, .sidebar, footer, .n-saver, .n-ambient, script, style';
+
 	var PLMN_RE = /^\s*(\d{3})[\s-]?(\d{2,3})\s*$/;
 	var OPER_RE = /опера|operator|carrier|plmn|провайдер/i;
 
@@ -345,7 +347,7 @@
 		var name = PLMN[m[1] + m[2]];
 		var host = t.parentElement;
 
-		if (!name || !host || host.closest(SKIP))
+		if (!name || !host || host.closest(OPSKIP))
 			return;
 
 		/* the label sits in the same row: the parent or the one above it */
@@ -369,7 +371,7 @@
 		if (node.nodeType == 3)
 			return opfixText(node);
 
-		if (node.nodeType != 1 || (node.closest && node.closest(SKIP)) || !/\d{5}/.test(node.textContent || ''))
+		if (node.nodeType != 1 || (node.closest && node.closest(OPSKIP)) || !/\d{5}/.test(node.textContent || ''))
 			return;
 
 		var w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT), t;
@@ -390,6 +392,20 @@
 		var st = el.style || {};
 		return (el.getAttribute('class') || '') + '|' + (st.background || '') + '|' + (st.backgroundColor || '') + '|' +
 			(st.backgroundImage || '') + '|' + (st.color || '') + '|' + (st.borderColor || '') + '|' + (st.border || '');
+	}
+
+	/* outlines and glows an overlay app sets inline (even !important) */
+	function stripInline() {
+		var els = document.querySelectorAll('[data-nfx~="overlay"] [style*="text-shadow"], [data-nfx~="overlay"] [style*="stroke"], [data-nfx~="overlay"] [style*="filter"]');
+
+		for (var i = 0; i < els.length; i++) {
+			var st = els[i].style;
+			st.removeProperty('text-shadow');
+			st.removeProperty('-webkit-text-stroke');
+
+			if (!/^(svg|canvas|img|circle|path)$/i.test(els[i].tagName) && /drop-shadow/.test(st.filter || ''))
+				st.removeProperty('filter');
+		}
 	}
 
 	var later = [], laterTimer = null;
@@ -448,6 +464,8 @@
 			if (todo[j][1] == 'overlay')
 				document.dispatchEvent(new CustomEvent('404mode-overlay', { detail: todo[j][0] }));
 		}
+
+		stripInline();
 	}
 
 	/* re-check elements whose classes / colours changed. While their tag is

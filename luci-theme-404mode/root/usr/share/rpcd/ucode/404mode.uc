@@ -47,7 +47,7 @@ function answer(key, ttl, cmd) {
 	const lock = stat(DIR + '/' + key + '.lock');
 	let res = null;
 
-	if ((!st || time() - st.mtime >= ttl) && !(lock && time() - lock.mtime < 40))
+	if ((!st || time() - st.mtime >= ttl) && !(lock && time() - lock.mtime < 180))
 		system(BIN + ' ' + cmd + ' >/dev/null 2>&1 </dev/null &');
 
 	if (st)
