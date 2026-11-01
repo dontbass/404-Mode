@@ -25,7 +25,7 @@
 
 	/* chrome and LuCI widgets the theme already paints */
 	var SKIP = [
-		'header.hud', '.sidebar', 'footer', '.hud-ticker', '.shell-mask', '.n-ambient',
+		'header.hud', '.sidebar', 'footer', '.hud-ticker', '.shell-mask', '.n-ambient', '.n-saver',
 		'.gd', '.gost-plate', '.gost-radar', '.login', '.login-mark',
 		'.alert-message', '.cbi-progressbar', '.ifacebox', '.zonebadge',
 		'.cbi-tooltip', '.cbi-dropdown', '.dropdown-menu', '.cbi-tabmenu',
@@ -207,7 +207,8 @@
 		/* full-screen foreign backdrop (screensavers, kiosk views): theme ground
 		   underneath, so the cards and text repainted on top stay readable */
 		if (cs.position == 'fixed' && w >= innerWidth * .9 && h >= innerHeight * .9 &&
-		    ((bg && bg.a >= .85 && !themed(bg, true)) || grad.length) &&
+		    ((bg && bg.a >= .5 && !themed(bg, true)) || grad.length ||
+		     (cs.backdropFilter && cs.backdropFilter != 'none') || (cs.webkitBackdropFilter && cs.webkitBackdropFilter != 'none')) &&
 		    !el.matches('#modal_overlay, .shell-mask')) {
 			cards.add(el);
 			return 'overlay';
@@ -232,6 +233,12 @@
 		isBtn = isBtn && el.matches(BTN) && h > 0 && h <= 64 && w <= 420 &&
 			(tag == 'BUTTON' || tag == 'INPUT' || tag == 'A' || el.textContent.trim().length > 0) &&
 			!el.querySelector('button, input, select, textarea');
+
+		/* an icon in a little framed square: keep the glyph, drop the frame */
+		if (!isForm && !isBtn && w >= 10 && w <= 36 && h >= 10 && h <= 36 && Math.abs(w - h) <= 8 && inCard(el) &&
+		    (el.querySelector('img, svg, i, span') || (el.textContent.trim().length > 0 && el.textContent.trim().length <= 2)) &&
+		    ((bg && bg.a > .05) || grad.length || parseFloat(cs.borderTopWidth) > 0))
+			return 'icon';
 
 		if (isBtn) {
 			var tcb = parse(cs.color);
@@ -268,12 +275,16 @@
 
 			var card = inCard(el) || tags.indexOf('surface') > -1 || tags.indexOf('note') > -1;
 
-			if (tc && tc.a >= .95 && (card || !themed(tc))) {
+			/* in a repainted card even half-transparent labels need our ink,
+			   otherwise white-on-glass captions vanish on a light card */
+			if (tc && (tc.a >= .95 || (card && tc.a >= .25)) && (card || !themed(tc))) {
 				var k3 = hsl(tc);
 
 				/* pale tints (lime, light yellow, sky) are highlights, not warnings */
-				if (k3.c > .2)
+				if (k3.c > .2 && tc.a >= .6)
 					tags.push('t-' + (k3.l > .72 ? 'acc' : hue(tc)));
+				else if (tc.a < .95 || (cs.textTransform == 'uppercase' && parseFloat(cs.fontSize) <= 13))
+					tags.push('ink-dim');
 				else
 					tags.push((parseInt(cs.fontWeight, 10) >= 600 && parseFloat(cs.fontSize) >= 15) ? 'ink-strong' : 'ink');
 			}
@@ -370,6 +381,9 @@
 				todo[j][0].setAttribute('data-nfx', todo[j][1]);
 			else
 				todo[j][0].removeAttribute('data-nfx');
+
+			if (todo[j][1] == 'overlay')
+				document.dispatchEvent(new CustomEvent('404mode-overlay', { detail: todo[j][0] }));
 		}
 	}
 

@@ -1844,3 +1844,14 @@ html[data-skin="gost"][data-theme="light"] body[theme] {
 
 [data-skin="gost"] .hb-ico { color: var(--g-amber); }
 [data-skin="gost"] .hb-src { color: var(--g-red); }
+
+/* screensaver board: enamel / steel plates with soft corners */
+[data-skin="gost"] .ns-panel {
+	background: color-mix(in srgb, var(--g-steel-2) 82%, transparent);
+	border: 1px solid var(--g-seam);
+	box-shadow: inset 0 1px 0 var(--g-edge-hi), 0 8px 24px var(--g-cast);
+}
+
+[data-skin="gost"] .ns-panel h4 { font-family: var(--n-font-ui); letter-spacing: .08em; }
+[data-skin="gost"] .ns-temp { font-family: var(--n-font-ui); font-weight: 400; }
+[data-skin="gost"] .ns-wx-main .hb-ico { color: var(--g-amber); }

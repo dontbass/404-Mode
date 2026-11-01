@@ -28,9 +28,11 @@ const ROOT = document.documentElement;
 
 const T = RU ? {
 	feels: 'ощущается', wind: 'ветер', ms: 'м/с', city: 'Город', rates: 'Курс ЦБ на',
+	s_rates: 'Курс ЦБ', s_news: 'Новости', s_wx: 'Погода', locale: 'ru-RU',
 	wx: { clear: 'ясно', cloud: 'облачно', fog: 'туман', drizzle: 'морось', rain: 'дождь', snow: 'снег', storm: 'гроза' }
 } : {
 	feels: 'feels like', wind: 'wind', ms: 'm/s', city: 'City', rates: 'CBR rate for',
+	s_rates: 'CBR rates', s_news: 'Headlines', s_wx: 'Weather', locale: 'en-US',
 	wx: { clear: 'clear', cloud: 'cloudy', fog: 'fog', drizzle: 'drizzle', rain: 'rain', snow: 'snow', storm: 'storm' }
 };
 
@@ -155,6 +157,142 @@ return baseclass.extend({
 		}, 5 * 60e3);
 
 		window.setInterval(() => this.rotateNews(), 9000);
+
+		/* full-screen foreign overlays (screensavers): a live board behind them */
+		document.addEventListener('404mode-overlay', ev => this.attachSaver(ev.detail));
+		document.querySelectorAll('[data-nfx~="overlay"]').forEach(el => this.attachSaver(el));
+	},
+
+	/* ---------- screensaver board ---------- */
+
+	attachSaver(ov) {
+		if (!ov || this.saverFor === ov)
+			return;
+
+		this.saverFor = ov;
+
+		if (!this.saver) {
+			this.saver = document.createElement('div');
+			this.saver.className = 'n-saver';
+			this.saver.setAttribute('aria-hidden', 'true');
+			this.saver.innerHTML =
+				'<div class="ns-amb"><i></i><i></i><i></i></div>' +
+				'<div class="ns-board">' +
+					'<section class="ns-panel ns-wx" hidden></section>' +
+					'<section class="ns-panel ns-fx" hidden></section>' +
+					'<section class="ns-panel ns-news" hidden></section>' +
+				'</div>';
+			this.saverPage = 0;
+			this.saverTick = 0;
+		}
+
+		if (!this.saverTimer)
+			this.saverTimer = window.setInterval(() => this.syncSaver(), 1000);
+
+		this.syncSaver();
+	},
+
+	/* follow the overlay: shown, hidden, re-created or gone */
+	syncSaver() {
+		const ov = this.saverFor;
+
+		if (!ov || !ov.isConnected) {
+			const again = document.querySelector('[data-nfx~="overlay"]');
+
+			if (again && again !== ov) {
+				this.saverFor = again;
+				return this.syncSaver();
+			}
+
+			this.saver.remove();
+			window.clearInterval(this.saverTimer);
+			this.saverTimer = null;
+			this.saverFor = null;
+			return;
+		}
+
+		const cs = getComputedStyle(ov);
+		const shown = cs.display != 'none' && cs.visibility != 'hidden' && parseFloat(cs.opacity) > .05;
+
+		if (!shown) {
+			ov.removeAttribute('data-nfx-saver');
+			this.saver.remove();
+			return;
+		}
+
+		if (this.saver.nextSibling !== ov) {
+			ov.parentNode.insertBefore(this.saver, ov);
+			this.saver.style.zIndex = (cs.zIndex == 'auto') ? '' : cs.zIndex;
+			this.renderSaver();
+		}
+
+		ov.setAttribute('data-nfx-saver', '');
+
+		/* headlines page every 12 s */
+		if (++this.saverTick % 12 == 0)
+			this.renderSaverNews(true);
+	},
+
+	renderSaver() {
+		if (!this.saver)
+			return;
+
+		this.saverTick = this.saverTick || 0;
+
+		const wx = this.data.wx, fx = this.data.rates;
+		const panel = this.saver.querySelector('.ns-wx');
+
+		if (wx && !wx.error) {
+			const kind = wxKind(wx.code);
+			const ico = (kind == 'clear') ? (wx.day === 0 ? 'moon' : 'sun') : kind;
+			const t = Math.round(wx.t);
+			const date = new Date().toLocaleDateString(T.locale, { weekday: 'long', day: 'numeric', month: 'long' });
+
+			panel.innerHTML =
+				'<div class="ns-wx-main">' + icon(ico) +
+					'<span class="ns-temp">' + (t > 0 ? '+' : '') + t + '°</span></div>' +
+				'<div class="ns-wx-side">' +
+					'<b>' + esc(wx.city) + '</b>' +
+					'<span>' + esc(T.wx[kind]) + '</span>' +
+					'<span>' + esc(T.feels) + ' ' + Math.round(wx.feels) + '°, ' + esc(T.wind) + ' ' + num(wx.wind, 1) + ' ' + esc(T.ms) + '</span>' +
+					'<span class="ns-date">' + esc(date) + '</span>' +
+				'</div>';
+			panel.hidden = false;
+		}
+
+		const fxp = this.saver.querySelector('.ns-fx');
+
+		if (fx && fx.list && fx.list.length) {
+			fxp.innerHTML = '<h4>' + esc(T.s_rates) + '</h4>' + fx.list.map(r => {
+				const diff = r.v - r.p;
+				const dir = Math.abs(diff) < 0.005 ? 'eq' : (diff > 0 ? 'up' : 'dn');
+
+				return '<div class="ns-rate"><span>' + esc(r.code) + '</span><b>' + num(r.v, 2) + '</b>' +
+					'<i class="hb-' + dir + '">' + (dir == 'up' ? '▲ ' : dir == 'dn' ? '▼ ' : '') +
+					(dir == 'eq' ? '—' : num(Math.abs(diff), 2)) + '</i></div>';
+			}).join('');
+			fxp.hidden = false;
+		}
+
+		this.renderSaverNews(false);
+	},
+
+	renderSaverNews(next) {
+		const d = this.data.news, box = this.saver && this.saver.querySelector('.ns-news');
+
+		if (!box || !d || !d.items || !d.items.length)
+			return;
+
+		const per = 4, pages = Math.ceil(d.items.length / per);
+
+		if (next)
+			this.saverPage = (this.saverPage + 1) % pages;
+
+		const items = d.items.slice(this.saverPage * per, this.saverPage * per + per);
+
+		box.innerHTML = '<h4>' + esc(T.s_news) + '</h4><ol>' + items.map(it =>
+			'<li><span class="hb-src">' + esc(it.s) + '</span><span>' + esc(it.t) + '</span></li>').join('') + '</ol>';
+		box.hidden = false;
 	},
 
 	city() {
@@ -207,6 +345,9 @@ return baseclass.extend({
 			this.renderNews(d, true);
 
 		this.box.hidden = !(this.data.wx || this.data.rates || this.data.news);
+
+		if (this.saver && this.saver.isConnected)
+			this.renderSaver();
 	},
 
 	renderWeather(d) {
