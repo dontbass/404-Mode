@@ -181,11 +181,26 @@
 	<aside class="sidebar" id="sidebar">
 		<div class="sidebar-scan" aria-hidden="true"></div>
 		{% if (gost): %}
+		{# OpenWrt mark: shape from the official logo shipped with LuCI (Apache-2.0), restyled #}
 		<div class="gost-plate" aria-hidden="true">
-			<img class="gost-plate-art" src="{{ media }}/gost/van.svg" alt="">
-			<span class="gost-plate-tag gost-plate-tag-l">СТС &#x2022; {{ distver || '24' }}</span>
-			<span class="gost-plate-tag gost-plate-tag-r">ГОСТ-{{ distmajor }}</span>
-			<span class="gost-plate-title">OPEN<i>_</i>WRT <b>{{ distmajor }}</b></span>
+			<svg class="gm" viewBox="-14 -6 110 110" aria-hidden="true">
+				<circle class="gm-disc" cx="41" cy="48" r="53"/>
+				<circle class="gm-groove" cx="41" cy="48" r="47"/>
+				<path class="gm-ring" d="M64.9 39.7a30.2 30.2 0 1 1-48.7 0l-6.9-7a39.9 39.9 0 1 0 62.5 0z"/>
+				<path class="gm-arc gm-a1" d="M0 16.9l7 6.8a47.5 47.5 0 0 1 67.2 0l7-6.8a57.2 57.2 0 0 0-81.2 0"/>
+				<path class="gm-arc gm-a2" d="M12.5 29.2l6.8 7a30 30 0 0 1 42.6 0l6.8-7a39.7 39.7 0 0 0-56.3 0"/>
+				<path class="gm-arc gm-a3" d="M24.8 41.6l6.8 6.9a12.6 12.6 0 0 1 18 0l6.8-6.9a22.3 22.3 0 0 0-31.6 0"/>
+				<path class="gm-dot" d="M40.5 50.8a6.6 6.6 0 1 0 0 13.2 6.6 6.6 0 0 0 0-13.2"/>
+			</svg>
+			<div class="gost-plate-text">
+				<span class="gost-plate-tags">
+					<span class="gost-plate-tag gost-plate-tag-l">СТС &#x2022; {{ distver || '24' }}</span>
+					<span class="gost-plate-tag gost-plate-tag-r">ГОСТ-{{ distmajor }}</span>
+				</span>
+				<span class="gost-plate-title">OPEN<i>_</i>WRT</span>
+				<span class="gost-plate-num">{{ distmajor }}</span>
+				<span class="gost-plate-sub">{{ T.uplink }}: {{ T.uplink_state }}</span>
+			</div>
 		</div>
 		{% endif %}
 		<nav id="mainmenu" style="display:none"></nav>
