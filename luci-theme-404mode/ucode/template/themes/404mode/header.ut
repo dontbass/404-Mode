@@ -154,6 +154,14 @@
 </head>
 
 <body class="lang_{{ dispatcher.lang }} {{ blank_page ? 'page-blank' : '' }} {{ ctx.authsession ? 'logged-in' : '' }} {{ entityencode(striptags(node?.title ?? ''), true) }}" data-page="{{ entityencode(join('-', ctx.request_path), true) }}">
+<script>
+	/* apps that follow LuCI's theme via <body theme=…> (iStoreOS QuickStart, iStore) */
+	(function(b, r) {
+		var sync = function() { b.setAttribute('theme', r.getAttribute('data-theme') || 'dark'); };
+		sync();
+		document.addEventListener('404mode-scheme', sync);
+	})(document.body, document.documentElement);
+</script>
 {% if (!blank_page): %}
 <header class="hud">
 	<button type="button" class="hud-toggle" id="nav-toggle" aria-label="Menu" aria-controls="sidebar" aria-expanded="false">

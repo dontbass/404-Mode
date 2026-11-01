@@ -1631,3 +1631,91 @@ body.gd-on #view.gd-grid .table { overflow-x: auto; }
 	.gt-well { display: none; }
 	.gt { left: 140px; }
 }
+
+/* ---------- iStoreOS QuickStart ---------- */
+
+html[data-skin="gost"][data-theme] body,
+html[data-skin="gost"][data-theme] body[theme] {
+	--qs-surface: var(--g-steel-2);
+	--qs-raised: var(--g-steel-3);
+	--qs-edge: var(--g-edge);
+	--qs-edge-hover: var(--g-seam);
+	--qs-icon: var(--n-text-dim);
+	--qs-chart-filter: grayscale(1) sepia(.45) saturate(1.1) hue-rotate(-10deg) brightness(1.2) contrast(1.35);
+}
+
+html[data-skin="gost"][data-theme="light"] body,
+html[data-skin="gost"][data-theme="light"] body[theme] {
+	--qs-chart-filter: grayscale(1) sepia(.22) saturate(.9) contrast(1.15);
+}
+
+/* riveted plates, like every other panel of the skin */
+[data-skin="gost"] #app .reusable-card,
+[data-skin="gost"] #app .network_container,
+[data-skin="gost"] #app .feature-card,
+[data-skin="gost"] #app .app-container {
+	background-color: var(--g-steel-2) !important;
+	background-image: var(--g-rivet), var(--g-rivet), var(--g-rivet), var(--g-rivet) !important;
+	background-size: 14px 14px !important;
+	background-position: 0 0, 100% 0, 0 100%, 100% 100% !important;
+	background-repeat: no-repeat !important;
+	border: 1px solid var(--g-edge) !important;
+	border-radius: 2px !important;
+	box-shadow: inset 0 1px 0 var(--g-edge-hi), inset 0 0 0 1px var(--g-inner) !important;
+}
+
+[data-skin="gost"] #app .feature-card:hover { background-color: var(--g-steel-3) !important; }
+
+[data-skin="gost"] #app .card-header,
+[data-skin="gost"] #app .title_box,
+[data-skin="gost"] #app .title { font-family: var(--n-font-ui); letter-spacing: .01em; }
+
+/* quick links are the skin's metal buttons (as in the sidebar), no stripe */
+[data-skin="gost"] #app .item_container .item,
+[data-skin="gost"] #app .grid-item .item {
+	background: var(--g-btn-lo) !important;
+	background-image: linear-gradient(180deg, var(--g-btn-hi), var(--g-btn-lo)) !important;
+	border-color: var(--g-seam) !important;
+	border-radius: 2px !important;
+	box-shadow: inset 0 1px 0 var(--g-btn-shine), 0 2px 0 var(--g-drop) !important;
+}
+
+[data-skin="gost"] #app .item_container .item:hover,
+[data-skin="gost"] #app .grid-item .item:hover {
+	background-image: linear-gradient(180deg, var(--g-btn-hov-hi), var(--g-btn-hov-lo)) !important;
+}
+
+[data-skin="gost"] #app .item_container .item:active,
+[data-skin="gost"] #app .grid-item .item:active {
+	transform: translateY(1px);
+	box-shadow: var(--g-inset) !important;
+}
+
+[data-skin="gost"] #app .item1,
+[data-skin="gost"] #app .icon_box,
+[data-skin="gost"] #app .path {
+	background: var(--g-well) !important;
+	border-color: var(--g-seam) !important;
+	box-shadow: var(--g-inset) !important;
+}
+
+[data-skin="gost"] #app .device-manage-btn,
+[data-skin="gost"] #app .settings-btn,
+[data-skin="gost"] #app .btn_settings,
+[data-skin="gost"] #app .item_btn {
+	background: var(--g-btn-lo) !important;
+	background-image: linear-gradient(180deg, var(--g-btn-hi), var(--g-btn-lo)) !important;
+	border-color: var(--g-seam) !important;
+	border-radius: 2px !important;
+	box-shadow: inset 0 1px 0 var(--g-btn-shine), 0 2px 0 var(--g-drop) !important;
+}
+
+/* instrument "screens" for the charts */
+[data-skin="gost"] #app .echart {
+	background: var(--g-well);
+	border: 1px solid var(--g-seam);
+	box-shadow: var(--g-inset), 0 1px 0 var(--g-edge-hi);
+}
+
+[data-skin="gost"] #app .extra.badge,
+[data-skin="gost"] #app .extra.badge * { color: var(--g-red) !important; }

@@ -5266,3 +5266,279 @@ body[data-page="admin-modem-modemwebui"] #embedded-iframe {
 		width: 100% !important;
 	}
 }
+
+/* ==========================================================================
+ * iStoreOS QuickStart (luci-app-quickstart, Vue) — follows the 404 Mode palette
+ *
+ * QuickStart reads <body theme="dark|light"> (set by header.ut) for its own
+ * variables and its ECharts theme; what it hardcodes is remapped here.
+ * App-screen rules: surfaces one tone step off the ground with a 1px edge and
+ * no resting shadow, grey outline icons without coloured squares, figures in
+ * ink with tabular digits, one tone per chart, the accent only on data.
+ * ========================================================================== */
+
+html[data-theme] body,
+html[data-theme] body[theme] {
+	--flow-bg-color: rgb(var(--n-panel-rgb));
+	--flow-span-color: var(--n-text-dim);
+	--card-bg-color: rgb(var(--n-panel-rgb));
+	--card-box-shadow: none;
+	--app-container_title-color: var(--n-heading);
+	--app-container_status-label_block: var(--n-text);
+	--item-label_key-span-color: var(--n-text-dim);
+	--item-label_value-span-color: var(--n-text);
+	--app-container_status-label_bg: var(--n-input-bg);
+	--item_btn-border: 1px solid var(--n-line-strong);
+	--item_btn-color: var(--n-text);
+	--tit-color: var(--n-heading);
+	--popup-bg-color: var(--n-surface);
+	--tag-bg-color: rgba(var(--n-neutral-rgb), .08);
+	--gradient-bg-color: linear-gradient(90deg, transparent 0%, rgba(var(--n-panel-rgb), .8) 62%, rgb(var(--n-panel-rgb)) 100%);
+	--breadcrumbs-tit-color: var(--n-line-strong);
+	--breadcrumbs-tit-color1: var(--n-line);
+	--border-color: var(--n-line);
+	--SystemUpdateBanner-bg-color: var(--n-input-bg);
+	--SystemUpdateBanner-border-color: var(--n-line-strong);
+	--btn-border-color: var(--n-line-strong);
+	--card-txt-color: var(--n-text);
+	--SystemInfo-bg-color: var(--n-input-bg);
+
+	--qs-surface: rgb(var(--n-panel-rgb));
+	--qs-raised: var(--n-input-bg);
+	--qs-edge: var(--n-line);
+	--qs-edge-hover: var(--n-line-strong);
+	--qs-icon: var(--n-text-dim);
+	--qs-chart-filter: grayscale(1) contrast(1.05);
+}
+
+html[data-theme="dark"] body,
+html[data-theme="dark"] body[theme] {
+	--qs-chart-filter: grayscale(1) contrast(1.3) brightness(1.15);
+}
+
+#app .page-container {
+	color: var(--n-text);
+	font-variant-numeric: tabular-nums;
+}
+
+/* top feature cards: fit any content width instead of overflowing */
+#app .card-container {
+	display: grid !important;
+	grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+	gap: 16px;
+}
+
+#app .card-container > .feature-card {
+	width: auto !important;
+	min-width: 0 !important;
+	max-width: none !important;
+	margin: 0 !important;
+}
+
+/* panels: a tone step and a 1px edge, no resting shadow */
+#app .reusable-card,
+#app .network_container,
+#app .feature-card,
+#app .app-container {
+	color: var(--n-text);
+	background: var(--qs-surface) !important;
+	border: 1px solid var(--qs-edge) !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+}
+
+#app .feature-card { transition: border-color .15s, background-color .15s; }
+
+#app .feature-card:hover {
+	border-color: var(--qs-edge-hover) !important;
+	background: var(--qs-raised) !important;
+}
+
+#app .card-header {
+	border-bottom: 1px solid var(--qs-edge);
+	padding-bottom: 8px;
+}
+
+/* type: titles in ink at one size, secondary text in the dim grey */
+#app .title,
+#app .card-header .title,
+#app .title_box,
+#app .title_box * {
+	color: var(--n-heading) !important;
+	letter-spacing: 0;
+	text-transform: none;
+}
+
+#app .feature-card .title { font-size: 15px; font-weight: 600; }
+
+#app .subtitle,
+#app .speed_item > span,
+#app .info .name,
+#app .schedule { color: var(--n-text-dim) !important; }
+
+#app .ip_address,
+#app .dns_txt,
+#app .speed_item,
+#app span:not([class]),
+#app div:not([class]):not([style*="color"]) { color: var(--n-text); }
+
+/* speed figures: ink, tabular, one size — the chart below carries the series */
+#app .speed_item > div,
+#app .speed_item [style*="color"] {
+	color: var(--n-heading) !important;
+	font-size: 22px;
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+}
+
+#app a,
+#app a[style*="color: white"] { color: var(--n-cyan) !important; }
+
+#app .right-arrow,
+#app .right-arrow * { fill: var(--n-text-faint) !important; }
+
+#app .model_btn svg [fill]:not([fill="none"]),
+#app .card-header svg [fill]:not([fill="none"]),
+#app .left svg [fill]:not([fill="none"]) { fill: var(--qs-icon); }
+
+/* feature-card icons: no coloured square, a plain grey outline icon */
+#app .icon-wrapper {
+	width: 28px !important;
+	height: 28px !important;
+	min-width: 0 !important;
+	padding: 0 !important;
+	background: transparent !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+}
+
+#app .icon-wrapper svg {
+	width: 24px !important;
+	height: 24px !important;
+}
+
+#app .icon-wrapper svg [fill]:not([fill="none"]),
+#app .icon-wrapper svg path { fill: var(--qs-icon) !important; }
+
+/* badges: pale neutral pills; the device count is data and keeps the accent */
+#app .badge,
+#app .ip_tag,
+#app .tag,
+#app span.offline {
+	color: var(--n-text-dim) !important;
+	background: var(--qs-raised) !important;
+	border: 1px solid var(--qs-edge) !important;
+	border-radius: 0 !important;
+}
+
+#app .extra.badge,
+#app .extra.badge * { color: var(--n-cyan) !important; }
+
+/* state pills (uptime, link speed, running): the state colour as text on the
+   raised tone instead of a pastel green block; never wrap the figure */
+#app .status_time,
+#app .speed,
+#app .status-icon,
+#app .tab .memory,
+#app .item .info .name > span,
+#app .info .bgcolor2 {
+	color: var(--n-green) !important;
+	background: var(--qs-raised) !important;
+	border: 1px solid var(--qs-edge) !important;
+	border-radius: 0 !important;
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+#app .status_box { gap: 10px; }
+
+/* quick-link tiles and info boxes: one raised tone, grey icon, no pastel, no stripe */
+#app .item_container .item,
+#app .grid-item .item,
+#app .item.cloud,
+#app .item.network,
+#app .item.memory,
+#app .item1,
+#app .icon_box,
+#app .path,
+#app .disabled-style {
+	color: var(--n-text) !important;
+	background: var(--qs-surface) !important;
+	border: 1px solid var(--qs-edge) !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	transition: border-color .15s, background-color .15s;
+}
+
+#app .item_container .item:hover,
+#app .grid-item .item:hover,
+#app .item.active {
+	border-color: var(--qs-edge-hover) !important;
+	background: var(--qs-raised) !important;
+}
+
+#app .item_container .item *,
+#app .grid-item .item *,
+#app .item1 * { color: var(--n-text) !important; }
+
+#app .item_container .item svg,
+#app .grid-item .item svg { width: 22px !important; height: 22px !important; }
+
+#app .item_container .item svg [fill]:not([fill="none"]),
+#app .grid-item .item svg [fill]:not([fill="none"]),
+#app .item1 svg [fill]:not([fill="none"]),
+#app .icon_box svg [fill]:not([fill="none"]),
+#app .center-icon [fill]:not([fill="none"]) { fill: var(--qs-icon) !important; }
+
+/* small buttons */
+#app .device-manage-btn,
+#app .settings-btn,
+#app .btn_settings,
+#app .item_btn {
+	color: var(--n-text) !important;
+	background: transparent !important;
+	border: 1px solid var(--n-line-strong) !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+}
+
+#app .device-manage-btn svg [fill]:not([fill="none"]),
+#app .btn_settings svg [fill]:not([fill="none"]),
+#app .settings-btn svg [fill]:not([fill="none"]) { fill: var(--n-text-dim) !important; }
+
+#app .dropdown-menu {
+	background: var(--n-surface) !important;
+	border: 1px solid var(--n-line-strong) !important;
+	border-radius: 0 !important;
+	box-shadow: var(--n-shadow) !important;
+}
+
+/* ECharts (traffic graph, system gauges) draw blue/violet on canvas:
+   one neutral tone, and the legend swatches get the very same filter */
+#app .echart {
+	background: var(--n-input-bg);
+	border: 1px solid var(--qs-edge);
+}
+
+#app .title_box svg [fill]:not([fill="none"]),
+#app .title_box svg path { fill: var(--qs-icon) !important; }
+
+#app .ip_tag svg path,
+#app .ip_action svg path { fill: var(--qs-icon) !important; }
+
+#app .echart canvas,
+#app .chart_box canvas,
+#app .tag_up,
+#app .tag_dn,
+#app .title_box [class*="dot"],
+#app .title_box i { filter: var(--qs-chart-filter); }
+
+#app .tag_up,
+#app .tag_dn { border-radius: 0 !important; }
+
+#app .center-label { color: var(--n-heading) !important; font-family: var(--n-font); font-variant-numeric: tabular-nums; }
+
+@media screen and (max-width: 854px) {
+	#app .card-container { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+}

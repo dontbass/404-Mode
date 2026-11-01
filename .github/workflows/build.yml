@@ -8,6 +8,8 @@ on:
       - 'luci-theme-404mode/**'
       - 'luci-theme-404mode-modemwebui/**'
       - '.github/workflows/build.yml'
+      - 'MANIFEST'
+      - 'install.sh'
   pull_request:
   workflow_dispatch:
 
@@ -15,6 +17,16 @@ permissions:
   contents: write
 
 jobs:
+  manifest:
+    name: MANIFEST is current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sh tools/mkmanifest.sh
+          git diff --exit-code MANIFEST || { echo '::error::MANIFEST is stale, run tools/mkmanifest.sh'; exit 1; }
+          sh -n install.sh
+
   build:
     name: SDK ${{ matrix.sdk }}
     runs-on: ubuntu-latest

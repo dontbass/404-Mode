@@ -5,6 +5,7 @@
 #   install (auto dark/light):  sh install.sh
 #   force a variant:            sh install.sh --dark | --light | --gost
 #   specific git ref:           sh install.sh v1.2.0 [--dark|--light|--gost]
+#   offline (zip from a PC):    sh install.sh --local /tmp/404-Mode-main.zip [--gost]
 #   uninstall:                  sh install.sh --remove
 #
 # If Modem WebUI (luci-app-modemwebui, :8001) is present, its skin hook is
@@ -18,6 +19,7 @@ REF="main"
 NAME="404mode"
 VARIANT=""
 ACTION="install"
+LOCAL=""
 WWW="/www/luci-static"
 UCODE="/usr/share/ucode/luci/template/themes"
 
@@ -27,8 +29,9 @@ for arg in "$@"; do
 		--dark)      VARIANT="-dark" ;;
 		--light)     VARIANT="-light" ;;
 		--gost)      VARIANT="-gost" ;;
+		--local)     LOCAL="__next__" ;;
 		-*)          echo "unknown option: $arg" >&2; exit 1 ;;
-		*)           REF="$arg" ;;
+		*)           if [ "$LOCAL" = "__next__" ]; then LOCAL="$arg"; else REF="$arg"; fi ;;
 	esac
 done
 
@@ -39,16 +42,80 @@ clear_cache() {
 	rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache 2>/dev/null || true
 }
 
+FETCH_LOG="/tmp/404mode-fetch.log"
+
+# fetch URL FILE — quiet on success, the reason goes to $FETCH_LOG on failure
 fetch() {
+	rm -f "$2"
 	if command -v uclient-fetch >/dev/null 2>&1; then
-		uclient-fetch -q -O "$2" "$1"
-	elif command -v wget >/dev/null 2>&1; then
-		wget -q -O "$2" "$1"
+		uclient-fetch -T 20 -O "$2" "$1" >>"$FETCH_LOG" 2>&1
 	elif command -v curl >/dev/null 2>&1; then
-		curl -fsSL -o "$2" "$1"
+		curl -fsSL --connect-timeout 20 -o "$2" "$1" >>"$FETCH_LOG" 2>&1
+	elif command -v wget >/dev/null 2>&1; then
+		wget -T 20 -O "$2" "$1" >>"$FETCH_LOG" 2>&1
 	else
-		die "no uclient-fetch / wget / curl found"
+		die "no uclient-fetch / curl / wget found"
 	fi
+	[ -s "$2" ]
+}
+
+# get the package sources into $TMP, trying several routes:
+#   1. GitHub tarball (codeload / github.com archive)
+#   2. file by file from MANIFEST via raw.githubusercontent.com or jsDelivr
+#      (one of them usually works when the others are blocked)
+get_sources() {
+	local url host base f n
+
+	for url in "https://codeload.github.com/$REPO/tar.gz/$REF" \
+	           "https://github.com/$REPO/archive/$REF.tar.gz"; do
+		host="${url#https://}"; host="${host%%/*}"
+		say "download: $host"
+		if fetch "$url" "$TMP/src.tgz" && tar -xzf "$TMP/src.tgz" -C "$TMP" 2>>"$FETCH_LOG"; then
+			SRC="$(find "$TMP" -maxdepth 2 -type d -name 'luci-theme-404mode' | head -n1)"
+			[ -n "$SRC" ] && return 0
+		fi
+		say "  $host: unavailable"
+	done
+
+	for base in "https://raw.githubusercontent.com/$REPO/$REF" \
+	            "https://cdn.jsdelivr.net/gh/$REPO@$REF" \
+	            "https://fastly.jsdelivr.net/gh/$REPO@$REF"; do
+		host="${base#https://}"; host="${host%%/*}"
+		say "download: $host (file by file)"
+		rm -rf "$TMP/cdn"; mkdir -p "$TMP/cdn"; n=0
+		if fetch "$base/MANIFEST" "$TMP/MANIFEST"; then
+			while read -r f; do
+				case "$f" in ''|\#*) continue ;; esac
+				mkdir -p "$TMP/cdn/$(dirname "$f")"
+				fetch "$base/$f" "$TMP/cdn/$f" || { n=-1; break; }
+				n=$((n + 1))
+			done < "$TMP/MANIFEST"
+			if [ "$n" -gt 0 ]; then
+				say "  $n files"
+				SRC="$TMP/cdn/luci-theme-404mode"
+				return 0
+			fi
+		fi
+		say "  $host: unavailable"
+	done
+
+	return 1
+}
+
+net_help() {
+	printf '\033[1;31m[404] download failed on every route.\033[0m\n' >&2
+	echo "  last errors:" >&2
+	tail -n 6 "$FETCH_LOG" 2>/dev/null | sed 's/^/    /' >&2
+	cat >&2 <<-'HELP'
+	  check on the router:
+	    nslookup codeload.github.com      # DNS
+	    nslookup raw.githubusercontent.com
+	    nslookup cdn.jsdelivr.net
+	    opkg list-installed | grep -E 'ustream|ca-bundle|ca-certificates'   # HTTPS support
+	  or download the repo zip on a PC, copy it to /tmp and run:
+	    sh install.sh --local /tmp/404-Mode-main.zip   (or the unpacked folder)
+	HELP
+	exit 1
 }
 
 if [ "$ACTION" = "remove" ]; then
@@ -84,12 +151,24 @@ fi
 TMP="$(mktemp -d /tmp/404mode.XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT INT TERM
 
-say "fetching $REPO@$REF"
-fetch "https://codeload.github.com/$REPO/tar.gz/$REF" "$TMP/src.tgz" || die "download failed (check DNS / HTTPS / ref '$REF')"
+: > "$FETCH_LOG"
 
-tar -xzf "$TMP/src.tgz" -C "$TMP" || die "unpack failed"
-SRC="$(find "$TMP" -maxdepth 2 -type d -name 'luci-theme-404mode' | head -n1)"
-[ -n "$SRC" ] || die "package dir not found in archive"
+if [ -n "$LOCAL" ] && [ "$LOCAL" != "__next__" ]; then
+	say "using local sources: $LOCAL"
+	if [ -d "$LOCAL" ]; then
+		cp -R "$LOCAL" "$TMP/local"
+	else
+		case "$LOCAL" in
+			*.zip) unzip -q "$LOCAL" -d "$TMP/local" || die "unzip failed (opkg install unzip)" ;;
+			*)     mkdir -p "$TMP/local"; tar -xzf "$LOCAL" -C "$TMP/local" || die "unpack failed" ;;
+		esac
+	fi
+	SRC="$(find "$TMP/local" -maxdepth 3 -type d -name 'luci-theme-404mode' | head -n1)"
+	[ -n "$SRC" ] || die "luci-theme-404mode not found in $LOCAL"
+else
+	say "fetching $REPO@$REF"
+	get_sources || net_help
+fi
 
 say "installing files"
 mkdir -p "$WWW/resources" "$UCODE"
@@ -113,7 +192,7 @@ uci commit luci
 clear_cache
 
 # Modem WebUI skin hook
-MW="$(find "$TMP" -maxdepth 2 -type d -name 'luci-theme-404mode-modemwebui' | head -n1)"
+MW="$(find "$TMP" -maxdepth 4 -type d -name 'luci-theme-404mode-modemwebui' | head -n1)"
 if [ -d /www/webui ] && [ -n "$MW" ] && ! opkg list-installed 2>/dev/null | grep -q '^luci-theme-404mode-modemwebui '; then
 	say "Modem WebUI found — hooking the modem panel"
 	mkdir -p /usr/share/404mode/modemwebui /usr/libexec /etc/init.d

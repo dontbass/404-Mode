@@ -58,6 +58,22 @@
 
 `install.sh` ставит хук сам, если на роутере есть `/www/webui`. Пакетом — `luci-theme-404mode-modemwebui`.
 
+## iStoreOS QuickStart
+
+Стартовая страница iStoreOS (`luci-app-quickstart`) идёт за активной темой и её схемой: ГОСТ-24, ASH, SAMIZDAT, тёмная или светлая. Тема выставляет QuickStart его собственный признак `<body theme="dark|light">` (от него зависят переменные страницы и палитра графиков ECharts) и перекрывает то, что в QuickStart зашито цветами.
+
+| ГОСТ-24 | ГОСТ-24 светлая |
+|---|---|
+| ![quickstart gost](docs/quickstart-gost.jpg) | ![quickstart gost light](docs/quickstart-gost-light.jpg) |
+| **ASH** | **SAMIZDAT** |
+| ![quickstart ash](docs/quickstart-ash.jpg) | ![quickstart samizdat](docs/quickstart-samizdat.jpg) |
+
+- Панели — один тон над фоном и рамка 1px, без теней и скруглений; в ГОСТ-24 — стальные плиты с заклёпками.
+- Иконки — серые контурные, без цветных квадратов; быстрые ссылки — плитки одного тона, без пастели и цветных полосок.
+- Цифры скорости — цветом текста, моноширинные (`tabular-nums`); статусы (аптайм, скорость линка) — цветом состояния на нейтральной плашке, без переноса.
+- Акцент — только на данных (число устройств в сети).
+- График трафика и датчики рисуются ECharts на canvas, поэтому они перекрашиваются фильтром в один тон палитры; форма кривых остаётся стоковой.
+
 ## Четыре темы в одном пакете
 
 | В LuCI | Путь | Поведение |
@@ -90,14 +106,40 @@
 
 ### Быстро (без сборки)
 
+Скачать установщик (пробует GitHub, потом зеркала jsDelivr) и запустить:
+
 ```sh
-uclient-fetch -qO /tmp/404.sh https://raw.githubusercontent.com/dontbass/404-Mode/main/install.sh
+cd /tmp && rm -f 404.sh && for u in \
+  https://raw.githubusercontent.com/dontbass/404-Mode/main/install.sh \
+  https://cdn.jsdelivr.net/gh/dontbass/404-Mode@main/install.sh \
+  https://fastly.jsdelivr.net/gh/dontbass/404-Mode@main/install.sh
+do uclient-fetch -T 20 -O 404.sh "$u" && break; done; sh 404.sh --gost
+```
+
+Ключи:
+
+```sh
 sh /tmp/404.sh            # авто
 sh /tmp/404.sh --dark     # сразу тёмная
 sh /tmp/404.sh --light    # сразу светлая
 sh /tmp/404.sh --gost     # сразу ГОСТ-24
 sh /tmp/404.sh --remove   # удалить, вернуть bootstrap
 ```
+
+Установщик пишет каждый шаг. Файлы темы он берёт архивом с `codeload.github.com` / `github.com`. Если они недоступны, качает по одному файлу по списку `MANIFEST` с `raw.githubusercontent.com`, `cdn.jsdelivr.net` или `fastly.jsdelivr.net`. Если не сработал ни один путь, он показывает последние ошибки и что проверить (DNS, `libustream`/`ca-bundle` для HTTPS). jsDelivr кэширует ветку `main` до ~12 часов, так что свежий коммит туда приходит с задержкой.
+
+### Без интернета на роутере
+
+Скачать на ПК архив репозитория (**Code → Download ZIP** или `https://codeload.github.com/dontbass/404-Mode/tar.gz/main`), скопировать его на роутер вместе с `install.sh` и указать через `--local`:
+
+```sh
+# на ПК
+scp -O install.sh 404-Mode-main.tar.gz root@192.168.1.1:/tmp/
+# на роутере
+sh /tmp/install.sh --local /tmp/404-Mode-main.tar.gz --gost
+```
+
+`--local` принимает `.tar.gz`, `.zip` (нужен `unzip`) или уже распакованную папку (`scp -O -r 404-Mode-main root@…:/tmp/`).
 
 ### Пакетом (.ipk)
 
@@ -119,11 +161,14 @@ make package/404-Mode/luci-theme-404mode/compile V=s
 ## Структура
 
 ```
+install.sh                         # установщик без сборки (зеркала, --local)
+MANIFEST                           # список файлов для пофайловой загрузки (tools/mkmanifest.sh)
+
 luci-theme-404mode/
 ├── Makefile
 ├── htdocs/luci-static/
 │   ├── 404mode/
-│   │   ├── cascade.css          # база компонентов + слой 404 MODE (токены ASH / SAMIZDAT)
+│   │   ├── cascade.css          # база компонентов + слой 404 MODE (токены ASH / SAMIZDAT) + QuickStart
 │   │   ├── mobile.css
 │   │   ├── logo.svg, logo_48.png
 │   │   └── gost/gost.css            # скин ГОСТ-24
