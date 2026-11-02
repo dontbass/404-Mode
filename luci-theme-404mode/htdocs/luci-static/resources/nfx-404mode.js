@@ -251,7 +251,7 @@
 		else if (!isForm && fill && w > 0 && h > 0) {
 			var k2 = hsl(fill);
 
-			if (w <= 18 && h <= 18 && el.children.length == 0 && !hasText(el) && k2.c > .12)
+			if (w <= 18 && h <= 18 && Math.abs(w - h) <= 4 && el.children.length == 0 && !hasText(el) && k2.c > .12)
 				tags.push('dot', 'd-' + hue(fill));
 			else if (h <= 22 && w >= 1 && el.children.length == 0 && !hasText(el) && (k2.c > .12 || grad.length))
 				tags.push('bar');
@@ -572,8 +572,48 @@
 		start();
 
 	/* late styles (fonts, app CSS loaded after the page) */
-	window.addEventListener('load', function() {
-		seen = new WeakSet();
-		scan(all(scope()), false);
-	});
+	/* look at the whole page again: untagged elements only (tagged ones keep
+	   their tag and are re-checked when their class / style changes) */
+	var rescanTimer = null;
+
+	function rescanSoon(delay) {
+		if (rescanTimer)
+			window.clearTimeout(rescanTimer);
+
+		rescanTimer = window.setTimeout(function() {
+			rescanTimer = null;
+			seen = new WeakSet();
+			scan(all(scope()), false);
+		}, delay || 80);
+	}
+
+	window.addEventListener('load', function() { rescanSoon(0); });
+
+	/* LuCI views render after window.onload and often bring their own
+	   stylesheet: nodes scanned before that CSS arrived looked unstyled, so
+	   every late stylesheet load (and web fonts) triggers another pass */
+	document.addEventListener('load', function(ev) {
+		var t = ev.target;
+
+		if (t && (t.tagName == 'LINK' || t.tagName == 'STYLE'))
+			rescanSoon();
+	}, true);
+
+	if (document.fonts && document.fonts.addEventListener)
+		document.fonts.addEventListener('loadingdone', function() { rescanSoon(); });
+
+	/* inline <style> blocks added by scripts apply at once, but the nodes
+	   they style may already have been scanned */
+	new MutationObserver(function(muts) {
+		for (var i = 0; i < muts.length; i++)
+			for (var j = 0; j < muts[i].addedNodes.length; j++) {
+				var n = muts[i].addedNodes[j];
+
+				if (n.nodeType == 1 && (n.tagName == 'STYLE' || n.tagName == 'LINK'))
+					return rescanSoon(n.tagName == 'STYLE' ? 0 : 400);
+			}
+	}).observe(document.documentElement, { childList: true, subtree: true });
+
+	/* and a couple of passes for views that finish rendering late */
+	[ 1500, 4000 ].forEach(function(ms) { window.setTimeout(function() { rescanSoon(0); }, ms); });
 })();
