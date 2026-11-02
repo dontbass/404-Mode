@@ -6378,11 +6378,7 @@ html.no-fx .ns-slide.on .ns-img { animation: none; }
 .ns-wx { flex-wrap: wrap; gap: 10px 18px; }
 .ns-wx-side { flex: 1 1 140px; }
 
-@media screen and (max-width: 700px) {
-	.n-saver[data-layout] .ns-board { display: none; }
-	.n-saver[data-layout] .ns-head { left: 16px; right: 16px; top: auto; bottom: 16px; transform: none; width: auto; }
-	.ns-head p { font-size: 18px !important; -webkit-line-clamp: 3; }
-}
+
 
 /* the app's own text effects (outlines, glows, strokes) go away on an
    overlay, whatever its specificity: :not(#\#) adds id weight */
@@ -6574,3 +6570,233 @@ html.no-fx .ns-slide.on .ns-img { animation: none; }
 .luci-overlay .memory-card { --lo-ico: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Crect%20x=%223%22%20y=%227%22%20width=%2218%22%20height=%2210%22%20rx=%221.5%22/%3E%3Cpath%20d=%22M7%207v10M11%207v10M15%207v10M6%2020v-3M18%2020v-3%22/%3E%3C/svg%3E"); }
 .luci-overlay .disk-card { --lo-ico: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cellipse%20cx=%2212%22%20cy=%226%22%20rx=%228%22%20ry=%223%22/%3E%3Cpath%20d=%22M4%206v12c0%201.7%203.6%203%208%203s8-1.3%208-3V6M4%2012c0%201.7%203.6%203%208%203s8-1.3%208-3%22/%3E%3C/svg%3E"); }
 .luci-overlay .modem-card { --lo-ico: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%23000%22%20stroke-width=%221.8%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22M4%2020v-3M9%2020v-7M14%2020v-11M19%2020V5%22/%3E%3C/svg%3E"); }
+
+/* ---------- screensaver: steady and phone-sized ---------- */
+
+/* rings are re-created on every refresh: no sweep from zero each time */
+.luci-overlay .progress-ring-circle { transition: none !important; }
+
+/* the colon breathes instead of blinking */
+.luci-overlay .luci-overlay-time-blink { animation: n-colon 2s ease-in-out infinite !important; }
+
+@keyframes n-colon {
+	0%, 100% { opacity: 1; }
+	50% { opacity: .35; }
+}
+
+html.no-fx .luci-overlay .luci-overlay-time-blink { animation: none !important; }
+
+@media screen and (max-width: 720px), screen and (max-height: 520px) {
+	/* cards start under the clock and may scroll; never clipped at the top */
+	.luci-overlay.show {
+		align-items: flex-start !important;
+		overflow-y: auto !important;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.luci-overlay .luci-overlay-content {
+		width: 100% !important;
+		max-width: none !important;
+		padding: calc(10px + env(safe-area-inset-top)) 12px 16px !important;
+		box-sizing: border-box;
+		animation: none !important;
+	}
+
+	/* room for the weather + headline band of the board */
+	.luci-overlay[data-ns-mobile] .luci-overlay-content { padding-bottom: calc(150px + env(safe-area-inset-bottom)) !important; }
+
+	.luci-overlay .luci-overlay-message { margin: 0 !important; }
+
+	.luci-overlay .luci-overlay-time-display {
+		font-size: clamp(56px, 21vw, 96px) !important;
+		line-height: 1 !important;
+		max-height: none !important;
+		margin-bottom: 10px !important;
+	}
+
+	/* system and mobile network across, CPU / memory / disk as three
+	   small ring tiles in one row: the whole screensaver fits a phone */
+	.luci-overlay .luci-overlay-cards {
+		display: grid !important;
+		grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+		width: 100% !important;
+		gap: 8px !important;
+	}
+
+	.luci-overlay .luci-overlay-card { grid-column: 1 / -1; }
+
+	.luci-overlay .luci-overlay-card.cpu-card,
+	.luci-overlay .luci-overlay-card.memory-card,
+	.luci-overlay .luci-overlay-card.disk-card {
+		grid-column: auto;
+		padding: 10px 8px 10px !important;
+		text-align: center;
+	}
+
+	.luci-overlay .cpu-card .card-header,
+	.luci-overlay .memory-card .card-header,
+	.luci-overlay .disk-card .card-header { justify-content: center; gap: 6px; }
+
+	.luci-overlay .cpu-card .card-title,
+	.luci-overlay .memory-card .card-title,
+	.luci-overlay .disk-card .card-title {
+		font-size: 12.5px !important;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.luci-overlay .luci-overlay-card.cpu-card .card-content,
+	.luci-overlay .luci-overlay-card.memory-card .card-content,
+	.luci-overlay .luci-overlay-card.disk-card .card-content {
+		flex-direction: column !important;
+		align-items: center !important;
+		gap: 2px !important;
+	}
+
+	.luci-overlay .cpu-card .circular-progress,
+	.luci-overlay .memory-card .circular-progress,
+	.luci-overlay .disk-card .circular-progress {
+		transform: none;
+		margin: 2px auto 0;
+	}
+
+	.luci-overlay .cpu-card .card-title { font-size: 0 !important; }
+	.luci-overlay .cpu-card .card-title::after { content: "CPU"; font-size: 12.5px; }
+
+	/* one figure under each ring: network state, used memory, free disk */
+	.luci-overlay .cpu-card .status-item,
+	.luci-overlay .memory-card .status-item,
+	.luci-overlay .disk-card .status-item { display: none !important; }
+
+	.luci-overlay .cpu-card .status-item:nth-child(2),
+	.luci-overlay .memory-card .status-item:nth-child(1),
+	.luci-overlay .disk-card .status-item:nth-child(2) {
+		display: block !important;
+		border: 0;
+		text-align: center;
+	}
+
+	.luci-overlay .cpu-card .status-item .label,
+	.luci-overlay .memory-card .status-item .label,
+	.luci-overlay .disk-card .status-item .label { display: none !important; }
+
+	.luci-overlay .cpu-card .status-item .value,
+	.luci-overlay .memory-card .status-item .value,
+	.luci-overlay .disk-card .status-item .value { font-size: 12.5px; text-align: center; white-space: nowrap; }
+
+	html[lang="ru"] .luci-overlay .disk-card .status-item .value::before { content: "своб. "; color: var(--n-text-dim); font-weight: 400; }
+	html:not([lang="ru"]) .luci-overlay .disk-card .status-item .value::before { content: "free "; color: var(--n-text-dim); font-weight: 400; }
+
+	/* phones redraw backdrop blur on every refresh: solid tiles instead */
+	.luci-overlay .luci-overlay-card {
+		width: 100% !important;
+		min-height: 0 !important;
+		padding: 10px 12px !important;
+		border-radius: 14px !important;
+		background: rgba(var(--n-panel-rgb), .86) !important;
+		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none !important;
+		box-shadow: 0 6px 18px rgba(0, 0, 0, .22) !important;
+	}
+
+	.luci-overlay .card-header { margin-bottom: 4px !important; gap: 8px; }
+	.luci-overlay .card-icon { width: 16px !important; height: 16px !important; flex: 0 0 16px; }
+	.luci-overlay .card-title { font-size: 14px !important; }
+
+	.luci-overlay .status-item { padding: 2px 0 !important; gap: 10px; font-size: 13px !important; }
+	.luci-overlay .status-item .label { font-size: 12px !important; flex: 0 1 auto; min-width: 0; }
+	.luci-overlay .status-item .value { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+
+	.luci-overlay .luci-overlay-card.cpu-card .card-content,
+	.luci-overlay .luci-overlay-card.memory-card .card-content,
+	.luci-overlay .luci-overlay-card.disk-card .card-content { gap: 12px !important; }
+
+	/* 60px ring drawn at 44px (the svg has no viewBox, so scale the box) */
+	.luci-overlay .circular-progress {
+		transform: scale(.74);
+		transform-origin: left center;
+		margin-right: -16px;
+	}
+
+	.luci-overlay .card-right { min-width: 0; }
+}
+
+/* board on a phone: a compact weather / USD row above the headline */
+.n-saver[data-layout="mobile"] .ns-board {
+	display: flex !important;
+	left: 12px;
+	right: 12px;
+	top: auto;
+	bottom: calc(74px + env(safe-area-inset-bottom));
+	width: auto;
+	transform: none;
+	gap: 8px;
+	max-height: none;
+}
+
+.n-saver[data-layout="mobile"] .ns-panel {
+	padding: 8px 12px;
+	border-radius: 12px;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+	background: rgba(var(--n-panel-rgb), .86);
+}
+
+.n-saver[data-layout="mobile"] .ns-wx { flex: 1 1 auto; flex-wrap: nowrap; gap: 10px; min-width: 0; }
+.n-saver[data-layout="mobile"] .ns-wx-main { gap: 6px; }
+.n-saver[data-layout="mobile"] .ns-wx-main .hb-ico { width: 22px; height: 22px; }
+.n-saver[data-layout="mobile"] .ns-temp { font-size: 24px; }
+.n-saver[data-layout="mobile"] .ns-wx-side { flex: 1 1 auto; gap: 0; }
+.n-saver[data-layout="mobile"] .ns-wx-side b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.n-saver[data-layout="mobile"] .ns-wx-side span { display: none; }
+.n-saver[data-layout="mobile"] .ns-wx-side span:nth-of-type(1) { display: block; font-size: 11px; }
+
+.n-saver[data-layout="mobile"] .ns-fx { display: flex !important; flex: 0 0 auto; align-items: center; }
+.n-saver[data-layout="mobile"] .ns-fx h4,
+.n-saver[data-layout="mobile"] .ns-rate:nth-of-type(n+2) { display: none; }
+.n-saver[data-layout="mobile"] .ns-rate { grid-template-columns: auto auto; gap: 2px 8px; padding: 0; border: 0; }
+.n-saver[data-layout="mobile"] .ns-rate b { font-size: 16px; }
+.n-saver[data-layout="mobile"] .ns-rate i { grid-column: 1 / -1; font-size: 10.5px; }
+
+.n-saver[data-layout="mobile"] .ns-head {
+	left: 12px;
+	right: 12px;
+	top: auto;
+	bottom: calc(14px + env(safe-area-inset-bottom));
+	width: auto;
+	transform: none;
+	gap: 4px;
+}
+
+.n-saver[data-layout="mobile"] .ns-head p { font-size: 15px !important; line-height: 1.3; -webkit-line-clamp: 2; }
+.n-saver[data-layout="mobile"] .ns-head .hb-src { font-size: 9.5px; }
+.n-saver[data-layout="mobile"] .ns-dots { display: none; }
+
+/* the picture fills the phone screen but stays well behind the cards */
+.n-saver[data-layout="mobile"] .ns-img { opacity: .34; }
+.n-saver[data-layout="mobile"] .ns-slide.on .ns-img { animation-duration: 24s; }
+
+/* phone held sideways: system and network side by side, the three ring
+   tiles below; the board keeps only a one-line headline */
+@media screen and (max-height: 520px) and (orientation: landscape) {
+	.luci-overlay .luci-overlay-cards { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+	.luci-overlay .luci-overlay-card.system-status-card,
+	.luci-overlay .luci-overlay-card.modem-card { grid-column: span 3; order: 1; }
+	.luci-overlay .luci-overlay-card.cpu-card,
+	.luci-overlay .luci-overlay-card.memory-card,
+	.luci-overlay .luci-overlay-card.disk-card { grid-column: span 2; order: 2; }
+	.luci-overlay .luci-overlay-card .circular-progress { margin-top: 0; }
+
+	.luci-overlay .luci-overlay-time-display { font-size: clamp(44px, 15vh, 72px) !important; margin-bottom: 6px !important; }
+	.luci-overlay[data-ns-mobile] .luci-overlay-content { padding-bottom: calc(52px + env(safe-area-inset-bottom)) !important; }
+
+	.n-saver[data-layout="mobile"] .ns-board { display: none !important; }
+	.n-saver[data-layout="mobile"] .ns-head { bottom: calc(10px + env(safe-area-inset-bottom)); }
+	.n-saver[data-layout="mobile"] .ns-head p { -webkit-line-clamp: 1; font-size: 14px !important; }
+}
+
+/* phones: what of the board fits under the cards (set from the free height) */
+.n-saver[data-layout="mobile"][data-free="head"] .ns-board { display: none !important; }
+.n-saver[data-layout="mobile"][data-free="none"] .ns-board,
+.n-saver[data-layout="mobile"][data-free="none"] .ns-head { display: none !important; }

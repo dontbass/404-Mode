@@ -266,14 +266,41 @@ return baseclass.extend({
 		const below = innerHeight - bottom - 24;
 		const side = Math.min(left, innerWidth - right) - 32;
 
-		if (below >= 210)
+		/* phones: one fixed layout (compact cards from the top, weather and
+		   the headline in a band at the bottom) */
+		if (innerWidth <= 720 || innerHeight <= 520)
+			mode = 'mobile';
+		else if (below >= 210)
 			mode = 'below';
 		else if (side >= 220)
 			mode = 'sides';
 		else
 			mode = 'compact';
 
+		/* switch only when the same layout comes out twice in a row, so a
+		   re-render of the screensaver never makes the board jump */
+		if (mode != this.saver.getAttribute('data-layout')) {
+			if (this.layoutNext != mode) {
+				this.layoutNext = mode;
+
+				if (this.saver.hasAttribute('data-layout'))
+					return;
+			}
+		}
+
+		this.layoutNext = null;
 		this.saver.setAttribute('data-layout', mode);
+
+		/* on a phone: room under the cards for the weather row + headline,
+		   the headline alone, or nothing (picture only) */
+		if (mode == 'mobile') {
+			const free = innerHeight - bottom;
+			const fit = free >= 150 ? 'full' : free >= 58 ? 'head' : 'none';
+
+			if (this.saver.getAttribute('data-free') != fit)
+				this.saver.setAttribute('data-free', fit);
+		}
+		ov.toggleAttribute('data-ns-mobile', mode == 'mobile');
 		st.setProperty('--ns-below', Math.max(0, below) + 'px');
 		st.setProperty('--ns-side', Math.max(0, side) + 'px');
 	},
