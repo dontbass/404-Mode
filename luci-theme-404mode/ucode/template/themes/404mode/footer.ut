@@ -20,7 +20,7 @@
 		</footer>
 	</main>
 </div>
-<script src="{{ resource }}/nfx-404mode.js?v=1.7.2"></script>
+<script src="{{ resource }}/nfx-404mode.js?v=1.7.3"></script>
 <script>L.require('menu-404mode')</script>
 <script>L.require('brief-404mode')</script>
 {% if (theme == '404mode-gost'): %}

@@ -133,13 +133,31 @@
 	function themed(c, isBg) {
 		if (isBg) {
 			var k = hsl(c);
-			if (k.l > .94 && k.c < .025)
+			/* pure / cool whites (#fff, #f8fbff, #f0f4f8…) are never ours: the
+			   theme's light surfaces are warm paper and enamel (hue 30–65°) */
+			if (k.l > .9 && (k.c < .025 || (k.c < .09 && (k.h < 25 || k.h > 140))))
 				return false;
 		}
 
+		/* light colours: the theme's are warm paper / enamel, an app's are
+		   usually cool white (#f4f6f9, #f8fafc): a warm and a cool tint never
+		   count as the same colour, and the tolerance is tighter */
+		var light = (c.r + c.g + c.b) / 3 > 205;
+
 		for (var i = 0; i < palette.length; i++) {
 			var p = palette[i];
-			if (Math.abs(p.r - c.r) + Math.abs(p.g - c.g) + Math.abs(p.b - c.b) < 21)
+			var d = Math.abs(p.r - c.r) + Math.abs(p.g - c.g) + Math.abs(p.b - c.b);
+
+			if (light) {
+				var wc = c.r - c.b, wp = p.r - p.b;
+
+				if (d >= 10 || (wc <= -3 && wp >= 3) || (wc >= 3 && wp <= -3))
+					continue;
+
+				return true;
+			}
+
+			if (d < 21)
 				return true;
 		}
 
