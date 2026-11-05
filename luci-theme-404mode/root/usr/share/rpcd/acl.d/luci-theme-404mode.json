@@ -1,9 +1,25 @@
 {
 	"luci-theme-404mode": {
-		"description": "404 Mode theme: header brief (weather, rates, headlines)",
+		"description": "404 Mode theme: header brief, dashboard, proxy panel",
 		"read": {
 			"ubus": {
-				"404mode": [ "weather", "rates", "news" ]
+				"404mode": [ "weather", "rates", "news", "proxy" ],
+				"qmodem": [ "info", "base_info", "cell_info", "sim_info", "network_info", "get_stats" ],
+				"system": [ "info", "board" ],
+				"luci-rpc": [ "getNetworkDevices" ],
+				"network.interface": [ "dump" ],
+				"rc": [ "list" ],
+				"file": [ "read" ]
+			},
+			"uci": [ "qmodem", "nikki" ],
+			"file": {
+				"/proc/stat": [ "read" ],
+				"/sys/class/thermal/thermal_zone*/temp": [ "read" ]
+			}
+		},
+		"write": {
+			"ubus": {
+				"404mode": [ "proxy_set" ]
 			}
 		}
 	}

@@ -6833,3 +6833,7 @@ svg[data-nfx~="surface"]:not(#\#):not(#\#) {
 	border: 0 !important;
 	box-shadow: none !important;
 }
+
+/* neon sidebar icons and search exist only in the neon skin */
+:root:not([data-skin="neon"]) .nav-icon,
+:root:not([data-skin="neon"]) .nav-dot { display: none; }

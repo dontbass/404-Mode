@@ -1,0 +1,27 @@
+{#
+ 404 Mode — neon emblem for the sidebar and the login card, picked by the
+ running system:
+   immortal (ImmortalWrt) — an infinity loop with a core (original drawing)
+   openwrt  (default)     — signal arcs over a ring (shape of the OpenWrt mark
+                            shipped with LuCI, Apache-2.0, redrawn as a line)
+ Scope: emblem, gid (unique gradient id)
+-#}
+<svg class="ng ng-{{ emblem }}" viewBox="0 0 48 48" aria-hidden="true">
+	<defs>
+		<linearGradient id="{{ gid }}" x1="0" y1="1" x2="1" y2="0">
+			<stop offset="0" stop-color="var(--x-volt, #4C7DFF)"/>
+			<stop offset="1" stop-color="var(--x-cyan, #2BE4FF)"/>
+		</linearGradient>
+	</defs>
+{% if (emblem == 'immortal'): %}
+	<path class="ng-line" d="M8 24c0-5 4-8 8-8 7 0 9 16 16 16 4 0 8-3 8-8s-4-8-8-8c-7 0-9 16-16 16-4 0-8-3-8-8z" fill="none" stroke="url(#{{ gid }})" stroke-width="3.2" stroke-linecap="round"/>
+	<circle class="ng-core" cx="24" cy="24" r="2.6"/>
+{% else %}
+	<g fill="none" stroke="url(#{{ gid }})" stroke-width="3" stroke-linecap="round">
+		<path d="M9 15a21 21 0 0 1 30 0"/>
+		<path d="M14 20.5a13.5 13.5 0 0 1 20 0"/>
+		<path d="M14.5 27a12 12 0 1 0 19 0"/>
+	</g>
+	<circle class="ng-core" cx="24" cy="31" r="2.8"/>
+{% endif %}
+</svg>

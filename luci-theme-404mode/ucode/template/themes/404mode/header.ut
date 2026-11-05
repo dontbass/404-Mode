@@ -4,9 +4,10 @@
  Licensed to the public under the Apache License 2.0.
 
  Variants (same files, symlinked):
-   404mode        — follows the browser (prefers-color-scheme) + in-UI switch
-   404mode-dark   — forced "ASH" dark
-   404mode-light  — forced "SAMIZDAT" light
+   404mode        — "Neon" skin, follows the browser (prefers-color-scheme)
+                    + in-UI switch
+   404mode-dark   — "Neon", forced dark
+   404mode-light  — "Neon", forced light
    404mode-gost   — "ГОСТ-24" dieselpunk bunker skin with live telemetry HUD;
                     dark by default, light via the header switch
 -#}
@@ -18,6 +19,10 @@
 	const hostname = striptags(boardinfo?.hostname ?? '?');
 	const model = striptags(boardinfo?.model ?? '');
 	const gost = (theme == '404mode-gost');
+	const neon = !gost;
+	const sysinfo = neon ? ubus.call('system', 'info') : null;
+	const kernel = striptags(boardinfo?.kernel ?? '');
+	const uptime = +(sysinfo?.uptime ?? 0);
 	const forced = (theme == '404mode-dark') ? 'dark' : ((theme == '404mode-light') ? 'light' : '');
 	const scheme_default = gost ? 'dark' : 'auto';
 	const distver = striptags(version?.distversion ?? '');
@@ -35,56 +40,58 @@
 	const ru = (substr(dispatcher.lang ?? '', 0, 2) == 'ru');
 
 	const T = ru ? {
-		ticker_tag: 'СЕТЬ ПОД ФИЛЬТРОМ',
-		ticker: [
-			'ВНИМАНИЕ: ТРАФИК ДОСМАТРИВАЕТСЯ (DPI)',
-			'РЕСУРС ЗАБЛОКИРОВАН ПО ТРЕБОВАНИЮ <span class="redact">████████████</span>',
-			'СВОБОДНЫЙ ИНТЕРНЕТ — 404 NOT FOUND',
-			'ПРОТОКОЛ ЗАМЕДЛЕН',
-			'ЗАПИСЬ СОЕДИНЕНИЙ ВЕДЁТСЯ',
-			'РЕЖИМ БЕЛЫХ СПИСКОВ: <span class="redact">██████</span>',
-			'ТУННЕЛЬ — ЕДИНСТВЕННЫЙ ВЫХОД',
-			'ДАННЫЕ ХРАНЯТСЯ <span class="redact">████</span> ЛЕТ',
-		],
 		uplink: 'АПЛИНК',
 		uplink_state: 'ФИЛЬТРУЕТСЯ',
 		scheme: 'Тема: авто / тёмная / светлая',
 		temp: 'ТЕМП.',
 		uptime: 'ВРЕМЯ РАБОТЫ',
 		radar: 'РАДАР // КЛИЕНТЫ',
+		search: 'Найти настройку: Wi-Fi, TTL, proxy…',
+		search_label: 'Поиск по настройкам',
+		firmware: 'Прошивка',
+		kernel: 'Ядро',
+		running: 'Работает',
+		menu: 'Меню',
+		collapse: 'Свернуть меню',
 	} : {
-		ticker_tag: 'NET UNDER FILTER',
-		ticker: [
-			'WARNING: DEEP PACKET INSPECTION ACTIVE',
-			'RESOURCE BLOCKED BY ORDER OF <span class="redact">████████████</span>',
-			'FREE INTERNET — 404 NOT FOUND',
-			'PROTOCOL THROTTLED',
-			'CONNECTION LOGS RETAINED',
-			'WHITELIST MODE: <span class="redact">██████</span>',
-			'THE TUNNEL IS THE ONLY WAY OUT',
-			'DATA STORED FOR <span class="redact">████</span> YEARS',
-		],
 		uplink: 'UPLINK',
 		uplink_state: 'FILTERED',
 		scheme: 'Theme: auto / dark / light',
 		temp: 'TEMP.',
 		uptime: 'UPTIME',
 		radar: 'RADAR // CLIENTS',
+		search: 'Find a setting: Wi-Fi, TTL, proxy…',
+		search_label: 'Search settings',
+		firmware: 'Firmware',
+		kernel: 'Kernel',
+		running: 'Uptime',
+		menu: 'Menu',
+		collapse: 'Collapse menu',
 	};
+
+	function updays(t) {
+		const d = int(t / 86400), h = int((t % 86400) / 3600), m = int((t % 3600) / 60);
+		return ru ? (d ? `${d} д ${h} ч` : `${h} ч ${m} мин`) : (d ? `${d}d ${h}h` : `${h}h ${m}m`);
+	}
 
 	http.prepare_content('text/html; charset=UTF-8');
 -%}
 
 <!DOCTYPE html>
-<html lang="{{ dispatcher.lang }}"{{ gost ? ' data-skin="gost"' : '' }} data-theme="{{ forced || 'dark' }}" data-darkmode="{{ forced == 'light' ? 'false' : 'true' }}" data-scheme="{{ forced || scheme_default }}" data-scheme-default="{{ scheme_default }}"{{ forced ? ' data-scheme-lock="1"' : '' }}>
+<html lang="{{ dispatcher.lang }}" data-skin="{{ gost ? 'gost' : 'neon' }}" data-theme="{{ forced || 'dark' }}" data-darkmode="{{ forced == 'light' ? 'false' : 'true' }}" data-scheme="{{ forced || scheme_default }}" data-scheme-default="{{ scheme_default }}"{{ forced ? ' data-scheme-lock="1"' : '' }}>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	{% if (gost): %}
 	<meta name="theme-color" content="#161714">
 	{% endif %}
+	{% if (neon): %}
+	<meta name="theme-color" content="#080b10" media="(prefers-color-scheme: dark)">
+	<meta name="theme-color" content="#eef2f7" media="(prefers-color-scheme: light)">
+	{% else %}
 	<meta name="theme-color" content="#0b0b0a" media="(prefers-color-scheme: dark)">
 	<meta name="theme-color" content="#e9e4d8" media="(prefers-color-scheme: light)">
+	{% endif %}
 	<meta name="color-scheme" content="{{ forced || 'dark light' }}">
 	<meta name="application-name" content="{{ hostname }} - LuCI">
 	<meta name="apple-mobile-web-app-title" content="{{ hostname }} - LuCI">
@@ -179,6 +186,8 @@
 	<link rel="stylesheet" media="screen and (max-width: 854px)" href="{{ media }}/mobile.css">
 	{% if (gost): %}
 	<link rel="stylesheet" href="{{ media }}/gost/gost.css">
+	{% else %}
+	<link rel="stylesheet" href="{{ media }}/neon/neon.css">
 	{% endif %}
 	<link rel="icon" href="{{ media }}/logo.svg" sizes="any" type="image/svg+xml">
 	<link rel="icon" href="{{ media }}/logo_48.png" sizes="48x48">
@@ -204,15 +213,24 @@
 <div class="n-ambient" aria-hidden="true"><i class="n-amb-a"></i><i class="n-amb-b"></i><i class="n-amb-c"></i></div>
 {% if (!blank_page): %}
 <header class="hud">
-	<button type="button" class="hud-toggle" id="nav-toggle" aria-label="Menu" aria-controls="sidebar" aria-expanded="false">
+	<button type="button" class="hud-toggle" id="nav-toggle" aria-label="{{ T.menu }}" aria-controls="sidebar" aria-expanded="false">
 		<span></span><span></span><span></span>
 	</button>
 
+	{% if (gost): %}
 	<a class="brand" href="/" title="{{ entityencode(model, true) }}">
 		<span class="brand-code glitch" data-text="404">404</span>
 		<span class="brand-sep">://</span>
 		<span class="brand-host">{{ hostname }}</span>
 	</a>
+	{% else %}
+	<div class="hud-search" role="search">
+		<svg class="hud-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+		<input type="search" id="hud-search" autocomplete="off" spellcheck="false" placeholder="{{ T.search }}" aria-label="{{ T.search_label }}" aria-controls="hud-search-results" aria-expanded="false">
+		<kbd class="hud-search-key" aria-hidden="true">/</kbd>
+		<div class="hud-search-results" id="hud-search-results" role="listbox" hidden></div>
+	</div>
+	{% endif %}
 
 	<div class="hud-meta">
 		{% if (gost): %}
@@ -237,22 +255,19 @@
 	</div>
 </header>
 
-{% if (!gost): %}
-<div class="hud-ticker" aria-hidden="true">
-	<span class="hud-ticker-tag">&#x26A0; {{ T.ticker_tag }}</span>
-	<div class="hud-ticker-track">
-		<div class="hud-ticker-run">
-			{% for (let pass = 0; pass < 2; pass++): %}
-			{% for (let msg in T.ticker): %}<span class="hud-ticker-msg">{{ msg }}</span>{% endfor %}
-			{% endfor %}
-		</div>
-	</div>
-</div>
-{% endif %}
 
 <div class="shell">
 	<aside class="sidebar" id="sidebar">
 		<div class="sidebar-scan" aria-hidden="true"></div>
+		{% if (neon): %}
+		<a class="side-brand" href="/" title="{{ entityencode(model, true) }}">
+			{% include('themes/404mode/glyph', { emblem, gid: 'ng-side' }) %}
+			<span class="side-brand-text">
+				<b>{{ distname }}</b>
+				<small>{{ model || hostname }}</small>
+			</span>
+		</a>
+		{% endif %}
 		{% if (gost): %}
 		<div class="gost-plate gost-plate-{{ emblem }}" aria-hidden="true">
 			{% include('themes/404mode/mark', { emblem }) %}
@@ -285,14 +300,21 @@
 			</div>
 		</div>
 		{% endif %}
+		{% if (neon): %}
+		<dl class="side-info">
+			<div><dt>{{ T.firmware }}</dt><dd>{{ distver || '—' }}</dd></div>
+			{% if (kernel): %}<div><dt>{{ T.kernel }}</dt><dd>{{ kernel }}</dd></div>{% endif %}
+			{% if (uptime): %}<div><dt>{{ T.running }}</dt><dd id="side-uptime" data-uptime="{{ uptime }}">{{ updays(uptime) }}</dd></div>{% endif %}
+		</dl>
+		{% endif %}
 		<div class="sidebar-uplink" aria-hidden="true">
 			<span class="sidebar-uplink-dot"></span>
 			<span class="sidebar-uplink-label">{{ T.uplink }}:</span>
 			<span class="sidebar-uplink-state">{{ T.uplink_state }}</span>
 		</div>
-		<button type="button" class="sidebar-collapse" id="nav-collapse" aria-label="Collapse menu">
+		<button type="button" class="sidebar-collapse" id="nav-collapse" aria-label="{{ T.collapse }}" title="{{ T.collapse }}">
 			<span class="sidebar-collapse-icon" aria-hidden="true">&#x25C2;</span>
-			<span class="sidebar-collapse-label">MINIMIZE</span>
+			<span class="sidebar-collapse-label">{{ neon ? T.collapse : 'MINIMIZE' }}</span>
 		</button>
 	</aside>
 	<div class="shell-mask" id="nav-mask"></div>

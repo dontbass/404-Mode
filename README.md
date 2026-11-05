@@ -1,16 +1,22 @@
 # 404 MODE
 
-**Киберпанк / пост-апокалипсис тема для LuCI (OpenWrt 24.10+).** Неон поверх пепла, колючая проволока, гранж и ощущение, что интернет больше не свободный.
+**Тема для LuCI (OpenWrt / ImmortalWrt 24.10+) в виде пульта мобильного 4G/5G-роутера.** Основной скин «Неон»: тёмный обсидиан со сланцевым стеклом или светлый фарфор, неоновый циан и электрический синий для управления, зелёный / янтарный / красный только для состояний, моноширинные цифры. Второй скин — дизельпанк «ГОСТ-24».
 
-`СИГНАЛ ПОТЕРЯН // СЕТЬ НЕСВОБОДНА — ПОДТВЕРДИТЕ ЛИЧНОСТЬ`
-
-| ASH (тёмная) | SAMIZDAT (светлая) |
+| Тёмная | Светлая |
 |---|---|
-| ![Dark](docs/dark-overview.jpg) | ![Light](docs/light-overview.jpg) |
-| ![Dark settings](docs/dark-settings.jpg) | ![Light settings](docs/light-settings.jpg) |
-| ![Dark login](docs/dark-login.jpg) | ![Light login](docs/light-login.jpg) |
+| ![Обзор, тёмная](docs/neon-dashboard-dark.jpg) | ![Обзор, светлая](docs/neon-dashboard-light.jpg) |
+| ![Proxy](docs/neon-proxy-dark.jpg) | ![Настройки](docs/neon-settings-light.jpg) |
+| ![Вход](docs/neon-login.jpg) | ![Телефон](docs/neon-mobile.jpg) |
 
-![Mobile](docs/mobile.jpg)
+### Неон: что внутри
+
+- **«Обзор» — новая главная страница.** Модем крупно: оператор, тип сети (LTE / 4G+ / 5G), активная SIM, шкала сигнала, кольца RSRP / RSRQ / SINR с итоговой оценкой, бэнды с шириной полосы, Cell ID / PCI / EARFCN / TAC. Рядом «Текущий прокси-сервер» с флагом страны, пингом и тумблером, состояние системы (процессор, память, температура процессора и модема, аптайм), радиометрики с порогами и трафик: живой график скачивания / загрузки и кольцо лимита тарифа (лимит задаётся прямо на карточке).
+- **Proxy** — панель Nikki + mihomo: включить / выключить службу, режим маршрутизации (по правилам / весь трафик / напрямую), TUN, число соединений, принято / отправлено, цепочка «группа › группа › узел», группы узлов из подписки с выбором узла и проверкой пинга. Пункт меню появляется, только если установлен Nikki.
+- **Поиск по настройкам** в шапке (клавиша `/`): ищет по всем разделам меню и по карточкам, полям и вкладкам текущей страницы, понимает «вайфай», «ttl», «пароль», «прокси»; найденное подсвечивается и в меню, и на странице, Enter переходит.
+- Сайдбар с иконками разделов, сворачивается до иконок; на телефоне — выдвижное меню. Флажки в формах — переключатели, вкладки — сегменты, кнопки и поля — скруглённые.
+- Шрифты в комплекте (Onest, Unbounded, JetBrains Mono, OFL), интернет для них не нужен.
+
+Откуда данные: модем — QModem (`ubus qmodem info`), прокси — mihomo REST API через rpcd-плагин темы (адрес и секрет берутся из `/etc/nikki/run/config.yaml`), система и трафик — `system info`, `/proc/stat`, термодатчик, счётчики интерфейса маршрута по умолчанию. Нет QModem или Nikki — карточка честно пишет, чего не хватает.
 
 ### ГОСТ-24 — полевой бункер
 
@@ -36,12 +42,12 @@
 
 ## Панель модема (Modem WebUI, порт 8001)
 
-Для роутеров с `luci-app-modemwebui` (Hiveton H5000M и др.) панель модема на `:8001` перекрашивается под активную тему: ГОСТ-24, ASH или SAMIZDAT, тёмная или светлая. Внутри LuCI (*Modem → ModemWebUI*) она переключается вместе с кнопкой схемы в шапке; открытая напрямую на `:8001` — запоминает последний вариант. Совместима с русским переводом [hiveton-h5000m-ru](https://github.com/dontbass/hiveton-h5000m-ru).
+Для роутеров с `luci-app-modemwebui` (Hiveton H5000M и др.) панель модема на `:8001` перекрашивается под активную тему: неон или ГОСТ-24, тёмная или светлая. Внутри LuCI (*Modem → ModemWebUI*) она переключается вместе с кнопкой схемы в шапке; открытая напрямую на `:8001` — запоминает последний вариант. Совместима с русским переводом [hiveton-h5000m-ru](https://github.com/dontbass/hiveton-h5000m-ru).
 
 | ГОСТ-24 в LuCI | ГОСТ-24 светлая |
 |---|---|
 | ![modem gost](docs/modem-gost.jpg) | ![modem gost light](docs/modem-gost-light.jpg) |
-| **ASH** | **SAMIZDAT** |
+| **Тёмная** | **Светлая** |
 | ![modem ash](docs/modem-ash.jpg) | ![modem samizdat](docs/modem-samizdat.jpg) |
 
 Как устроено:
@@ -61,12 +67,12 @@
 
 ## iStoreOS QuickStart
 
-Стартовая страница iStoreOS (`luci-app-quickstart`) идёт за активной темой и её схемой: ГОСТ-24, ASH, SAMIZDAT, тёмная или светлая. Тема выставляет QuickStart его собственный признак `<body theme="dark|light">` (от него зависят переменные страницы и палитра графиков ECharts) и перекрывает то, что в QuickStart зашито цветами.
+Стартовая страница iStoreOS (`luci-app-quickstart`) идёт за активной темой и её схемой: неон или ГОСТ-24, тёмная или светлая. Тема выставляет QuickStart его собственный признак `<body theme="dark|light">` (от него зависят переменные страницы и палитра графиков ECharts) и перекрывает то, что в QuickStart зашито цветами.
 
 | ГОСТ-24 | ГОСТ-24 светлая |
 |---|---|
 | ![quickstart gost](docs/quickstart-gost.jpg) | ![quickstart gost light](docs/quickstart-gost-light.jpg) |
-| **ASH** | **SAMIZDAT** |
+| **Тёмная** | **Светлая** |
 | ![quickstart ash](docs/quickstart-ash.jpg) | ![quickstart samizdat](docs/quickstart-samizdat.jpg) |
 
 - Панели — один тон над фоном и рамка 1px, без теней и скруглений; в ГОСТ-24 — стальные плиты с заклёпками.
@@ -134,9 +140,9 @@ Meduza    https://meduza.io/rss/all
 
 | В LuCI | Путь | Поведение |
 |---|---|---|
-| **404Mode** | `/luci-static/404mode` | авто по системной теме браузера + переключатель `AUTO / DARK / LITE` в шапке |
-| **404ModeDark** | `/luci-static/404mode-dark` | всегда **ASH** — сажа, токсичный неон, ржавчина, CRT-сканлайны |
-| **404ModeLight** | `/luci-static/404mode-light` | всегда **SAMIZDAT** — ксерокопия на старой бумаге, типографская краска, красный штамп |
+| **404Mode** | `/luci-static/404mode` | **Неон**, авто по системной теме браузера + переключатель «Авто / Тёмная / Светлая» в шапке |
+| **404ModeDark** | `/luci-static/404mode-dark` | **Неон**, всегда тёмная — обсидиан и сланцевое стекло |
+| **404ModeLight** | `/luci-static/404mode-light` | **Неон**, всегда светлая — фарфор и матовое стекло |
 | **404ModeGost** | `/luci-static/404mode-gost` | **ГОСТ-24** — дизельпанк-бункер с живой телеметрией и дашбордом; тёмная по умолчанию, светлая — кнопкой в шапке |
 
 Выбор: **System → System → Language and Style**.
@@ -169,15 +175,15 @@ cd /tmp && rm -f 404.sh && for u in \
   https://raw.githubusercontent.com/dontbass/404-Mode/main/install.sh \
   https://cdn.jsdelivr.net/gh/dontbass/404-Mode@main/install.sh \
   https://fastly.jsdelivr.net/gh/dontbass/404-Mode@main/install.sh
-do uclient-fetch -T 20 -O 404.sh "$u" && break; done; sh 404.sh --gost
+do uclient-fetch -T 20 -O 404.sh "$u" && break; done; sh 404.sh
 ```
 
 Ключи:
 
 ```sh
-sh /tmp/404.sh            # авто
-sh /tmp/404.sh --dark     # сразу тёмная
-sh /tmp/404.sh --light    # сразу светлая
+sh /tmp/404.sh            # неон, авто
+sh /tmp/404.sh --dark     # неон, тёмная
+sh /tmp/404.sh --light    # неон, светлая
 sh /tmp/404.sh --gost     # сразу ГОСТ-24
 sh /tmp/404.sh --remove   # удалить, вернуть bootstrap
 ```
@@ -224,27 +230,32 @@ luci-theme-404mode/
 ├── Makefile
 ├── htdocs/luci-static/
 │   ├── 404mode/
-│   │   ├── cascade.css          # база компонентов + слой 404 MODE (токены ASH / SAMIZDAT) + QuickStart
+│   │   ├── cascade.css          # база компонентов + общий слой 404 MODE + QuickStart, iStore, сторонние приложения
 │   │   ├── mobile.css
 │   │   ├── logo.svg, logo_48.png
+│   │   ├── neon/neon.css            # скин «Неон» (404Mode, -Dark, -Light)
+│   │   ├── neon/fonts/              # Onest, Unbounded, JetBrains Mono (OFL)
 │   │   └── gost/gost.css            # скин ГОСТ-24
 │   ├── 404mode-gost  -> 404mode
 │   ├── 404mode-dark  -> 404mode
 │   ├── 404mode-light -> 404mode
 │   └── resources/
-│       ├── menu-404mode.js      # сайдбар, вкладки, drawer, FX, переключатель темы
+│       ├── menu-404mode.js      # сайдбар, вкладки, drawer, FX, переключатель темы, поиск
+│       ├── neon-404mode.js      # общие помощники «Обзора» и Proxy (флаги, форматы, RPC)
+│       ├── view/404mode/        # dashboard.js («Обзор»), proxy.js, neon.css
 │       ├── hud-404mode.js       # ГОСТ-24: телеметрия, радар, дашборд
 │       ├── nfx-404mode.js       # перекраска сторонних приложений
 │       └── brief-404mode.js     # сводка в шапке, оттенок фона
 ├── ucode/template/themes/
-│   ├── 404mode/{header,footer,sysauth,mark}.ut
+│   ├── 404mode/{header,footer,sysauth,mark,glyph}.ut
 │   ├── 404mode-dark  -> 404mode
 │   ├── 404mode-light -> 404mode
 │   └── 404mode-gost  -> 404mode
 └── root/
     ├── etc/uci-defaults/30_luci-theme-404mode
     ├── usr/libexec/404mode-brief                  # фоновая загрузка погоды / курсов / новостей
-    └── usr/share/rpcd/{ucode/404mode.uc, acl.d/luci-theme-404mode.json}
+    ├── usr/share/luci/menu.d/luci-theme-404mode.json   # пункты «Обзор» и Proxy
+    └── usr/share/rpcd/{ucode/404mode.uc, acl.d/luci-theme-404mode.json}   # сводка, Nikki / mihomo
 
 luci-theme-404mode-modemwebui/          # скин панели модема (:8001)
 ├── Makefile
@@ -256,16 +267,16 @@ luci-theme-404mode-modemwebui/          # скин панели модема (:8
 
 ## Палитра
 
-| Токен | ASH | SAMIZDAT | Где |
+| Токен | Тёмная | Светлая | Где |
 |---|---|---|---|
-| `--n-cyan` | `#00e8f0` | `#00727c` | акцент, ссылки, рамки |
-| `--n-magenta` | `#ff2a6d` | `#c4122f` | активное, ошибки, штамп |
-| `--n-green` | `#39ff9c` | `#1d7a3e` | сохранить / применить |
-| `--n-yellow` | `#f2d60b` | `#e5b100` | сигнальные ленты, предупреждения |
-| `--n-rust` | `#d9622b` | `#a8471c` | ржавчина, «фильтруется» |
-| `--n-bg` | `#0b0b0a` | `#e9e4d8` | фон |
+| `--x-cyan` | `#2BE4FF` | `#0789AD` | управление, ссылки, активное |
+| `--x-volt` | `#4C7DFF` | `#2F5FE8` | градиенты, второй ряд графиков |
+| `--x-ok` | `#3DDC97` | `#0E9A60` | хорошо / включено |
+| `--x-warn` | `#FFB648` | `#B86E00` | внимание |
+| `--x-bad` | `#FF5470` | `#D9304B` | ошибка / слабый сигнал |
+| `--n-bg` | `#080B10` | `#EEF2F7` | фон |
 
-Перекрасить — поменять токены в блоках `ASH` / `SAMIZDAT` в `cascade.css`, ГОСТ-24 — в `gost/gost.css` (блоки dark / light), панель модема — палитры `--m-*` в `modem.css`.
+Перекрасить — поменять токены в `neon/neon.css` (блоки dark / light), ГОСТ-24 — в `gost/gost.css` (блоки dark / light), панель модема — палитры `--m-*` в `modem.css`.
 
 ## Лицензия
 

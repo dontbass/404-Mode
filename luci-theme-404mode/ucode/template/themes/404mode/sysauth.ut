@@ -12,6 +12,9 @@
 	const ru = (substr(dispatcher.lang ?? '', 0, 2) == 'ru');
 	const emblem = match(lc(striptags(version?.distname ?? '')), /immortal/) ? 'immortal' : 'openwrt';
 
+	const gost = (theme == '404mode-gost');
+	const hello = ru ? 'Вход в панель управления' : 'Sign in to the control panel';
+	const busy = ru ? 'Входим…' : 'Signing in…';
 	const L = ru ? {
 		lost: 'СИГНАЛ ПОТЕРЯН',
 		sub: '// СЕТЬ НЕСВОБОДНА — ПОДТВЕРДИТЕ ЛИЧНОСТЬ',
@@ -30,6 +33,7 @@
 -%}
 
 {% include('header', { blank_page: true }) %}
+{% if (gost): %}
 
 <canvas id="rain" class="login-rain" aria-hidden="true"></canvas>
 <div class="login-vignette" aria-hidden="true"></div>
@@ -181,5 +185,51 @@
 	requestAnimationFrame(frame);
 })();
 </script>
+
+{% else %}
+<div class="xl">
+	<div class="xl-head">
+		{% include('themes/404mode/glyph', { emblem, gid: 'ng-login' }) %}
+		<div>
+			<div class="xl-name">{{ striptags(version?.distname ?? 'OpenWrt') }}</div>
+			<div class="xl-host">{{ model || host }}</div>
+		</div>
+	</div>
+	<form method="post" class="xl-card" id="login-form" autocomplete="on">
+		<h2 class="xl-title">{{ hello }}</h2>
+		{% if (fuser): %}
+		<div class="alert-message error xl-error">{{ _('Invalid username and/or password! Please try again.') }}</div>
+		{% endif %}
+		<label class="xl-field">
+			<span class="xl-label">{{ _('Username') }}</span>
+			<input name="luci_username" id="luci_username" type="text" autocomplete="username" spellcheck="false" autocapitalize="off" value="{{ entityencode(duser, true) }}">
+		</label>
+		<label class="xl-field">
+			<span class="xl-label">{{ _('Password') }}</span>
+			<input name="luci_password" id="luci_password" type="password" autocomplete="current-password">
+		</label>
+		<button type="submit" class="btn cbi-button important xl-submit" data-busy="{{ busy }}">{{ _('Log in') }}</button>
+	</form>
+	<div class="xl-foot">
+		<span>{{ host }}</span>
+		<span>{{ striptags(version?.distname ?? '') }} {{ striptags(version?.distversion ?? '') }}</span>
+	</div>
+</div>
+<script>
+(function() {
+	var form = document.getElementById('login-form'),
+	    pass = document.getElementById('luci_password'),
+	    user = document.getElementById('luci_username'),
+	    btn = form.querySelector('.xl-submit');
+
+	(user && !user.value ? user : pass).focus();
+
+	form.addEventListener('submit', function() {
+		form.classList.add('busy');
+		btn.textContent = btn.getAttribute('data-busy');
+	});
+})();
+</script>
+{% endif %}
 
 {% include('footer', { blank_page: true }) %}

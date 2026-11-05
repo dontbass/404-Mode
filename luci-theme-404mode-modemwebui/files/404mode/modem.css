@@ -1,5 +1,6 @@
 /*!
  * 404 MODE — skin for Modem WebUI (Ant Design Pro on :8001)
+ * "base" is the neon skin of 404Mode / 404ModeDark / 404ModeLight.
  * Active only while <html data-404="gost|base" data-404-theme="dark|light">,
  * which modem.js sets from the LuCI theme. Without it the panel stays stock.
  * https://github.com/dontbass/404-Mode — Apache-2.0
@@ -113,101 +114,101 @@ html[data-404="gost"][data-404-theme="light"] {
 }
 
 html[data-404="base"][data-404-theme="dark"] {
-	--m-icon-filter: grayscale(1) sepia(1) hue-rotate(135deg) saturate(5) brightness(1.15);
-	--m-icon-hot: grayscale(1) sepia(1) hue-rotate(290deg) saturate(6) brightness(1.1);
+	--m-icon-filter: grayscale(1) sepia(1) hue-rotate(150deg) saturate(5) brightness(1.2);
+	--m-icon-hot: grayscale(1) sepia(1) hue-rotate(190deg) saturate(6) brightness(1.1);
 
-	--m-bg: #0b0b0a;
-	--m-side: #0d0d0c;
-	--m-surface: #151513;
-	--m-head: #151513;
-	--m-elev: #1b1b18;
-	--m-well: #080807;
-	--m-tile: #1b1b18;
-	--m-text: #d9d6cb;
-	--m-text-2: #8d897d;
-	--m-text-3: #6b675d;
-	--m-text-4: #4d4a42;
-	--m-heading: #f3f0e5;
-	--m-border: rgba(0, 232, 240, .28);
-	--m-border-2: rgba(0, 232, 240, .13);
-	--m-seam: rgba(0, 232, 240, .15);
-	--m-fill: rgba(0, 232, 240, .08);
-	--m-fill-2: rgba(0, 232, 240, .05);
-	--m-fill-3: rgba(0, 232, 240, .03);
-	--m-primary: #00e8f0;
-	--m-primary-hover: #5cf3f8;
-	--m-primary-active: #00b8bf;
-	--m-primary-rgb: 0, 232, 240;
-	--m-on-primary: #0b0b0a;
-	--m-accent: #00e8f0;
-	--m-accent-rgb: 0, 232, 240;
-	--m-success: #39ff9c;
-	--m-success-rgb: 57, 255, 156;
-	--m-warning: #f2d60b;
-	--m-warning-rgb: 242, 214, 11;
-	--m-error: #ff2a6d;
-	--m-error-rgb: 255, 42, 109;
-	--m-info: #00e8f0;
-	--m-info-rgb: 0, 232, 240;
-	--m-radius: 0px;
-	--m-font: "JetBrains Mono", "Fira Code", "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace;
-	--m-mono: var(--m-font);
-	--m-shadow: inset 0 0 40px rgba(0, 0, 0, .3);
+	--m-bg: #080b10;
+	--m-side: #0d121a;
+	--m-surface: #121925;
+	--m-head: #121925;
+	--m-elev: #18202d;
+	--m-well: #070a0f;
+	--m-tile: #161e2b;
+	--m-text: #dce5ef;
+	--m-text-2: #8796a8;
+	--m-text-3: #6b7a8e;
+	--m-text-4: #56657a;
+	--m-heading: #f2f6fb;
+	--m-border: rgba(135, 150, 168, .28);
+	--m-border-2: rgba(135, 150, 168, .14);
+	--m-seam: rgba(135, 150, 168, .16);
+	--m-fill: rgba(135, 150, 168, .12);
+	--m-fill-2: rgba(135, 150, 168, .08);
+	--m-fill-3: rgba(135, 150, 168, .05);
+	--m-primary: #2be4ff;
+	--m-primary-hover: #66ecff;
+	--m-primary-active: #12c3dd;
+	--m-primary-rgb: 43, 228, 255;
+	--m-on-primary: #04121a;
+	--m-accent: #2be4ff;
+	--m-accent-rgb: 43, 228, 255;
+	--m-success: #3ddc97;
+	--m-success-rgb: 61, 220, 151;
+	--m-warning: #ffb648;
+	--m-warning-rgb: 255, 182, 72;
+	--m-error: #ff5470;
+	--m-error-rgb: 255, 84, 112;
+	--m-info: #4c7dff;
+	--m-info-rgb: 76, 125, 255;
+	--m-radius: 14px;
+	--m-font: "Onest", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--m-mono: "JetBrains Mono", "Fira Code", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+	--m-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 18px 40px -24px rgba(0, 0, 0, .8);
 	--m-inset: none;
 	--m-shine: none;
 	--m-rivet: none;
-	--m-btn-hi: rgba(0, 232, 240, .07);
-	--m-btn-lo: rgba(0, 232, 240, .07);
+	--m-btn-hi: rgba(135, 150, 168, .15);
+	--m-btn-lo: rgba(135, 150, 168, .15);
 	--m-chart-filter: invert(.92) hue-rotate(180deg);
 	color-scheme: dark;
 }
 
 html[data-404="base"][data-404-theme="light"] {
-	--m-icon-filter: grayscale(1) sepia(1) hue-rotate(135deg) saturate(4) brightness(.6);
-	--m-icon-hot: grayscale(1) sepia(1) hue-rotate(300deg) saturate(6) brightness(.7);
+	--m-icon-filter: grayscale(1) sepia(1) hue-rotate(160deg) saturate(4) brightness(.6);
+	--m-icon-hot: grayscale(1) sepia(1) hue-rotate(190deg) saturate(6) brightness(.7);
 
-	--m-bg: #e9e4d8;
-	--m-side: #e1dbcd;
-	--m-surface: #f7f4ec;
-	--m-head: #f7f4ec;
-	--m-elev: #f8f5ee;
-	--m-well: #fffdf7;
-	--m-tile: #efeadf;
-	--m-text: #24221d;
-	--m-text-2: #5e594d;
-	--m-text-3: #7a7466;
-	--m-text-4: #9a9483;
-	--m-heading: #12110e;
-	--m-border: rgba(36, 34, 29, .3);
-	--m-border-2: rgba(36, 34, 29, .14);
-	--m-seam: rgba(36, 34, 29, .2);
-	--m-fill: rgba(36, 34, 29, .08);
-	--m-fill-2: rgba(36, 34, 29, .05);
-	--m-fill-3: rgba(36, 34, 29, .03);
-	--m-primary: #00727c;
-	--m-primary-hover: #008a96;
-	--m-primary-active: #005f68;
-	--m-primary-rgb: 0, 114, 124;
-	--m-on-primary: #f8f5ee;
-	--m-accent: #00727c;
-	--m-accent-rgb: 0, 114, 124;
-	--m-success: #1d7a3e;
-	--m-success-rgb: 29, 122, 62;
-	--m-warning: #9a7400;
-	--m-warning-rgb: 154, 116, 0;
-	--m-error: #c4122f;
-	--m-error-rgb: 196, 18, 47;
-	--m-info: #00727c;
-	--m-info-rgb: 0, 114, 124;
-	--m-radius: 0px;
-	--m-font: "JetBrains Mono", "Fira Code", "Cascadia Code", "Source Code Pro", Menlo, Consolas, "DejaVu Sans Mono", monospace;
-	--m-mono: var(--m-font);
-	--m-shadow: 2px 3px 0 rgba(36, 34, 29, .12), 0 10px 26px rgba(60, 50, 30, .12);
+	--m-bg: #eef2f7;
+	--m-side: #f8fafd;
+	--m-surface: #ffffff;
+	--m-head: #ffffff;
+	--m-elev: #ffffff;
+	--m-well: #f5f7fb;
+	--m-tile: #f2f5fa;
+	--m-text: #1a2433;
+	--m-text-2: #556274;
+	--m-text-3: #6f7c8e;
+	--m-text-4: #8e9aac;
+	--m-heading: #0b1220;
+	--m-border: rgba(15, 23, 42, .18);
+	--m-border-2: rgba(15, 23, 42, .09);
+	--m-seam: rgba(15, 23, 42, .12);
+	--m-fill: rgba(15, 23, 42, .07);
+	--m-fill-2: rgba(15, 23, 42, .045);
+	--m-fill-3: rgba(15, 23, 42, .03);
+	--m-primary: #2f5fe8;
+	--m-primary-hover: #4672f0;
+	--m-primary-active: #2349b8;
+	--m-primary-rgb: 47, 95, 232;
+	--m-on-primary: #ffffff;
+	--m-accent: #0789ad;
+	--m-accent-rgb: 7, 137, 173;
+	--m-success: #0e9a60;
+	--m-success-rgb: 14, 154, 96;
+	--m-warning: #b86e00;
+	--m-warning-rgb: 184, 110, 0;
+	--m-error: #d9304b;
+	--m-error-rgb: 217, 48, 75;
+	--m-info: #2f5fe8;
+	--m-info-rgb: 47, 95, 232;
+	--m-radius: 14px;
+	--m-font: "Onest", "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--m-mono: "JetBrains Mono", "Fira Code", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+	--m-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 14px 34px -22px rgba(15, 23, 42, .28);
 	--m-inset: none;
 	--m-shine: none;
 	--m-rivet: none;
-	--m-btn-hi: rgba(0, 114, 124, .07);
-	--m-btn-lo: rgba(0, 114, 124, .07);
+	--m-btn-hi: rgba(15, 23, 42, .05);
+	--m-btn-lo: rgba(15, 23, 42, .05);
 	--m-chart-filter: none;
 	color-scheme: light;
 }
@@ -589,23 +590,15 @@ html[data-404="gost"] .ant-card-head {
 html[data-404="gost"][data-404-theme="dark"] .ant-card-head { background: linear-gradient(180deg, #30312c, #252622) !important; }
 
 /* 404 base: HUD brackets */
-html[data-404="base"] .ant-card {
-	--c: rgba(var(--m-accent-rgb), .7);
-	background-image:
-		linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)),
-		linear-gradient(var(--c), var(--c)), linear-gradient(var(--c), var(--c)) !important;
-	background-size: 14px 1px, 1px 14px, 14px 1px, 1px 14px !important;
-	background-position: 0 0, 0 0, 100% 100%, 100% 100% !important;
-	background-repeat: no-repeat !important;
-}
+/* neon: glass cards, sentence-case titles, the heading in ink */
+html[data-404="base"] .ant-card { background-image: none !important; }
 
 html[data-404="base"] .ant-card-head-title,
 html[data-404="base"] .ant-card-head-title h2 {
-	text-transform: uppercase;
-	letter-spacing: .03em;
+	text-transform: none;
+	letter-spacing: 0;
+	font-weight: 600;
 }
-
-html[data-404="base"] .ant-card-head-title { color: var(--m-accent) !important; }
 
 /* tile cards inside the dashboard: inline "rgba(240,240,240,.5)" boxes */
 html[data-404] [style*="background: rgba(240, 240, 240"],
@@ -688,10 +681,10 @@ html[data-404] .ant-btn-primary:hover,
 html[data-404] .ant-btn-variant-solid.ant-btn-color-primary:hover { filter: brightness(1.1); }
 
 html[data-404="base"] .ant-btn {
-	text-transform: uppercase;
-	letter-spacing: .1em;
-	font-weight: 700;
-	font-size: 12px;
+	text-transform: none;
+	letter-spacing: 0;
+	font-weight: 500;
+	border-radius: 12px !important;
 }
 
 html[data-404="base"][data-404-theme="dark"] .ant-btn-primary:hover { box-shadow: 0 0 8px rgba(var(--m-primary-rgb), .55), 0 0 22px rgba(var(--m-primary-rgb), .25) !important; }

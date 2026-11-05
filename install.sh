@@ -185,6 +185,17 @@ rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$WWW/$NAME-gost" "$UCO
 cp -R "$SRC/htdocs/luci-static/$NAME" "$WWW/"
 cp "$SRC/htdocs/luci-static/resources/menu-$NAME.js" "$SRC/htdocs/luci-static/resources/hud-$NAME.js" \
    "$SRC/htdocs/luci-static/resources/nfx-$NAME.js" "$SRC/htdocs/luci-static/resources/brief-$NAME.js" "$WWW/resources/"
+
+# dashboard ("Overview") and the Nikki / mihomo proxy panel
+if [ -d "$SRC/htdocs/luci-static/resources/view/$NAME" ]; then
+	cp "$SRC/htdocs/luci-static/resources/neon-$NAME.js" "$WWW/resources/"
+	rm -rf "$WWW/resources/view/$NAME"
+	mkdir -p "$WWW/resources/view"
+	cp -R "$SRC/htdocs/luci-static/resources/view/$NAME" "$WWW/resources/view/"
+	mkdir -p /usr/share/luci/menu.d
+	cp "$SRC/root/usr/share/luci/menu.d/luci-theme-$NAME.json" /usr/share/luci/menu.d/
+	rm -f /tmp/404mode-mihomo.json
+fi
 cp -R "$SRC/ucode/template/themes/$NAME" "$UCODE/"
 
 # header brief backend (weather / rates / headlines): rpcd ucode plugin + ACL

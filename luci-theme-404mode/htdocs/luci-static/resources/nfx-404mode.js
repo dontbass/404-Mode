@@ -26,7 +26,7 @@
 	/* chrome and LuCI widgets the theme already paints */
 	var SKIP = [
 		'header.hud', '.sidebar', 'footer', '.hud-ticker', '.shell-mask', '.n-ambient', '.n-saver',
-		'.gd', '.gost-plate', '.gost-radar', '.login', '.login-mark',
+		'.gd', '.gost-plate', '.gost-radar', '.login', '.login-mark', '.xd', '.xl', '.hud-search-results',
 		'.alert-message', '.cbi-progressbar', '.ifacebox', '.zonebadge',
 		'.cbi-tooltip', '.cbi-dropdown', '.dropdown-menu', '.cbi-tabmenu',
 		'.tabs', '#tabmenu', '.cbi-page-actions', '.cbi-button.important',
@@ -108,7 +108,7 @@
 			var name = cs[i];
 
 			/* our tokens and the LuCI bootstrap tokens the theme maps */
-			if (!/^--(n|g|qs|text-color|border-color|background-color|primary-color|on-|error-color|success-color|warn-color|tab-bar)-?/.test(name))
+			if (!/^--(n|g|x|qs|text-color|border-color|background-color|primary-color|on-|error-color|success-color|warn-color|tab-bar)-?/.test(name))
 				continue;
 
 			var v = cs.getPropertyValue(name).replace(/\s+/g, ' ').trim(), c = null;
@@ -131,6 +131,16 @@
 	/* pure white / near-white greys never count as theme backgrounds: the
 	   theme's light surfaces are warm paper and enamel, not #fff */
 	function themed(c, isBg) {
+		/* the neon skin's light surfaces are cool porcelain: plain palette match */
+		if (root.getAttribute('data-skin') == 'neon') {
+			for (var j = 0; j < palette.length; j++) {
+				var q = palette[j];
+				if (Math.abs(q.r - c.r) + Math.abs(q.g - c.g) + Math.abs(q.b - c.b) < ((c.r + c.g + c.b) / 3 > 205 ? 10 : 21))
+					return true;
+			}
+			return false;
+		}
+
 		if (isBg) {
 			var k = hsl(c);
 			/* pure / cool whites (#fff, #f8fbff, #f0f4f8…) are never ours: the
@@ -351,7 +361,7 @@
 		'40101': [ 'Beeline', 'Beeline' ], '40102': [ 'Kcell', 'Kcell' ], '40107': [ 'Altel', 'Altel' ], '40177': [ 'Tele2', 'Tele2' ]
 	};
 
-	var OPSKIP = 'header.hud, .sidebar, footer, .n-saver, .n-ambient, script, style';
+	var OPSKIP = 'header.hud, .sidebar, footer, .n-saver, .n-ambient, .xd, script, style';
 
 	var PLMN_RE = /^\s*(\d{3})[\s-]?(\d{2,3})\s*$/;
 	var OPER_RE = /опера|operator|carrier|plmn|провайдер/i;

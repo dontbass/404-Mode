@@ -1,0 +1,25 @@
+{
+	"admin/dashboard": {
+		"title": "Overview",
+		"order": 0,
+		"action": {
+			"type": "view",
+			"path": "404mode/dashboard"
+		},
+		"depends": {
+			"acl": [ "luci-theme-404mode" ]
+		}
+	},
+	"admin/proxy": {
+		"title": "Proxy",
+		"order": 2,
+		"action": {
+			"type": "view",
+			"path": "404mode/proxy"
+		},
+		"depends": {
+			"acl": [ "luci-theme-404mode" ],
+			"fs": { "/etc/init.d/nikki": "executable" }
+		}
+	}
+}
