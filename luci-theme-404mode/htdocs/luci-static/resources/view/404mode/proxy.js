@@ -38,10 +38,75 @@ return view.extend({
 		]);
 
 		this.open = {};
+		this.sig = this.shape(p);
 		this.paint(p);
-		poll.add(() => x.proxy().then(r => this.paint(r)), 5);
+		poll.add(() => x.proxy().then(r => this.refresh(r)), 5);
 
 		return this.root;
+	},
+
+	/* what decides the page layout; everything else is a live figure */
+	shape(p) {
+		return JSON.stringify([ p.installed, p.enabled, p.running, p.api, p.mode, p.tun, p.core,
+			p.node && p.node.name, p.chain,
+			(p.groups || []).map(g => [ g.name, g.type, g.now, g.fixed, g.hidden, g.all.map(n => n.name) ]),
+			(p.providers || []).map(v => [ v.name, v.count, v.updated ]),
+			(p.rules || []).map(r => [ r.name, r.count, r.updated ]) ]);
+	},
+
+	/* refresh: change figures in place, rebuild only when the layout changed,
+	   and never let the page jump while it is being scrolled */
+	refresh(p) {
+		const sig = this.shape(p);
+		if (sig == this.sig && !this.busy)
+			return this.update(p);
+		this.sig = sig;
+
+		const y = window.scrollY;
+		const h = this.root.offsetHeight;
+		this.root.style.minHeight = h + 'px';
+		this.paint(p);
+		window.scrollTo(0, y);
+		window.requestAnimationFrame(() => { this.root.style.minHeight = ''; window.scrollTo(0, y); });
+	},
+
+	update(p) {
+		this.p = p;
+		const fmtDelay = (el, d, plain) => {
+			if (!el) return;
+			el.textContent = plain ? (d ? String(d) : (d === 0 ? T('нет', 'n/a') : el.textContent)) : x.delayText(d);
+			el.className = el.className.replace(/\bxd-(ok|warn|bad|none)\b/g, '').trim() + ' xd-' + x.delayClass(d);
+		};
+
+		(p.groups || []).forEach(g => {
+			const card = this.root.querySelector('.xp-group[data-group="' + CSS.escape(g.name) + '"]');
+			if (!card)
+				return;
+			const leaves = g.all.filter(n => !n.group), alive = g.all.filter(n => n.delay > 0).length;
+			const cnt = card.querySelector('.xp-gcount');
+			if (cnt) cnt.textContent = (leaves.length ? alive + '/' : '') + g.all.length;
+			const gd = card.querySelector('.xp-gdelay');
+			if (gd && g.delay) { gd.textContent = g.delay + ' ' + T('мс', 'ms'); gd.className = 'xp-gdelay xd-' + x.delayClass(g.delay); }
+			const tiles = card.querySelectorAll('.xp-tile');
+			g.all.forEach((n, i) => {
+				const t = tiles[i];
+				if (t && !n.group && t.getAttribute('title') == n.name)
+					fmtDelay(t.querySelector('.xp-tile-delay'), n.delay, true);
+			});
+		});
+
+		const ping = this.root.querySelector('.xp-now-ping');
+		if (ping && p.node && !this.root.querySelector('.xp-now .btn[disabled]'))
+			fmtDelay(ping, p.node.delay);
+
+		const tr = p.traffic || {};
+		const dd = this.root.querySelectorAll('.xp-facts dd');
+		if (dd.length == 4 && p.api) {
+			const [ dv, du ] = x.bytes(tr.down), [ uv, uu ] = x.bytes(tr.up);
+			dd[1].textContent = x.num(tr.conns || 0);
+			dd[2].textContent = dv + ' ' + du;
+			dd[3].textContent = uv + ' ' + uu;
+		}
 	},
 
 	paint(p) {
@@ -96,7 +161,7 @@ return view.extend({
 			btn.disabled = true;
 			x.proxySet('service', { on: on }).then(() => {
 				ui.addNotification(null, E('p', {}, [ on ? T('Nikki запускается, это займёт несколько секунд.', 'Nikki is starting, it takes a few seconds.') : T('Nikki остановлен.', 'Nikki stopped.') ]), 'info');
-				window.setTimeout(() => x.proxy().then(r => this.paint(r)), 3000);
+				window.setTimeout(() => x.proxy().then(r => this.refresh(r)), 3000);
 			});
 		});
 
@@ -105,7 +170,7 @@ return view.extend({
 			'class': 'xd-seg-btn',
 			'aria-pressed': p.mode == m ? 'true' : 'false',
 			'disabled': (!p.api) || null,
-			'click': () => x.proxySet('mode', { mode: m }).then(() => x.proxy().then(r => this.paint(r)))
+			'click': () => x.proxySet('mode', { mode: m }).then(() => x.proxy().then(r => this.refresh(r)))
 		}, [ label ]);
 
 		const tr = p.traffic || {};
@@ -156,7 +221,7 @@ return view.extend({
 			btn.classList.remove('busy');
 			btn.textContent = label;
 			this.busy = false;
-			return x.proxy().then(r => this.paint(r));
+			return x.proxy().then(r => this.refresh(r));
 		});
 	},
 
@@ -294,7 +359,7 @@ return view.extend({
 			x.proxySet('group_delay', { group: g.name }).then(() => x.proxy()).then(r => {
 				b.disabled = false;
 				b.classList.remove('busy');
-				this.paint(r);
+				this.refresh(r);
 			});
 		} }, [ x.icon('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>'), E('span', {}, [ T('Пинг', 'Test') ]) ]);
 
@@ -331,7 +396,7 @@ return view.extend({
 						if (r && r.error)
 							ui.addNotification(null, E('p', {}, [ T('mihomo не принял выбор: ', 'mihomo refused: ') + r.error ]), 'warning');
 						return x.proxy();
-					}).then(r => this.paint(r));
+					}).then(r => this.refresh(r));
 				} : null
 			}, [
 				E('span', { 'class': 'xp-tile-name' }, [
