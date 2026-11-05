@@ -20,6 +20,8 @@ const callDevices = rpc.declare({ object: 'luci-rpc', method: 'getNetworkDevices
 const callIfaces = rpc.declare({ object: 'network.interface', method: 'dump', expect: { 'interface': [] } });
 const callRead = rpc.declare({ object: 'file', method: 'read', params: [ 'path' ], expect: { data: '' } });
 const callCellInfo = rpc.declare({ object: 'qmodem', method: 'cell_info', params: [ 'config_section' ], expect: { '': {} } });
+const callWrite = rpc.declare({ object: 'file', method: 'write', params: [ 'path', 'data', 'append', 'mode', 'base64' ] });
+const LOGO_DIR = '/www/luci-static/resources/404mode-op/';
 const callCell = rpc.declare({ object: '404mode', method: 'cell', params: [ 'mcc', 'mnc', 'lac', 'cid' ], expect: { '': {} } });
 
 /* EARFCN (downlink) → LTE band, NR-ARFCN → NR band */
@@ -279,7 +281,10 @@ return view.extend({
 			E('div', { 'class': 'xd-modem-body' }, [
 				E('div', { 'class': 'xd-modem-main' }, [
 					E('div', { 'class': 'xd-op-row' }, [
-						E('span', { 'class': 'xd-op-badge', 'aria-hidden': 'true' }),
+						E('button', { 'type': 'button', 'class': 'xd-op-badge', 'title': T('Свой логотип оператора: нажмите и выберите картинку', 'Your operator logo: click and pick an image'), 'click': ev => this.pickLogo(ev) }, [
+							E('img', { 'class': 'xd-op-logo', 'alt': '', 'hidden': '' }),
+							E('span', { 'class': 'xd-op-letter' })
+						]),
 						E('div', { 'class': 'xd-op' }, [ '…' ])
 					]),
 					E('div', { 'class': 'xd-op-meta' }, [ '' ]),
@@ -713,7 +718,8 @@ return view.extend({
 		const badge = this.q('.xd-op-badge');
 		const brand = OPCOLOR.find(b => b[0].test(m.operator || ''));
 		badge.hidden = !m.operator;
-		badge.textContent = (m.operator || '').replace(/[^A-Za-zА-Яа-яЁё0-9]/g, '').slice(0, 1).toUpperCase();
+		badge.querySelector('.xd-op-letter').textContent = (m.operator || '').replace(/[^A-Za-zА-Яа-яЁё0-9]/g, '').slice(0, 1).toUpperCase();
+		this.loadLogo(m.plmn);
 		badge.style.setProperty('--op', brand ? brand[1] : 'var(--xd-a)');
 		badge.style.setProperty('--op-ink', brand ? brand[2] : '#04121A');
 		this.q('.xd-op-meta').textContent = [
@@ -793,6 +799,53 @@ return view.extend({
 	handleSave: null,
 	handleSaveApply: null,
 	handleReset: null,
+
+	/* ---------- operator logo: an image the owner puts on the router ----------
+	   Stored as /www/luci-static/resources/404mode-op/<PLMN>.png, never shipped
+	   with the theme (logos are the operators' trademarks). */
+
+	loadLogo(plmn, force) {
+		if (!/^\d{5,6}$/.test(plmn || '') || (this.state.logoFor == plmn && !force))
+			return;
+		this.state.logoFor = plmn;
+		const badge = this.q('.xd-op-badge'), img = badge.querySelector('.xd-op-logo');
+		img.onload = () => { img.hidden = false; badge.classList.add('has-logo'); };
+		img.onerror = () => { img.hidden = true; badge.classList.remove('has-logo'); };
+		img.src = L.resource('404mode-op/' + plmn + '.png') + '?t=' + (force ? Date.now() : '1');
+	},
+
+	pickLogo(ev) {
+		const m = this.state.cellRef;
+		const plmn = m && m.plmn;
+		if (!/^\d{5,6}$/.test(plmn || ''))
+			return;
+
+		const input = E('input', { 'type': 'file', 'accept': 'image/png,image/jpeg,image/svg+xml,image/webp' });
+		input.addEventListener('change', () => {
+			const f = input.files && input.files[0];
+			if (!f)
+				return;
+			const url = URL.createObjectURL(f);
+			const pic = new Image();
+			pic.onload = () => {
+				/* square, 192 px PNG: small enough for one rpc call */
+				const size = 192, c = document.createElement('canvas');
+				c.width = c.height = size;
+				const k = Math.min(size / pic.naturalWidth || 1, size / pic.naturalHeight || 1);
+				const w = (pic.naturalWidth || size) * k, h = (pic.naturalHeight || size) * k;
+				c.getContext('2d').drawImage(pic, (size - w) / 2, (size - h) / 2, w, h);
+				URL.revokeObjectURL(url);
+				const data = c.toDataURL('image/png').split(',')[1];
+				callWrite(LOGO_DIR + plmn + '.png', data, false, 420, true).then(() => {
+					this.loadLogo(plmn, true);
+					ui.addNotification(null, E('p', {}, [ T('Логотип сохранён на роутере.', 'Logo saved on the router.') ]), 'info');
+				}).catch(e => ui.addNotification(null, E('p', {}, [ T('Не удалось сохранить логотип: ', 'Could not save the logo: ') + (e.message || e) ]), 'danger'));
+			};
+			pic.onerror = () => ui.addNotification(null, E('p', {}, [ T('Этот файл не открылся как картинка.', 'This file is not an image.') ]), 'warning');
+			pic.src = url;
+		});
+		input.click();
+	},
 
 	/* ---------- tower on a map ---------- */
 

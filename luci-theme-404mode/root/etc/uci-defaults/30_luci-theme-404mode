@@ -19,6 +19,8 @@ set_opt themes.404ModeDark /luci-static/404mode-dark
 set_opt themes.404ModeLight /luci-static/404mode-light
 set_opt themes.404ModeGost /luci-static/404mode-gost
 
+mkdir -p /www/luci-static/resources/404mode-op
+
 [ $changed = 1 ] && uci commit luci
 
 rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache 2>/dev/null

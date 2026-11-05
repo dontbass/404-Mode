@@ -57,6 +57,15 @@
 				],
 				"qmodem": [
 					"set_sim_slot"
+				],
+				"file": [
+					"write",
+					"remove"
+				]
+			},
+			"file": {
+				"/www/luci-static/resources/404mode-op/*": [
+					"write"
 				]
 			}
 		}

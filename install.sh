@@ -192,6 +192,7 @@ if [ -d "$SRC/htdocs/luci-static/resources/view/$NAME" ]; then
 	rm -rf "$WWW/resources/view/$NAME"
 	mkdir -p "$WWW/resources/view"
 	cp -R "$SRC/htdocs/luci-static/resources/view/$NAME" "$WWW/resources/view/"
+	mkdir -p "$WWW/resources/$NAME-op"	# your operator logos (<PLMN>.png), kept on updates
 	mkdir -p /usr/share/luci/menu.d
 	cp "$SRC/root/usr/share/luci/menu.d/luci-theme-$NAME.json" /usr/share/luci/menu.d/
 	rm -f /tmp/404mode-mihomo.json

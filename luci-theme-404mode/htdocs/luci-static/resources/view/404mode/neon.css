@@ -871,3 +871,15 @@ html.no-fx .xd-sweep { animation: none; stroke-opacity: 0; }
 .xd-modem-main { container-type: inline-size; }
 /* the name fits its column: size from the column width and the name length */
 .xd-op-row .xd-op { min-width: 0; font-size: clamp(24px, calc((100cqw - 84px) / (var(--len, 7) * .9)), 64px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; padding-bottom: .06em; }
+
+/* the badge is a button: click to put your own operator logo */
+.xd .xd-op-badge { all: unset; box-sizing: border-box; cursor: pointer; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;
+	width: clamp(46px, 5vw, 62px); height: clamp(46px, 5vw, 62px); font-family: var(--xd-display); font-size: clamp(24px, 2.8vw, 34px); font-weight: 700; line-height: 1;
+	color: var(--op-ink, #fff); background: radial-gradient(120% 120% at 20% 0%, rgba(255, 255, 255, .35), transparent 55%), var(--op, var(--xd-a));
+	border-radius: 18px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08) inset, 0 10px 30px -10px var(--op, var(--xd-a)); flex: 0 0 auto; }
+#maincontent .xd .xd-op-badge { min-width: 0; }
+.xd .xd-op-badge:focus-visible { outline: 2px solid var(--xd-a); outline-offset: 3px; }
+.xd .xd-op-badge.has-logo { background: transparent; border-radius: 50%; box-shadow: 0 10px 30px -12px var(--op, var(--xd-a)); }
+.xd .xd-op-badge.has-logo .xd-op-letter { display: none; }
+.xd-op-logo { width: 100%; height: 100%; object-fit: contain; }
+.xd-op-logo[hidden] { display: none; }
