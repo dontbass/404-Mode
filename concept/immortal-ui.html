@@ -1,0 +1,1141 @@
+<!doctype html>
+<html lang="ru" class="h-full">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ImmortalWrt — пульт роутера</title>
+<meta name="theme-color" content="#080B10">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+	tailwind.config = {
+		theme: {
+			extend: {
+				colors: {
+					obsidian: '#080B10',
+					slate: { 900: '#0D121A', 800: '#111722', 700: '#18202D', 600: '#222C3B' },
+					line: '#1E2836',
+					cyan: { DEFAULT: '#2BE4FF', soft: '#2BE4FF33' },
+					volt: '#4C7DFF',
+					ok: '#3DDC97',
+					warn: '#FFB648',
+					bad: '#FF5470',
+					ink: '#E7EEF6',
+					dim: '#8796A8',
+					faint: '#56657A'
+				},
+				fontFamily: {
+					sans: ['Onest', 'system-ui', 'sans-serif'],
+					display: ['Unbounded', 'Onest', 'sans-serif'],
+					mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
+				}
+			}
+		}
+	};
+</script>
+
+<style>
+	:root { color-scheme: dark; }
+
+	html, body { background: #080B10; }
+
+	body {
+		background:
+			radial-gradient(1100px 700px at 85% -10%, rgba(76, 125, 255, .14), transparent 60%),
+			radial-gradient(900px 600px at -10% 110%, rgba(43, 228, 255, .08), transparent 60%),
+			#080B10;
+		background-attachment: fixed;
+	}
+
+	/* fine grid behind everything: a nod to RF plots */
+	body::before {
+		content: "";
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		background-image:
+			linear-gradient(rgba(135, 150, 168, .045) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(135, 150, 168, .045) 1px, transparent 1px);
+		background-size: 40px 40px;
+		mask-image: radial-gradient(ellipse at 60% 30%, #000 30%, transparent 80%);
+	}
+
+	.glass {
+		background: linear-gradient(180deg, rgba(24, 32, 45, .72), rgba(13, 18, 26, .72));
+		border: 1px solid rgba(135, 150, 168, .14);
+		-webkit-backdrop-filter: blur(14px);
+		backdrop-filter: blur(14px);
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+	}
+
+	/* the one neon frame: the main modem widget */
+	.neon {
+		position: relative;
+		border-color: rgba(43, 228, 255, .35);
+		box-shadow: 0 0 0 1px rgba(43, 228, 255, .08), 0 0 40px -12px rgba(43, 228, 255, .45), inset 0 1px 0 rgba(255, 255, 255, .05);
+	}
+
+	.num { font-variant-numeric: tabular-nums; }
+
+	:focus-visible { outline: 2px solid #2BE4FF; outline-offset: 2px; border-radius: 8px; }
+
+	/* switches */
+	.switch {
+		position: relative;
+		width: 46px;
+		height: 26px;
+		flex: 0 0 auto;
+		border-radius: 999px;
+		background: #222C3B;
+		border: 1px solid rgba(135, 150, 168, .25);
+		transition: background-color .2s, border-color .2s;
+	}
+
+	.switch::after {
+		content: "";
+		position: absolute;
+		top: 3px;
+		left: 3px;
+		width: 18px;
+		height: 18px;
+		border-radius: 50%;
+		background: #8796A8;
+		transition: transform .2s, background-color .2s;
+	}
+
+	.switch[aria-checked="true"] { background: rgba(43, 228, 255, .18); border-color: #2BE4FF; }
+	.switch[aria-checked="true"]::after { transform: translateX(20px); background: #2BE4FF; box-shadow: 0 0 12px #2BE4FF; }
+
+	/* band chips */
+	.chip[aria-pressed="true"] { color: #080B10; background: #2BE4FF; border-color: #2BE4FF; }
+
+	/* search hits */
+	.hit { box-shadow: 0 0 0 2px #2BE4FF, 0 0 30px -6px rgba(43, 228, 255, .7) !important; }
+	.flash { animation: flash 1.4s ease-out; }
+	@keyframes flash { 0% { box-shadow: 0 0 0 2px #2BE4FF, 0 0 50px -4px #2BE4FF; } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+	/* live dot */
+	.pulse { animation: pulse 2s ease-in-out infinite; }
+	@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+	/* scanning sweep in the signal orbit */
+	.sweep { transform-origin: 120px 120px; animation: sweep 6s linear infinite; }
+	@keyframes sweep { to { transform: rotate(360deg); } }
+
+	.log-line { animation: logIn .25s ease-out; }
+	@keyframes logIn { from { opacity: 0; transform: translateY(4px); } }
+
+	::-webkit-scrollbar { width: 8px; height: 8px; }
+	::-webkit-scrollbar-thumb { background: #222C3B; border-radius: 8px; }
+	::-webkit-scrollbar-track { background: transparent; }
+
+	[hidden] { display: none !important; }
+
+	@media (prefers-reduced-motion: reduce) {
+		*, *::before, *::after { animation: none !important; transition: none !important; }
+	}
+</style>
+</head>
+
+<body class="h-full font-sans text-ink antialiased">
+
+<div class="flex min-h-full">
+
+	<!-- ======================= Sidebar ======================= -->
+	<aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 -translate-x-full lg:translate-x-0 transition-transform duration-200 glass border-y-0 border-l-0 flex flex-col">
+		<div class="flex items-center gap-3 px-6 h-20 border-b border-line">
+			<svg viewBox="0 0 48 48" class="w-9 h-9" aria-hidden="true">
+				<defs>
+					<linearGradient id="lg" x1="0" x2="1">
+						<stop offset="0" stop-color="#2BE4FF"/>
+						<stop offset="1" stop-color="#4C7DFF"/>
+					</linearGradient>
+				</defs>
+				<path d="M8 24c0-5 4-8 8-8 7 0 9 16 16 16 4 0 8-3 8-8s-4-8-8-8c-7 0-9 16-16 16-4 0-8-3-8-8z" fill="none" stroke="url(#lg)" stroke-width="3.2" stroke-linecap="round"/>
+				<circle cx="24" cy="24" r="2.6" fill="#2BE4FF"/>
+			</svg>
+			<div class="leading-tight">
+				<div class="font-display text-[15px] font-bold tracking-tight">ImmortalWrt</div>
+				<div class="text-xs text-dim">Hiveton H5000M</div>
+			</div>
+		</div>
+
+		<nav class="flex-1 overflow-y-auto px-3 py-5 space-y-1" aria-label="Разделы">
+			<button data-nav="overview" data-keys="обзор главная дашборд" class="nav-item group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-dim hover:text-ink hover:bg-slate-700/60">
+				<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+				<span class="flex-1">Обзор</span>
+			</button>
+			<button data-nav="modem" data-keys="модем сеть бэнд band частоты ttl imei sim сим вышки сканирование" class="nav-item group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-dim hover:text-ink hover:bg-slate-700/60">
+				<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13v8M8 21h8"/><circle cx="12" cy="10" r="2"/><path d="M7.8 5.8a6 6 0 0 0 0 8.4M16.2 5.8a6 6 0 0 1 0 8.4M5 3a10 10 0 0 0 0 14M19 3a10 10 0 0 1 0 14"/></svg>
+				<span class="flex-1">Модем и сеть</span>
+				<span class="font-mono text-[11px] text-cyan">4G+</span>
+			</button>
+			<button data-nav="vpn" data-keys="обход блокировок vpn прокси 3x-ui xray tun vless reality узлы маршрутизация" class="nav-item group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-dim hover:text-ink hover:bg-slate-700/60">
+				<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+				<span class="flex-1">Обход блокировок</span>
+				<span id="navVpnDot" class="w-2 h-2 rounded-full bg-ok pulse" title="Туннель активен"></span>
+			</button>
+			<button data-nav="sms" data-keys="sms смс ussd баланс сообщения" class="nav-item group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-dim hover:text-ink hover:bg-slate-700/60">
+				<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H8l-4 4V5z"/><path d="M8 9h8M8 12h5"/></svg>
+				<span class="flex-1">SMS и USSD</span>
+				<span id="smsBadge" class="font-mono text-[11px] px-1.5 py-0.5 rounded-md bg-cyan/15 text-cyan">2</span>
+			</button>
+			<button data-nav="system" data-keys="система хранилище cron планировщик emmc nvme fstrim терминал диск" class="nav-item group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-dim hover:text-ink hover:bg-slate-700/60">
+				<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01"/></svg>
+				<span class="flex-1">Система и хранилище</span>
+			</button>
+			<button data-nav="logs" data-keys="лог журнал logread syslog модем события" class="nav-item group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-dim hover:text-ink hover:bg-slate-700/60">
+				<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+				<span class="flex-1">Системный лог</span>
+			</button>
+		</nav>
+
+		<div class="px-6 py-5 border-t border-line text-xs text-dim space-y-1.5">
+			<div class="flex justify-between"><span>Прошивка</span><span class="font-mono text-ink">24.10-SNAPSHOT</span></div>
+			<div class="flex justify-between"><span>Ядро</span><span class="font-mono text-ink">6.6.110</span></div>
+			<div class="flex justify-between"><span>Работает</span><span id="sideUptime" class="font-mono text-ink num">12 д 4 ч</span></div>
+		</div>
+	</aside>
+
+	<div id="scrim" class="fixed inset-0 z-30 bg-black/60 lg:hidden" hidden></div>
+
+	<!-- ======================= Main ======================= -->
+	<div class="flex-1 min-w-0 lg:pl-72">
+
+		<header class="sticky top-0 z-20 border-b border-line bg-obsidian/75 backdrop-blur-xl">
+			<div class="flex items-center gap-3 px-4 sm:px-8 h-20">
+				<button id="menuBtn" class="lg:hidden p-2 -ml-2 rounded-lg text-dim hover:text-ink" aria-label="Открыть меню" aria-controls="sidebar" aria-expanded="false">
+					<svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+				</button>
+
+				<h1 id="pageTitle" class="font-display text-lg sm:text-xl font-medium tracking-tight whitespace-nowrap">Обзор</h1>
+
+				<div class="relative flex-1 max-w-xl ml-auto">
+					<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+					<input id="search" type="search" autocomplete="off" placeholder="Найти настройку: TTL, 3x-ui, бэнды…" aria-label="Поиск по настройкам"
+						class="w-full h-11 pl-10 pr-12 rounded-xl bg-slate-800/80 border border-line text-sm placeholder:text-faint focus:outline-none focus:border-cyan/70 focus:ring-4 focus:ring-cyan/10">
+					<kbd class="hidden sm:block absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[11px] text-faint border border-line rounded px-1.5 py-0.5">/</kbd>
+					<div id="searchResults" class="absolute left-0 right-0 top-full mt-2 glass rounded-xl p-2 shadow-2xl" hidden role="listbox"></div>
+				</div>
+
+				<div class="hidden md:flex items-center gap-2 text-xs">
+					<span class="flex items-center gap-2 px-3 h-9 rounded-xl border border-line bg-slate-800/60"><span class="w-2 h-2 rounded-full bg-ok pulse"></span>Интернет</span>
+					<span id="topVpn" class="flex items-center gap-2 px-3 h-9 rounded-xl border border-line bg-slate-800/60"><span class="w-2 h-2 rounded-full bg-cyan"></span>Туннель</span>
+				</div>
+			</div>
+		</header>
+
+		<main class="px-4 sm:px-8 py-6 sm:py-8 pb-24">
+
+			<!-- =================== Обзор =================== -->
+			<section data-view="overview" class="grid grid-cols-12 gap-4 sm:gap-5">
+
+				<!-- Modem: the hero -->
+				<article id="card-modem" data-keys="модем оператор сигнал sim сим 4g 5g lte бэнд" class="col-span-12 xl:col-span-8 xl:row-span-2 glass neon rounded-3xl p-5 sm:p-7 overflow-hidden">
+					<div class="flex flex-wrap items-center gap-3">
+						<div class="inline-flex p-1 rounded-xl bg-slate-900/80 border border-line" role="radiogroup" aria-label="Активная SIM-карта">
+							<button class="sim-btn px-3.5 h-8 rounded-lg text-sm font-medium" data-sim="1" role="radio" aria-checked="true">SIM 1</button>
+							<button class="sim-btn px-3.5 h-8 rounded-lg text-sm font-medium" data-sim="2" role="radio" aria-checked="false">SIM 2</button>
+						</div>
+						<span id="netType" class="font-display text-sm font-bold px-3 h-8 inline-flex items-center rounded-xl bg-cyan text-obsidian shadow-[0_0_24px_-4px_#2BE4FF]">4G+</span>
+						<span id="netMode" class="text-sm text-dim">LTE-A, агрегация двух несущих</span>
+						<span class="ml-auto flex items-center gap-2 text-sm text-dim"><span class="w-2 h-2 rounded-full bg-ok pulse"></span><span id="onlineFor" class="num">В сети 3 ч 12 мин</span></span>
+					</div>
+
+					<div class="mt-6 grid md:grid-cols-[1fr_auto] gap-6 items-center">
+						<div class="min-w-0">
+							<div id="opName" class="font-display font-bold tracking-tight leading-none text-[44px] sm:text-[64px] bg-gradient-to-r from-ink via-ink to-cyan bg-clip-text text-transparent">МегаФон</div>
+							<div class="mt-3 text-dim"><span id="opMeta">PLMN 25002, Воронеж</span></div>
+
+							<div class="mt-7 flex items-end gap-5">
+								<div class="flex items-end gap-1.5 h-14" id="bars" aria-label="Уровень сигнала">
+									<span class="w-3 rounded-sm" style="height:20%"></span>
+									<span class="w-3 rounded-sm" style="height:40%"></span>
+									<span class="w-3 rounded-sm" style="height:60%"></span>
+									<span class="w-3 rounded-sm" style="height:80%"></span>
+									<span class="w-3 rounded-sm" style="height:100%"></span>
+								</div>
+								<div>
+									<div class="font-mono text-4xl font-medium num"><span id="heroRsrp">−86</span><span class="text-lg text-dim"> дБм</span></div>
+									<div id="heroQuality" class="text-sm text-ok">Хороший сигнал</div>
+								</div>
+							</div>
+
+							<div class="mt-7 flex flex-wrap gap-2" id="bandChips"></div>
+						</div>
+
+						<!-- signal orbit: RSRP / RSRQ / SINR as concentric arcs -->
+						<div class="relative mx-auto" style="width:240px;height:240px">
+							<svg viewBox="0 0 240 240" class="w-full h-full" aria-hidden="true">
+								<defs>
+									<linearGradient id="arcG" x1="0" y1="1" x2="1" y2="0">
+										<stop offset="0" stop-color="#4C7DFF"/>
+										<stop offset="1" stop-color="#2BE4FF"/>
+									</linearGradient>
+									<radialGradient id="sweepG">
+										<stop offset="0" stop-color="#2BE4FF" stop-opacity=".0"/>
+										<stop offset="1" stop-color="#2BE4FF" stop-opacity=".18"/>
+									</radialGradient>
+								</defs>
+								<g fill="none" stroke-linecap="round" transform="rotate(135 120 120)">
+									<circle cx="120" cy="120" r="104" stroke="#1E2836" stroke-width="10" stroke-dasharray="490 654"/>
+									<circle cx="120" cy="120" r="80" stroke="#1E2836" stroke-width="10" stroke-dasharray="377 503"/>
+									<circle cx="120" cy="120" r="56" stroke="#1E2836" stroke-width="10" stroke-dasharray="264 352"/>
+									<circle id="arcRsrp" cx="120" cy="120" r="104" stroke="url(#arcG)" stroke-width="10" stroke-dasharray="0 654" style="transition:stroke-dasharray .8s"/>
+									<circle id="arcRsrq" cx="120" cy="120" r="80" stroke="url(#arcG)" stroke-width="10" stroke-dasharray="0 503" style="transition:stroke-dasharray .8s"/>
+									<circle id="arcSinr" cx="120" cy="120" r="56" stroke="url(#arcG)" stroke-width="10" stroke-dasharray="0 352" style="transition:stroke-dasharray .8s"/>
+								</g>
+								<circle class="sweep" cx="120" cy="120" r="117" fill="none" stroke="#2BE4FF" stroke-opacity=".55" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="26 710"/>
+							</svg>
+							<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+								<div class="font-mono text-4xl font-bold num" id="score">82</div>
+								<div class="text-[11px] text-dim">качество связи</div>
+							</div>
+							<div class="absolute inset-x-0 -bottom-1 grid grid-cols-3 text-center leading-tight" id="orbitLegend"></div>
+						</div>
+					</div>
+
+					<dl class="mt-7 pt-5 border-t border-line grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+						<div><dt class="text-dim">Cell ID</dt><dd class="font-mono num mt-1" id="cellId">26 754 817</dd></div>
+						<div><dt class="text-dim">eNB</dt><dd class="font-mono num mt-1" id="enb">104 511</dd></div>
+						<div><dt class="text-dim">PCI</dt><dd class="font-mono num mt-1" id="pci">312</dd></div>
+						<div><dt class="text-dim">EARFCN</dt><dd class="font-mono num mt-1" id="earfcn">1300 / 3050</dd></div>
+					</dl>
+				</article>
+
+				<!-- VPN -->
+				<article id="card-vpn" data-keys="vpn прокси 3x-ui туннель финляндия обход пинг" class="col-span-12 md:col-span-6 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
+					<div class="flex items-start justify-between gap-4">
+						<div>
+							<div class="text-sm text-dim">Текущий прокси-сервер</div>
+							<div class="mt-3 flex items-center gap-3">
+								<svg viewBox="0 0 36 24" class="w-9 h-6 rounded-[4px] shadow" aria-label="Флаг Финляндии"><rect width="36" height="24" fill="#fff"/><rect x="10" width="7" height="24" fill="#18407E"/><rect y="8.5" width="36" height="7" fill="#18407E"/></svg>
+								<div>
+									<div class="font-semibold text-lg leading-tight">Финляндия, Хельсинки</div>
+									<div class="text-xs text-dim mt-0.5">VLESS Reality через LTE</div>
+								</div>
+							</div>
+						</div>
+						<button id="vpnSwitch" class="switch mt-1" role="switch" aria-checked="true" aria-label="Туннель"></button>
+					</div>
+					<div class="mt-6 flex items-end justify-between gap-3">
+						<div>
+							<div class="font-mono text-3xl num"><span id="vpnPing">38</span><span class="text-base text-dim"> мс</span></div>
+							<div id="vpnState" class="text-sm text-ok">Трафик идёт через туннель</div>
+						</div>
+						<svg id="pingSpark" viewBox="0 0 120 36" class="w-32 h-9" preserveAspectRatio="none"><polyline fill="none" stroke="#2BE4FF" stroke-width="1.6" points=""/></svg>
+					</div>
+				</article>
+
+				<!-- System -->
+				<article id="card-sys" data-keys="система процессор цп оперативная память озу температура аптайм" class="col-span-12 md:col-span-6 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
+					<div class="flex items-center justify-between">
+						<h2 class="font-semibold">Состояние системы</h2>
+						<span class="text-xs text-dim num" id="uptime">аптайм 12 д 4 ч</span>
+					</div>
+					<div class="mt-5 space-y-4">
+						<div>
+							<div class="flex justify-between text-sm"><span class="text-dim">Процессор</span><span class="font-mono num" id="cpuVal">23%</span></div>
+							<div class="mt-2 h-1.5 rounded-full bg-slate-600/60 overflow-hidden"><div id="cpuBar" class="h-full rounded-full bg-gradient-to-r from-volt to-cyan" style="width:23%"></div></div>
+						</div>
+						<div>
+							<div class="flex justify-between text-sm"><span class="text-dim">Оперативная память</span><span class="font-mono num" id="ramVal">412 / 988 МБ</span></div>
+							<div class="mt-2 h-1.5 rounded-full bg-slate-600/60 overflow-hidden"><div id="ramBar" class="h-full rounded-full bg-gradient-to-r from-volt to-cyan" style="width:42%"></div></div>
+						</div>
+						<div class="grid grid-cols-2 gap-3 pt-1">
+							<div class="rounded-2xl bg-slate-900/70 border border-line p-3">
+								<div class="text-xs text-dim">Процессор</div>
+								<div class="font-mono text-2xl num mt-1"><span id="tCpu">52</span>°</div>
+							</div>
+							<div class="rounded-2xl bg-slate-900/70 border border-line p-3">
+								<div class="text-xs text-dim">Модем</div>
+								<div class="font-mono text-2xl num mt-1"><span id="tModem">47</span>°</div>
+							</div>
+						</div>
+					</div>
+				</article>
+
+				<!-- RF metrics -->
+				<article id="card-rf" data-keys="rsrp rsrq sinr rssi радио метрики вышка cell band" class="col-span-12 xl:col-span-5 glass rounded-3xl p-5 sm:p-6">
+					<div class="flex items-center justify-between">
+						<h2 class="font-semibold">Радиометрики</h2>
+						<span class="text-xs text-dim">обновляется каждые 2 с</span>
+					</div>
+					<div class="mt-5 grid grid-cols-2 gap-3" id="rfGrid"></div>
+				</article>
+
+				<!-- Traffic -->
+				<article id="card-traffic" data-keys="трафик лимит тариф скорость скачивание загрузка гигабайты" class="col-span-12 xl:col-span-7 glass rounded-3xl p-5 sm:p-6">
+					<div class="flex flex-wrap items-center justify-between gap-3">
+						<h2 class="font-semibold">Трафик</h2>
+						<div class="inline-flex p-1 rounded-xl bg-slate-900/80 border border-line text-xs" role="radiogroup" aria-label="Окно графика">
+							<button class="win-btn px-3 h-7 rounded-lg" data-win="60" role="radio" aria-checked="true">1 мин</button>
+							<button class="win-btn px-3 h-7 rounded-lg" data-win="150" role="radio" aria-checked="false">5 мин</button>
+						</div>
+					</div>
+					<div class="mt-5 grid sm:grid-cols-[170px_1fr] gap-6 items-center">
+						<div class="relative w-[170px] h-[170px] mx-auto">
+							<svg viewBox="0 0 170 170" class="w-full h-full -rotate-90" aria-hidden="true">
+								<circle cx="85" cy="85" r="72" fill="none" stroke="#1E2836" stroke-width="12"/>
+								<circle id="quotaArc" cx="85" cy="85" r="72" fill="none" stroke="url(#arcG)" stroke-width="12" stroke-linecap="round" stroke-dasharray="0 453"/>
+							</svg>
+							<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+								<div class="font-mono text-2xl num"><span id="quotaUsed">148,6</span></div>
+								<div class="text-xs text-dim">из 300 ГБ</div>
+								<div class="text-[11px] text-faint mt-1">сброс 12 ноября</div>
+							</div>
+						</div>
+						<div class="min-w-0">
+							<div class="flex gap-6 text-sm">
+								<div><div class="text-dim flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-sm bg-cyan"></span>Скачивание</div><div class="font-mono text-xl num mt-1"><span id="dl">42,8</span> <span class="text-sm text-dim">Мбит/с</span></div></div>
+								<div><div class="text-dim flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-sm bg-volt"></span>Загрузка</div><div class="font-mono text-xl num mt-1"><span id="ul">6,1</span> <span class="text-sm text-dim">Мбит/с</span></div></div>
+							</div>
+							<canvas id="chart" class="mt-4 w-full h-40" aria-label="График скорости"></canvas>
+						</div>
+					</div>
+				</article>
+			</section>
+
+			<!-- =================== Модем и сеть =================== -->
+			<section data-view="modem" class="grid grid-cols-12 gap-4 sm:gap-5" hidden>
+				<article id="card-bands" data-keys="бэнд band частоты lte nr 5g фиксация" class="col-span-12 xl:col-span-7 glass rounded-3xl p-5 sm:p-6">
+					<h2 class="font-semibold">Частотные диапазоны</h2>
+					<p class="mt-1 text-sm text-dim">Модем выбирает только отмеченные бэнды. Если снять все — работает автовыбор.</p>
+					<div class="mt-5 text-xs text-dim">LTE</div>
+					<div class="mt-2 flex flex-wrap gap-2" id="lteBands"></div>
+					<div class="mt-5 text-xs text-dim">5G NR</div>
+					<div class="mt-2 flex flex-wrap gap-2" id="nrBands"></div>
+					<div class="mt-6 flex flex-wrap gap-3">
+						<button class="act px-4 h-10 rounded-xl bg-cyan text-obsidian font-semibold hover:brightness-110" data-toast="Бэнды применены, модем переподключается">Применить бэнды</button>
+						<button class="px-4 h-10 rounded-xl border border-line text-dim hover:text-ink" id="bandsAuto">Сбросить на авто</button>
+					</div>
+				</article>
+
+				<article id="card-ttl" data-keys="ttl фиксация раздача тетеринг hop limit" class="col-span-12 md:col-span-6 xl:col-span-5 glass rounded-3xl p-5 sm:p-6">
+					<div class="flex items-start justify-between gap-4">
+						<div>
+							<h2 class="font-semibold">Фиксация TTL</h2>
+							<p class="mt-1 text-sm text-dim">Оператор видит весь трафик как трафик телефона.</p>
+						</div>
+						<button id="ttlSwitch" class="switch" role="switch" aria-checked="true" aria-label="Фиксация TTL"></button>
+					</div>
+					<label class="mt-5 block text-sm text-dim" for="ttlVal">Значение для исходящих пакетов</label>
+					<div class="mt-2 flex items-center gap-3">
+						<input id="ttlVal" type="number" value="65" min="1" max="255" class="w-28 h-11 px-3 rounded-xl bg-slate-900 border border-line font-mono text-lg focus:outline-none focus:border-cyan">
+						<span class="text-sm text-dim">IPv4 TTL и IPv6 hop limit</span>
+					</div>
+				</article>
+
+				<article id="card-sim" data-keys="sim сим переключение карта слот" class="col-span-12 md:col-span-6 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
+					<h2 class="font-semibold">SIM-карты</h2>
+					<div class="mt-4 space-y-3" id="simList"></div>
+				</article>
+
+				<article id="card-imei" data-keys="imei смена модем идентификатор" class="col-span-12 md:col-span-6 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
+					<h2 class="font-semibold">Смена IMEI</h2>
+					<p class="mt-1 text-sm text-dim">Текущий: <span class="font-mono text-ink">86 718105 943217 2</span></p>
+					<label class="mt-4 block text-sm text-dim" for="imeiNew">Новый IMEI, 15 цифр</label>
+					<input id="imeiNew" inputmode="numeric" maxlength="15" placeholder="867181059432172" class="mt-2 w-full h-11 px-3 rounded-xl bg-slate-900 border border-line font-mono focus:outline-none focus:border-cyan">
+					<div id="imeiHint" class="mt-2 text-xs text-faint">Контрольная цифра проверяется по алгоритму Луна.</div>
+					<button id="imeiBtn" class="mt-4 w-full h-10 rounded-xl border border-warn/50 text-warn hover:bg-warn/10 disabled:opacity-40" disabled>Записать в модем</button>
+				</article>
+
+				<article id="card-scan" data-keys="сканирование вышек бс базовые станции соседи" class="col-span-12 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
+					<div class="flex items-center justify-between">
+						<h2 class="font-semibold">Вышки рядом</h2>
+						<button id="scanBtn" class="px-3 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 text-sm">Сканировать</button>
+					</div>
+					<div id="scanProgress" class="mt-4 h-1 rounded-full bg-slate-600/60 overflow-hidden" hidden><div class="h-full w-0 bg-cyan transition-all duration-[2400ms]" id="scanFill"></div></div>
+					<ul id="scanList" class="mt-4 space-y-2 text-sm">
+						<li class="text-dim">Сканирование занимает около 20 секунд, на это время связь прервётся.</li>
+					</ul>
+				</article>
+			</section>
+
+			<!-- =================== Обход блокировок =================== -->
+			<section data-view="vpn" class="grid grid-cols-12 gap-4 sm:gap-5" hidden>
+				<article id="card-tun" data-keys="tun режим маршрутизация весь трафик" class="col-span-12 xl:col-span-4 glass rounded-3xl p-5 sm:p-6 space-y-5">
+					<div class="flex items-start justify-between gap-4">
+						<div><h2 class="font-semibold">TUN-режим</h2><p class="mt-1 text-sm text-dim">Весь трафик LAN и Wi-Fi проходит через ядро Xray.</p></div>
+						<button class="switch" role="switch" aria-checked="true" aria-label="TUN-режим"></button>
+					</div>
+					<div class="flex items-start justify-between gap-4">
+						<div><h2 class="font-semibold">Только заблокированное</h2><p class="mt-1 text-sm text-dim">Российские сайты идут напрямую через оператора.</p></div>
+						<button class="switch" role="switch" aria-checked="true" aria-label="Только заблокированное"></button>
+					</div>
+					<div class="flex items-start justify-between gap-4">
+						<div><h2 class="font-semibold">Обход для игровых консолей</h2><p class="mt-1 text-sm text-dim">Устройства из группы «Игры» без туннеля.</p></div>
+						<button class="switch" role="switch" aria-checked="false" aria-label="Обход для консолей"></button>
+					</div>
+				</article>
+
+				<article id="card-nodes" data-keys="узлы прокси outbound исходящие 3x-ui vless vmess trojan пинг" class="col-span-12 xl:col-span-8 glass rounded-3xl p-5 sm:p-6">
+					<div class="flex flex-wrap items-center justify-between gap-3">
+						<h2 class="font-semibold">Исходящие узлы</h2>
+						<button id="pingAll" class="px-3 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 text-sm">Проверить пинг</button>
+					</div>
+					<div class="mt-4 divide-y divide-line" id="nodes"></div>
+				</article>
+
+				<article id="card-inbounds" data-keys="входящие inbound 3x-ui порты socks http" class="col-span-12 glass rounded-3xl p-5 sm:p-6">
+					<h2 class="font-semibold">Входящие подключения</h2>
+					<div class="mt-4 overflow-x-auto">
+						<table class="w-full text-sm">
+							<thead class="text-dim text-left">
+								<tr><th class="font-normal py-2 pr-4">Имя</th><th class="font-normal py-2 pr-4">Протокол</th><th class="font-normal py-2 pr-4">Порт</th><th class="font-normal py-2 pr-4">Трафик</th><th class="font-normal py-2">Включено</th></tr>
+							</thead>
+							<tbody class="divide-y divide-line">
+								<tr><td class="py-3 pr-4">Прозрачный прокси</td><td class="pr-4 font-mono">tproxy</td><td class="pr-4 font-mono">7893</td><td class="pr-4 font-mono num">38,2 ГБ</td><td><button class="switch" role="switch" aria-checked="true" aria-label="Прозрачный прокси"></button></td></tr>
+								<tr><td class="py-3 pr-4">Для ноутбука</td><td class="pr-4 font-mono">socks5</td><td class="pr-4 font-mono">1080</td><td class="pr-4 font-mono num">2,1 ГБ</td><td><button class="switch" role="switch" aria-checked="true" aria-label="Для ноутбука"></button></td></tr>
+								<tr><td class="py-3 pr-4">Гостевая сеть</td><td class="pr-4 font-mono">http</td><td class="pr-4 font-mono">8118</td><td class="pr-4 font-mono num">0 Б</td><td><button class="switch" role="switch" aria-checked="false" aria-label="Гостевая сеть"></button></td></tr>
+							</tbody>
+						</table>
+					</div>
+				</article>
+			</section>
+
+			<!-- =================== SMS и USSD =================== -->
+			<section data-view="sms" class="grid grid-cols-12 gap-4 sm:gap-5" hidden>
+				<article id="card-inbox" data-keys="sms входящие сообщения оператор" class="col-span-12 xl:col-span-7 glass rounded-3xl p-2 sm:p-3">
+					<div class="px-3 pt-3 pb-2 flex items-center justify-between">
+						<h2 class="font-semibold">Входящие</h2>
+						<span class="text-xs text-dim">память SIM: 14 из 30</span>
+					</div>
+					<ul id="inbox" class="divide-y divide-line"></ul>
+				</article>
+
+				<article id="card-ussd" data-keys="ussd баланс запрос *100#" class="col-span-12 xl:col-span-5 glass rounded-3xl p-5 sm:p-6">
+					<h2 class="font-semibold">USSD-запрос</h2>
+					<form id="ussdForm" class="mt-4 flex gap-2">
+						<input id="ussdInput" value="*100#" aria-label="USSD-команда" class="flex-1 min-w-0 h-11 px-3 rounded-xl bg-slate-900 border border-line font-mono text-lg focus:outline-none focus:border-cyan">
+						<button class="px-4 h-11 rounded-xl bg-cyan text-obsidian font-semibold">Отправить</button>
+					</form>
+					<div class="mt-3 flex flex-wrap gap-2 text-sm">
+						<button class="ussd-q px-3 h-8 rounded-lg border border-line text-dim hover:text-ink" data-q="*100#">Баланс</button>
+						<button class="ussd-q px-3 h-8 rounded-lg border border-line text-dim hover:text-ink" data-q="*558#">Остаток пакета</button>
+						<button class="ussd-q px-3 h-8 rounded-lg border border-line text-dim hover:text-ink" data-q="*205#">Свой номер</button>
+					</div>
+					<div id="ussdOut" class="mt-5 min-h-[120px] rounded-2xl bg-slate-900/80 border border-line p-4 font-mono text-sm text-dim">Ответ оператора появится здесь.</div>
+				</article>
+			</section>
+
+			<!-- =================== Система и хранилище =================== -->
+			<section data-view="system" class="grid grid-cols-12 gap-4 sm:gap-5" hidden>
+				<article id="card-disks" data-keys="хранилище диск emmc nvme fstrim место" class="col-span-12 xl:col-span-5 glass rounded-3xl p-5 sm:p-6">
+					<h2 class="font-semibold">Хранилище</h2>
+					<div class="mt-5 space-y-5">
+						<div>
+							<div class="flex justify-between text-sm"><span>eMMC, корень системы</span><span class="font-mono num text-dim">427 МБ из 7,2 ГБ</span></div>
+							<div class="mt-2 h-2 rounded-full bg-slate-600/60 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-volt to-cyan" style="width:6%"></div></div>
+						</div>
+						<div>
+							<div class="flex justify-between text-sm"><span>NVMe, /mnt/data</span><span class="font-mono num text-dim">183 ГБ из 476 ГБ</span></div>
+							<div class="mt-2 h-2 rounded-full bg-slate-600/60 overflow-hidden"><div class="h-full rounded-full bg-gradient-to-r from-volt to-cyan" style="width:38%"></div></div>
+						</div>
+					</div>
+					<div class="mt-6 flex items-center gap-3">
+						<button id="trimBtn" class="px-4 h-10 rounded-xl bg-slate-700 hover:bg-slate-600 text-sm">Запустить fstrim</button>
+						<span id="trimOut" class="text-sm text-dim">Последний запуск: вчера в 04:00</span>
+					</div>
+				</article>
+
+				<article id="card-cron" data-keys="cron планировщик задачи расписание перезагрузка" class="col-span-12 xl:col-span-7 glass rounded-3xl p-5 sm:p-6">
+					<h2 class="font-semibold">Планировщик</h2>
+					<div class="mt-4 overflow-x-auto">
+						<table class="w-full text-sm">
+							<thead class="text-dim text-left"><tr><th class="font-normal py-2 pr-4">Когда</th><th class="font-normal py-2 pr-4">Что делает</th><th class="font-normal py-2">Вкл.</th></tr></thead>
+							<tbody class="divide-y divide-line">
+								<tr><td class="py-3 pr-4 font-mono whitespace-nowrap">0 4 * * *</td><td class="pr-4">fstrim всех дисков</td><td><button class="switch" role="switch" aria-checked="true" aria-label="fstrim"></button></td></tr>
+								<tr><td class="py-3 pr-4 font-mono whitespace-nowrap">*/30 * * * *</td><td class="pr-4">Проверка связи и перезапуск модема при обрыве</td><td><button class="switch" role="switch" aria-checked="true" aria-label="Проверка связи"></button></td></tr>
+								<tr><td class="py-3 pr-4 font-mono whitespace-nowrap">0 5 * * 1</td><td class="pr-4">Еженедельная перезагрузка</td><td><button class="switch" role="switch" aria-checked="false" aria-label="Перезагрузка"></button></td></tr>
+								<tr><td class="py-3 pr-4 font-mono whitespace-nowrap">0 */6 * * *</td><td class="pr-4">Обновление подписки 3x-ui</td><td><button class="switch" role="switch" aria-checked="true" aria-label="Подписка"></button></td></tr>
+							</tbody>
+						</table>
+					</div>
+				</article>
+
+				<article id="card-term" data-keys="терминал консоль shell ssh команды" class="col-span-12 glass rounded-3xl p-0 overflow-hidden">
+					<div class="flex items-center gap-2 px-5 h-11 border-b border-line text-sm text-dim">
+						<span class="w-3 h-3 rounded-full bg-bad/80"></span><span class="w-3 h-3 rounded-full bg-warn/80"></span><span class="w-3 h-3 rounded-full bg-ok/80"></span>
+						<span class="ml-3 font-mono">root@ImmortalWrt</span>
+					</div>
+					<div id="term" class="h-72 overflow-y-auto p-5 font-mono text-[13px] leading-relaxed bg-obsidian/70"></div>
+					<form id="termForm" class="flex items-center gap-2 px-5 h-12 border-t border-line bg-obsidian/70 font-mono text-[13px]">
+						<span class="text-cyan">#</span>
+						<input id="termInput" autocomplete="off" spellcheck="false" aria-label="Команда" placeholder="help" class="flex-1 bg-transparent focus:outline-none placeholder:text-faint">
+					</form>
+				</article>
+			</section>
+
+			<!-- =================== Системный лог =================== -->
+			<section data-view="logs" hidden>
+				<article id="card-log" data-keys="лог журнал syslog logread" class="glass rounded-3xl overflow-hidden">
+					<div class="flex flex-wrap items-center gap-2 px-5 py-3 border-b border-line">
+						<div class="inline-flex p-1 rounded-xl bg-slate-900/80 border border-line text-sm" role="radiogroup" aria-label="Источник">
+							<button class="log-f px-3 h-8 rounded-lg" data-f="all" role="radio" aria-checked="true">Все</button>
+							<button class="log-f px-3 h-8 rounded-lg" data-f="modem" role="radio" aria-checked="false">Модем</button>
+							<button class="log-f px-3 h-8 rounded-lg" data-f="xray" role="radio" aria-checked="false">Туннель</button>
+							<button class="log-f px-3 h-8 rounded-lg" data-f="kernel" role="radio" aria-checked="false">Ядро</button>
+						</div>
+						<button id="logPause" class="ml-auto px-3 h-9 rounded-xl border border-line text-sm text-dim hover:text-ink">Пауза</button>
+					</div>
+					<div id="log" class="h-[65vh] overflow-y-auto px-5 py-4 font-mono text-[12.5px] leading-6 bg-obsidian/60"></div>
+				</article>
+			</section>
+		</main>
+	</div>
+</div>
+
+<div id="toast" class="fixed left-1/2 bottom-6 -translate-x-1/2 z-50 glass rounded-xl px-4 py-3 text-sm shadow-2xl" hidden role="status"></div>
+
+<script>
+(() => {
+	'use strict';
+
+	const $ = (s, r = document) => r.querySelector(s);
+	const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+	const fmt = (n, d = 1) => n.toLocaleString('ru-RU', { minimumFractionDigits: d, maximumFractionDigits: d });
+	const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+	const minus = v => (v < 0 ? '−' + Math.abs(v) : String(v));
+
+	/* ---------------- navigation ---------------- */
+
+	const titles = { overview: 'Обзор', modem: 'Модем и сеть', vpn: 'Обход блокировок', sms: 'SMS и USSD', system: 'Система и хранилище', logs: 'Системный лог' };
+
+	function go(view, focusId) {
+		$$('[data-view]').forEach(s => s.hidden = s.dataset.view !== view);
+		$$('.nav-item').forEach(b => {
+			const on = b.dataset.nav === view;
+			b.classList.toggle('bg-slate-700/70', on);
+			b.classList.toggle('text-ink', on);
+			b.toggleAttribute('aria-current', on);
+		});
+		$('#pageTitle').textContent = titles[view];
+		closeMenu();
+		if (view === 'logs') $('#log').scrollTop = 1e9;
+		if (focusId) {
+			const el = document.getElementById(focusId);
+			if (el) {
+				el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+				el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+			}
+		}
+		history.replaceState(null, '', '#' + view);
+		if (view === 'overview') resizeChart();
+	}
+
+	$$('.nav-item').forEach(b => b.addEventListener('click', () => go(b.dataset.nav)));
+
+	const sidebar = $('#sidebar'), scrim = $('#scrim'), menuBtn = $('#menuBtn');
+	function openMenu() { sidebar.classList.remove('-translate-x-full'); scrim.hidden = false; menuBtn.setAttribute('aria-expanded', 'true'); }
+	function closeMenu() { if (innerWidth < 1024) { sidebar.classList.add('-translate-x-full'); scrim.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); } }
+	menuBtn.addEventListener('click', openMenu);
+	scrim.addEventListener('click', closeMenu);
+
+	/* ---------------- toast ---------------- */
+
+	let toastTimer;
+	function toast(text) {
+		const t = $('#toast');
+		t.textContent = text; t.hidden = false;
+		clearTimeout(toastTimer);
+		toastTimer = setTimeout(() => t.hidden = true, 2600);
+	}
+	$$('[data-toast]').forEach(b => b.addEventListener('click', () => toast(b.dataset.toast)));
+
+	/* ---------------- switches ---------------- */
+
+	document.addEventListener('click', e => {
+		const s = e.target.closest('.switch');
+		if (!s || s.id === 'vpnSwitch') return;
+		const on = s.getAttribute('aria-checked') !== 'true';
+		s.setAttribute('aria-checked', on);
+		toast((s.getAttribute('aria-label') || 'Параметр') + (on ? ': включено' : ': выключено'));
+	});
+
+	/* ---------------- segmented controls ---------------- */
+
+	function segmented(sel, onPick) {
+		const btns = $$(sel);
+		const paint = () => btns.forEach(b => {
+			const on = b.getAttribute('aria-checked') === 'true';
+			b.classList.toggle('bg-slate-600', on);
+			b.classList.toggle('text-ink', on);
+			b.classList.toggle('text-dim', !on);
+		});
+		btns.forEach(b => b.addEventListener('click', () => {
+			btns.forEach(x => x.setAttribute('aria-checked', x === b));
+			paint(); onPick && onPick(b);
+		}));
+		paint();
+	}
+
+	/* ---------------- modem data ---------------- */
+
+	const SIMS = {
+		1: { op: 'МегаФон', meta: 'PLMN 25002, Воронеж', type: '4G+', mode: 'LTE-A, агрегация двух несущих',
+		     bands: [['B3', '1800 МГц', '20 МГц', 'основная'], ['B7', '2600 МГц', '20 МГц', 'доп.']],
+		     rf: { rsrp: -86, rsrq: -9, sinr: 14, rssi: -61 }, cell: '26 754 817', enb: '104 511', pci: '312', earfcn: '1300 / 3050', number: '+7 920 •••-••-14', apn: 'internet' },
+		2: { op: 'Билайн', meta: 'PLMN 25099, Воронеж', type: 'LTE', mode: 'одна несущая',
+		     bands: [['B20', '800 МГц', '10 МГц', 'основная']],
+		     rf: { rsrp: -104, rsrq: -13, sinr: 4, rssi: -75 }, cell: '9 381 120', enb: '36 645', pci: '87', earfcn: '6400', number: '+7 960 •••-••-71', apn: 'internet.beeline.ru' }
+	};
+
+	let sim = 1, rf = { ...SIMS[1].rf };
+
+	function quality(k, v) {
+		const t = {
+			rsrp: [-90, -105], rsrq: [-10, -15], sinr: [13, 0], rssi: [-65, -85]
+		}[k];
+		if (v >= t[0]) return ['ok', 'отлично'];
+		if (v >= t[1]) return ['warn', 'средне'];
+		return ['bad', 'слабо'];
+	}
+
+	const RF_META = [
+		['rsrp', 'RSRP', 'дБм', -140, -44, 'Мощность опорного сигнала'],
+		['rsrq', 'RSRQ', 'дБ', -20, -3, 'Качество приёма'],
+		['sinr', 'SINR', 'дБ', -10, 30, 'Сигнал / шум'],
+		['rssi', 'RSSI', 'дБм', -110, -40, 'Общий уровень']
+	];
+
+	function renderRf() {
+		$('#rfGrid').innerHTML = RF_META.map(([k, name, unit, lo, hi, hint]) => {
+			const v = rf[k], [cls, word] = quality(k, v), pct = clamp((v - lo) / (hi - lo) * 100, 3, 100);
+			return `<div class="rounded-2xl bg-slate-900/70 border border-line p-4" title="${hint}">
+				<div class="flex items-baseline justify-between"><span class="font-mono text-sm text-dim">${name}</span><span class="text-xs text-${cls}">${word}</span></div>
+				<div class="font-mono text-2xl num mt-2">${minus(v)}<span class="text-sm text-dim"> ${unit}</span></div>
+				<div class="mt-3 h-1 rounded-full bg-slate-600/60 overflow-hidden"><div class="h-full rounded-full bg-${cls}" style="width:${pct}%"></div></div>
+			</div>`;
+		}).join('') + `<div class="col-span-2 grid grid-cols-3 gap-3 text-sm pt-1">
+			<div><div class="text-dim">Бэнд</div><div class="font-mono mt-1">${SIMS[sim].bands.map(b => b[0]).join(' + ')}</div></div>
+			<div><div class="text-dim">Cell ID</div><div class="font-mono mt-1 num">${SIMS[sim].cell}</div></div>
+			<div><div class="text-dim">PCI</div><div class="font-mono mt-1 num">${SIMS[sim].pci}</div></div>
+		</div>`;
+	}
+
+	function score() {
+		const n = (v, lo, hi) => clamp((v - lo) / (hi - lo), 0, 1);
+		return Math.round((n(rf.rsrp, -120, -75) * .45 + n(rf.rsrq, -18, -6) * .25 + n(rf.sinr, -3, 22) * .3) * 100);
+	}
+
+	function renderHero() {
+		const s = SIMS[sim], sc = score();
+		$('#opName').textContent = s.op;
+		$('#opMeta').textContent = s.meta;
+		$('#netType').textContent = s.type;
+		$('#netMode').textContent = s.mode;
+		$('#heroRsrp').textContent = minus(rf.rsrp);
+		$('#score').textContent = sc;
+		$('#cellId').textContent = s.cell; $('#enb').textContent = s.enb; $('#pci').textContent = s.pci; $('#earfcn').textContent = s.earfcn;
+
+		const [cls] = quality('rsrp', rf.rsrp);
+		$('#heroQuality').className = 'text-sm text-' + cls;
+		$('#heroQuality').textContent = { ok: 'Хороший сигнал', warn: 'Средний сигнал', bad: 'Слабый сигнал' }[cls];
+
+		const lit = clamp(Math.round((rf.rsrp + 125) / 10), 1, 5);
+		$$('#bars span').forEach((b, i) => b.style.background = i < lit ? (cls === 'ok' ? '#2BE4FF' : cls === 'warn' ? '#FFB648' : '#FF5470') : '#222C3B');
+
+		const arc = (id, frac, len, circ) => $(id).setAttribute('stroke-dasharray', `${(clamp(frac, .02, 1) * len).toFixed(1)} ${circ}`);
+		arc('#arcRsrp', (rf.rsrp + 125) / 50, 490, 654);
+		arc('#arcRsrq', (rf.rsrq + 20) / 16, 377, 503);
+		arc('#arcSinr', (rf.sinr + 5) / 30, 264, 352);
+		$('#orbitLegend').innerHTML = [['RSRP', 'rsrp'], ['RSRQ', 'rsrq'], ['SINR', 'sinr']].map(([n, k]) =>
+			`<div><div class="font-mono text-[10px] text-faint">${n}</div><div class="font-mono text-sm num text-${quality(k, rf[k])[0]}">${minus(rf[k])}</div></div>`).join('');
+
+		$('#bandChips').innerHTML = s.bands.map(([b, f, w, role]) =>
+			`<span class="inline-flex items-center gap-2 h-9 px-3 rounded-xl border border-line bg-slate-900/70 text-sm">
+				<span class="font-mono font-bold text-cyan">${b}</span><span class="text-dim">${f}, ${w}</span><span class="text-xs text-faint">${role}</span></span>`).join('');
+	}
+
+	segmented('.sim-btn', b => {
+		sim = +b.dataset.sim; rf = { ...SIMS[sim].rf };
+		renderHero(); renderRf(); renderSims();
+		toast(`Активна SIM ${sim}: ${SIMS[sim].op}`);
+	});
+
+	/* ---------------- VPN card ---------------- */
+
+	const pings = Array.from({ length: 30 }, () => 34 + Math.random() * 10);
+	const vpnSwitch = $('#vpnSwitch');
+	vpnSwitch.addEventListener('click', () => {
+		const on = vpnSwitch.getAttribute('aria-checked') !== 'true';
+		vpnSwitch.setAttribute('aria-checked', on);
+		$('#vpnState').textContent = on ? 'Трафик идёт через туннель' : 'Прямое подключение через оператора';
+		$('#vpnState').className = 'text-sm ' + (on ? 'text-ok' : 'text-warn');
+		$('#navVpnDot').className = 'w-2 h-2 rounded-full ' + (on ? 'bg-ok pulse' : 'bg-faint');
+		$('#topVpn').classList.toggle('opacity-40', !on);
+		toast(on ? 'Туннель включён' : 'Туннель выключен');
+	});
+
+	function renderPing() {
+		const on = vpnSwitch.getAttribute('aria-checked') === 'true';
+		$('#vpnPing').textContent = on ? Math.round(pings[pings.length - 1]) : '—';
+		const max = 60, pts = pings.map((p, i) => `${(i / (pings.length - 1) * 120).toFixed(1)},${(36 - p / max * 32).toFixed(1)}`).join(' ');
+		$('#pingSpark polyline').setAttribute('points', pts);
+		$('#pingSpark polyline').setAttribute('stroke', on ? '#2BE4FF' : '#56657A');
+	}
+
+	/* ---------------- traffic chart ---------------- */
+
+	const canvas = $('#chart'), ctx = canvas.getContext('2d');
+	let win = 60;
+	const dlHist = Array.from({ length: 150 }, (_, i) => 30 + 15 * Math.sin(i / 9) + Math.random() * 8);
+	const ulHist = Array.from({ length: 150 }, (_, i) => 5 + 2 * Math.sin(i / 7 + 1) + Math.random() * 1.5);
+	let shift = 0, lastPush = performance.now();
+
+	function resizeChart() {
+		const r = canvas.getBoundingClientRect();
+		if (!r.width) return;
+		canvas.width = r.width * devicePixelRatio; canvas.height = r.height * devicePixelRatio;
+	}
+	addEventListener('resize', resizeChart);
+
+	function drawSeries(data, max, color, fill) {
+		const W = canvas.width, H = canvas.height, n = win, step = W / (n - 1);
+		const pts = data.slice(-n - 1);
+		ctx.beginPath();
+		pts.forEach((v, i) => {
+			const x = (i - shift) * step, y = H - (v / max) * (H * .88) - 2;
+			i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+		});
+		ctx.strokeStyle = color; ctx.lineWidth = 2 * devicePixelRatio; ctx.stroke();
+		if (fill) {
+			ctx.lineTo(W, H); ctx.lineTo(-shift * step, H); ctx.closePath();
+			const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, fill); g.addColorStop(1, 'transparent');
+			ctx.fillStyle = g; ctx.fill();
+		}
+	}
+
+	function draw(now) {
+		if (!canvas.width) resizeChart();
+		const W = canvas.width, H = canvas.height;
+		ctx.clearRect(0, 0, W, H);
+		ctx.strokeStyle = 'rgba(135,150,168,.08)'; ctx.lineWidth = 1;
+		for (let i = 1; i < 4; i++) { const y = H / 4 * i; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+		shift = reduce ? 0 : clamp((now - lastPush) / 1000, 0, 1);
+		drawSeries(dlHist, 70, '#2BE4FF', 'rgba(43,228,255,.22)');
+		drawSeries(ulHist, 70, '#4C7DFF', 'rgba(76,125,255,.18)');
+		if (!reduce) requestAnimationFrame(draw);
+	}
+
+	segmented('.win-btn', b => { win = +b.dataset.win; if (reduce) draw(0); });
+
+	function quota(used) {
+		$('#quotaUsed').textContent = fmt(used);
+		$('#quotaArc').setAttribute('stroke-dasharray', `${(used / 300 * 452.4).toFixed(1)} 453`);
+	}
+
+	/* ---------------- live tick ---------------- */
+
+	let used = 148.6, cpu = 23, ram = 412, up = 12 * 86400 + 4 * 3600, online = 3 * 3600 + 12 * 60;
+
+	function tick() {
+		const base = SIMS[sim].rf, j = (a) => (Math.random() - .5) * a;
+		rf = { rsrp: Math.round(base.rsrp + j(4)), rsrq: Math.round(base.rsrq + j(2)), sinr: Math.round(base.sinr + j(4)), rssi: Math.round(base.rssi + j(4)) };
+		renderHero(); renderRf();
+
+		const quality = clamp(score() / 82, .3, 1.1);
+		const dl = clamp((30 + 18 * Math.sin(Date.now() / 7000) + Math.random() * 10) * quality, 2, 80);
+		const ul = clamp((5 + 2 * Math.sin(Date.now() / 5000) + Math.random() * 2) * quality, .5, 20);
+		dlHist.push(dl); ulHist.push(ul); dlHist.shift(); ulHist.shift(); lastPush = performance.now();
+		$('#dl').textContent = fmt(dl); $('#ul').textContent = fmt(ul);
+		used += (dl + ul) / 8 / 1024 * 2; quota(used);
+
+		cpu = clamp(Math.round(cpu + (Math.random() - .5) * 10), 6, 78);
+		ram = clamp(Math.round(ram + (Math.random() - .5) * 12), 360, 520);
+		$('#cpuVal').textContent = cpu + '%'; $('#cpuBar').style.width = cpu + '%';
+		$('#ramVal').textContent = `${ram} / 988 МБ`; $('#ramBar').style.width = (ram / 988 * 100).toFixed(0) + '%';
+		$('#tCpu').textContent = Math.round(48 + cpu / 10); $('#tModem').textContent = Math.round(44 + dl / 20);
+
+		up += 2; online += 2;
+		const d = Math.floor(up / 86400), h = Math.floor(up % 86400 / 3600);
+		$('#uptime').textContent = `аптайм ${d} д ${h} ч`; $('#sideUptime').textContent = `${d} д ${h} ч`;
+		$('#onlineFor').textContent = `В сети ${Math.floor(online / 3600)} ч ${Math.floor(online % 3600 / 60)} мин`;
+
+		pings.push(clamp(pings[pings.length - 1] + (Math.random() - .5) * 8, 28, 58)); pings.shift(); renderPing();
+		if (reduce) draw(0);
+	}
+
+	/* ---------------- modem page ---------------- */
+
+	const LTE = ['B1', 'B3', 'B7', 'B8', 'B20', 'B38', 'B40'], NR = ['n1', 'n3', 'n28', 'n41', 'n78'];
+	const picked = new Set(['B3', 'B7', 'B20']);
+
+	function bandBtns(list, box) {
+		$(box).innerHTML = list.map(b => `<button class="chip px-3.5 h-9 rounded-xl border border-line font-mono text-sm text-dim hover:text-ink" aria-pressed="${picked.has(b)}">${b}</button>`).join('');
+	}
+	bandBtns(LTE, '#lteBands'); bandBtns(NR, '#nrBands');
+	document.addEventListener('click', e => {
+		const c = e.target.closest('.chip'); if (!c) return;
+		const on = c.getAttribute('aria-pressed') !== 'true';
+		c.setAttribute('aria-pressed', on);
+		on ? picked.add(c.textContent) : picked.delete(c.textContent);
+	});
+	$('#bandsAuto').addEventListener('click', () => { picked.clear(); bandBtns(LTE, '#lteBands'); bandBtns(NR, '#nrBands'); toast('Автовыбор бэндов включён'); });
+
+	function renderSims() {
+		$('#simList').innerHTML = [1, 2].map(n => {
+			const s = SIMS[n], act = n === sim;
+			return `<button class="simcard w-full text-left rounded-2xl border ${act ? 'border-cyan/60 bg-cyan/5' : 'border-line bg-slate-900/60 hover:border-faint'} p-4" data-sim="${n}">
+				<div class="flex items-center justify-between"><span class="font-semibold">SIM ${n}: ${s.op}</span><span class="text-xs ${act ? 'text-cyan' : 'text-faint'}">${act ? 'активна' : 'в резерве'}</span></div>
+				<div class="mt-1 text-sm text-dim font-mono">${s.number}</div>
+				<div class="mt-1 text-xs text-faint">APN ${s.apn}</div></button>`;
+		}).join('');
+	}
+	document.addEventListener('click', e => {
+		const c = e.target.closest('.simcard'); if (!c) return;
+		$(`.sim-btn[data-sim="${c.dataset.sim}"]`).click();
+	});
+
+	function luhn(s) {
+		let sum = 0;
+		for (let i = 0; i < s.length; i++) { let d = +s[s.length - 1 - i]; if (i % 2) { d *= 2; if (d > 9) d -= 9; } sum += d; }
+		return sum % 10 === 0;
+	}
+	$('#imeiNew').addEventListener('input', e => {
+		const v = e.target.value = e.target.value.replace(/\D/g, '');
+		const ok = v.length === 15 && luhn(v);
+		$('#imeiBtn').disabled = !ok;
+		$('#imeiHint').textContent = v.length < 15 ? `Введено ${v.length} из 15 цифр.` : ok ? 'IMEI корректен. После записи модем перезапустится.' : 'Контрольная цифра не сходится — проверьте номер.';
+		$('#imeiHint').className = 'mt-2 text-xs ' + (v.length < 15 ? 'text-faint' : ok ? 'text-ok' : 'text-bad');
+	});
+	$('#imeiBtn').addEventListener('click', () => toast('IMEI записан, модем перезапускается'));
+
+	$('#scanBtn').addEventListener('click', () => {
+		const btn = $('#scanBtn'); btn.disabled = true; btn.textContent = 'Идёт поиск…';
+		$('#scanProgress').hidden = false; $('#scanFill').style.width = '0';
+		requestAnimationFrame(() => $('#scanFill').style.width = '100%');
+		setTimeout(() => {
+			const towers = [
+				['МегаФон', 'B3', 312, -86, true], ['МегаФон', 'B7', 312, -91], ['МТС', 'B7', 145, -95], ['Билайн', 'B20', 87, -104], ['T2', 'B1', 402, -108]
+			];
+			$('#scanList').innerHTML = towers.map(([op, b, pci, r, cur]) => {
+				const [cls] = quality('rsrp', r);
+				return `<li class="flex items-center gap-3 rounded-xl bg-slate-900/60 border ${cur ? 'border-cyan/50' : 'border-line'} px-3 py-2.5">
+					<span class="w-2 h-2 rounded-full bg-${cls}"></span><span class="flex-1">${op}${cur ? ' <span class="text-xs text-cyan">текущая</span>' : ''}</span>
+					<span class="font-mono text-dim">${b}</span><span class="font-mono text-dim w-12 text-right">${pci}</span><span class="font-mono w-16 text-right">${minus(r)}</span></li>`;
+			}).join('');
+			btn.disabled = false; btn.textContent = 'Сканировать'; $('#scanProgress').hidden = true;
+		}, 2500);
+	});
+
+	/* ---------------- VPN page ---------------- */
+
+	const NODES = [
+		['Финляндия, Хельсинки', 'VLESS Reality', 38, true, '#18407E'],
+		['Нидерланды, Амстердам', 'VLESS XHTTP', 52],
+		['Германия, Франкфурт', 'Trojan gRPC', 47],
+		['Казахстан, Алматы', 'VMess WS', 61],
+		['Турция, Стамбул', 'Hysteria 2', 74]
+	];
+	let activeNode = 0;
+	function renderNodes() {
+		$('#nodes').innerHTML = NODES.map(([name, proto, ping], i) => {
+			const act = i === activeNode, cls = ping < 50 ? 'ok' : ping < 70 ? 'warn' : 'bad';
+			return `<button class="node w-full flex items-center gap-4 py-3.5 text-left group" data-i="${i}">
+				<span class="w-4 h-4 rounded-full border ${act ? 'border-cyan bg-cyan shadow-[0_0_12px_#2BE4FF]' : 'border-faint'}"></span>
+				<span class="flex-1 min-w-0"><span class="block ${act ? 'text-ink' : 'text-dim group-hover:text-ink'}">${name}</span><span class="block text-xs text-faint font-mono">${proto}</span></span>
+				<span class="font-mono num text-${cls}">${ping} мс</span></button>`;
+		}).join('');
+	}
+	renderNodes();
+	document.addEventListener('click', e => {
+		const n = e.target.closest('.node'); if (!n) return;
+		activeNode = +n.dataset.i; renderNodes();
+		toast('Выбран узел: ' + NODES[activeNode][0]);
+	});
+	$('#pingAll').addEventListener('click', () => {
+		NODES.forEach(n => n[2] = Math.round(30 + Math.random() * 60));
+		renderNodes(); toast('Пинг обновлён');
+	});
+
+	/* ---------------- SMS / USSD ---------------- */
+
+	const SMS = [
+		['МегаФон', 'Остаток пакета: 151,4 ГБ интернета до 12.11. Подробнее в приложении.', 'сегодня, 09:12', true],
+		['900', 'Пополнение на 650 ₽. Баланс 842,17 ₽.', 'вчера, 18:40', true],
+		['MegaFon', 'Вы в сети LTE+. Скорость до 300 Мбит/с в зоне покрытия.', '2 ноября', false],
+		['Госуслуги', 'Код подтверждения: 4815. Никому не сообщайте.', '30 октября', false]
+	];
+	function renderInbox() {
+		$('#inbox').innerHTML = SMS.map(([from, text, when, unread], i) => `
+			<li><button class="sms w-full text-left px-3 py-3.5 rounded-xl hover:bg-slate-700/40 flex gap-3" data-i="${i}">
+				<span class="mt-1.5 w-2 h-2 rounded-full flex-none ${unread ? 'bg-cyan' : 'bg-transparent'}"></span>
+				<span class="min-w-0 flex-1"><span class="flex justify-between gap-3"><span class="${unread ? 'font-semibold' : ''}">${from}</span><span class="text-xs text-faint whitespace-nowrap">${when}</span></span>
+				<span class="block text-sm text-dim mt-0.5 ${i === openSms ? '' : 'truncate'}">${text}</span></span></button></li>`).join('');
+		const n = SMS.filter(s => s[3]).length;
+		$('#smsBadge').textContent = n; $('#smsBadge').hidden = !n;
+	}
+	let openSms = -1;
+	renderInbox();
+	document.addEventListener('click', e => {
+		const s = e.target.closest('.sms'); if (!s) return;
+		const i = +s.dataset.i; openSms = openSms === i ? -1 : i; SMS[i][3] = false; renderInbox();
+	});
+
+	const USSD = { '*100#': 'Баланс: 842,17 ₽. Тариф «Без переплат. Интернет».', '*558#': 'Осталось 151,4 ГБ из 300 ГБ до 12.11.2026.', '*205#': 'Ваш номер: +7 920 •••-••-14' };
+	$$('.ussd-q').forEach(b => b.addEventListener('click', () => { $('#ussdInput').value = b.dataset.q; $('#ussdForm').requestSubmit(); }));
+	$('#ussdForm').addEventListener('submit', e => {
+		e.preventDefault();
+		const q = $('#ussdInput').value.trim(), out = $('#ussdOut');
+		out.className = out.className.replace('text-ink', 'text-dim');
+		out.textContent = `Отправка ${q}…`;
+		setTimeout(() => {
+			out.textContent = USSD[q] || `Запрос ${q} выполнен, оператор не прислал ответ.`;
+			out.className = out.className.replace('text-dim', 'text-ink');
+		}, 1100);
+	});
+
+	/* ---------------- system page ---------------- */
+
+	$('#trimBtn').addEventListener('click', () => {
+		$('#trimOut').textContent = 'Выполняется…';
+		setTimeout(() => $('#trimOut').innerHTML = '<span class="text-ok">Освобождено 1,8 ГБ на NVMe и 212 МБ на eMMC</span>', 1500);
+	});
+
+	const term = $('#term');
+	const CMD = {
+		help: 'Доступно: uptime, df -h, ip -br a, logread -l 5, ping 1.1.1.1, at ATI, fstrim -v /, clear',
+		uptime: () => ` ${new Date().toTimeString().slice(0, 8)} up 12 days,  4:${String(new Date().getMinutes()).padStart(2, '0')},  load average: 0.31, 0.27, 0.22`,
+		'df -h': 'Filesystem      Size  Used Avail Use% Mounted on\n/dev/root        7.2G  427M  6.8G   6% /\n/dev/nvme0n1p1   476G  183G  293G  38% /mnt/data\ntmpfs            494M  2.1M  492M   1% /tmp',
+		'ip -br a': 'lo        UNKNOWN  127.0.0.1/8\nbr-lan    UP       192.168.88.1/24 fd8a:3c4e::1/60\nwwan0_1   UP       10.252.234.85/30\nxray0     UP       172.19.0.1/30',
+		'logread -l 5': () => logBuf.slice(-5).map(l => l.text).join('\n'),
+		'at ATI': 'Quectel\nRM520N-GL\nRevision: RM520NGLAAR03A03M4G\n\nOK',
+		'fstrim -v /': '/: 212 MiB (222298112 bytes) trimmed'
+	};
+	function termPrint(text, cls = 'text-dim') {
+		const d = document.createElement('div'); d.className = 'whitespace-pre-wrap ' + cls; d.textContent = text; term.appendChild(d); term.scrollTop = 1e9;
+	}
+	termPrint('ImmortalWrt 24.10-SNAPSHOT, r33418-34bb738192. Введите help.', 'text-faint');
+	termPrint('# at ATI', 'text-cyan'); termPrint(CMD['at ATI'], 'text-ink');
+	$('#termForm').addEventListener('submit', e => {
+		e.preventDefault();
+		const c = $('#termInput').value.trim(); $('#termInput').value = '';
+		if (!c) return;
+		termPrint('# ' + c, 'text-cyan');
+		if (c === 'clear') { term.innerHTML = ''; return; }
+		if (c.startsWith('ping')) {
+			let i = 0; const host = c.split(' ')[1] || '1.1.1.1';
+			termPrint(`PING ${host}: 56 data bytes`);
+			const t = setInterval(() => { termPrint(`64 bytes from ${host}: seq=${i} ttl=57 time=${(32 + Math.random() * 14).toFixed(1)} ms`); if (++i === 4) { clearInterval(t); termPrint(`--- ${host} ping statistics ---\n4 packets transmitted, 4 packets received, 0% packet loss`); } }, 600);
+			return;
+		}
+		const r = CMD[c];
+		termPrint(r ? (typeof r === 'function' ? r() : r) : `-ash: ${c.split(' ')[0]}: not found`, r ? 'text-ink' : 'text-bad');
+	});
+
+	/* ---------------- live log ---------------- */
+
+	const logEl = $('#log'), logBuf = [];
+	let logFilter = 'all', logPaused = false;
+	const LOGS = [
+		['modem', 'info', () => `modemmanager: [wwan0_1] signal RSRP ${minus(rf.rsrp)} dBm, RSRQ ${minus(rf.rsrq)} dB, SINR ${rf.sinr} dB`],
+		['modem', 'info', () => `qmi: serving cell PCI ${SIMS[sim].pci}, band ${SIMS[sim].bands[0][0]}, CA ${SIMS[sim].bands.length > 1 ? 'on' : 'off'}`],
+		['modem', 'warn', () => 'modemmanager: neighbour cell PCI 145 stronger by 3 dB, handover pending'],
+		['xray', 'info', () => `xray: [Info] proxy/vless/outbound: tunneling request to tcp:${['api.telegram.org', 'youtube.com', 'github.com', 'discord.com'][Math.floor(Math.random() * 4)]}:443 via helsinki`],
+		['xray', 'info', () => `xray: [Info] app/dispatcher: sniffed domain ${['ya.ru', 'gosuslugi.ru', 'vk.com'][Math.floor(Math.random() * 3)]} → direct`],
+		['kernel', 'info', () => `kernel: [${(Math.random() * 1e6).toFixed(6)}] br-lan: port 2(phy0-ap0) entered forwarding state`],
+		['kernel', 'info', () => 'odhcpd: DHCPV6 REPLY IA_NA from 1 on br-lan: ok fd8a:3c4e::1f2/128'],
+		['system', 'info', () => `dnsmasq-dhcp: DHCPACK(br-lan) 192.168.88.${100 + Math.floor(Math.random() * 60)} Xiaomi-14`],
+		['system', 'err', () => 'crond[1874]: USER root pid 22811 cmd /usr/bin/modem-watchdog — exit 1'],
+	];
+	const LVL = { info: 'text-dim', warn: 'text-warn', err: 'text-bad' };
+	function logLine(ago = 0) {
+		const [src, lvl, f] = LOGS[Math.floor(Math.random() * LOGS.length)];
+		const now = new Date(Date.now() - ago), ts = now.toTimeString().slice(0, 8);
+		const item = { src, lvl, text: `${ts} ${f()}` };
+		logBuf.push(item); if (logBuf.length > 400) logBuf.shift();
+		if (!logPaused) appendLog(item);
+	}
+	function appendLog(item) {
+		if (logFilter !== 'all' && !(item.src === logFilter || (logFilter === 'kernel' && item.src === 'system'))) return;
+		const d = document.createElement('div');
+		d.className = 'log-line whitespace-pre-wrap ' + LVL[item.lvl];
+		d.innerHTML = `<span class="text-faint">${item.text.slice(0, 8)}</span> <span class="${item.src === 'modem' ? 'text-cyan' : item.src === 'xray' ? 'text-volt' : 'text-faint'}">${{ modem: 'модем', xray: 'туннель', kernel: 'ядро', system: 'система' }[item.src]}</span> ${item.text.slice(9).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c])}`;
+		logEl.appendChild(d);
+		while (logEl.children.length > 300) logEl.firstChild.remove();
+		if (logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 80) logEl.scrollTop = 1e9;
+	}
+	function redrawLog() { logEl.innerHTML = ''; logBuf.slice(-200).forEach(appendLog); logEl.scrollTop = 1e9; }
+	segmented('.log-f', b => { logFilter = b.dataset.f; redrawLog(); });
+	$('#logPause').addEventListener('click', e => {
+		logPaused = !logPaused; e.target.textContent = logPaused ? 'Продолжить' : 'Пауза';
+		if (!logPaused) redrawLog();
+	});
+	for (let i = 40; i > 0; i--) logLine(i * 1300 + Math.random() * 900);
+
+	/* ---------------- search ---------------- */
+
+	const INDEX = [
+		['Фиксация TTL', 'modem', 'card-ttl', 'ttl hop limit раздача тетеринг'],
+		['Частотные диапазоны (бэнды)', 'modem', 'card-bands', 'band бэнд частоты lte nr 5g b3 b7 b20 n78'],
+		['Смена IMEI', 'modem', 'card-imei', 'imei идентификатор'],
+		['SIM-карты', 'modem', 'card-sim', 'sim сим слот переключение apn'],
+		['Сканирование вышек', 'modem', 'card-scan', 'вышки бс сканирование соседи pci'],
+		['TUN-режим', 'vpn', 'card-tun', 'tun маршрутизация обход'],
+		['Исходящие узлы 3x-ui', 'vpn', 'card-nodes', '3x-ui xray vless reality trojan vmess hysteria узлы outbound пинг'],
+		['Входящие подключения 3x-ui', 'vpn', 'card-inbounds', '3x-ui inbound socks http tproxy порты'],
+		['Текущий прокси-сервер', 'overview', 'card-vpn', 'vpn прокси финляндия туннель'],
+		['Радиометрики RSRP / SINR', 'overview', 'card-rf', 'rsrp rsrq sinr rssi радио сигнал'],
+		['Трафик и лимит тарифа', 'overview', 'card-traffic', 'трафик лимит тариф скорость гб'],
+		['Входящие SMS', 'sms', 'card-inbox', 'sms смс сообщения'],
+		['USSD и баланс', 'sms', 'card-ussd', 'ussd баланс *100#'],
+		['Хранилище и fstrim', 'system', 'card-disks', 'emmc nvme fstrim диск место'],
+		['Планировщик cron', 'system', 'card-cron', 'cron планировщик расписание задачи'],
+		['Терминал', 'system', 'card-term', 'терминал консоль shell ssh'],
+		['Системный лог', 'logs', 'card-log', 'лог журнал logread syslog']
+	];
+	const search = $('#search'), results = $('#searchResults');
+	let hits = [];
+
+	function runSearch() {
+		const q = search.value.trim().toLowerCase();
+		$$('.hit').forEach(e => e.classList.remove('hit'));
+		if (!q) { results.hidden = true; return; }
+
+		/* light up matching cards on the current page and matching sections in the menu */
+		$$('[data-keys]').forEach(e => {
+			const text = (e.dataset.keys + ' ' + e.textContent).toLowerCase();
+			if (text.includes(q) && !e.closest('[hidden]')) e.classList.add('hit');
+		});
+		$$('.nav-item').forEach(b => { if ((b.dataset.keys + ' ' + b.textContent).toLowerCase().includes(q)) b.classList.add('hit'); });
+
+		hits = INDEX.filter(([t, , , k]) => (t + ' ' + k).toLowerCase().includes(q));
+		results.innerHTML = hits.length
+			? hits.map(([t, v], i) => `<button class="res w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-slate-700/60 ${i === 0 ? 'bg-slate-700/40' : ''}" data-i="${i}" role="option"><span>${t}</span><span class="text-xs text-faint">${titles[v]}</span></button>`).join('')
+			: '<div class="px-3 py-3 text-sm text-dim">Ничего не нашлось. Попробуйте «TTL», «бэнды» или «3x-ui».</div>';
+		results.hidden = false;
+	}
+
+	search.addEventListener('input', runSearch);
+	search.addEventListener('keydown', e => {
+		if (e.key === 'Enter' && hits[0]) { go(hits[0][1], hits[0][2]); search.blur(); results.hidden = true; }
+		if (e.key === 'Escape') { search.value = ''; runSearch(); search.blur(); }
+	});
+	results.addEventListener('click', e => {
+		const r = e.target.closest('.res'); if (!r) return;
+		const [, v, id] = hits[+r.dataset.i]; go(v, id); results.hidden = true;
+	});
+	document.addEventListener('click', e => { if (!e.target.closest('#search, #searchResults')) results.hidden = true; });
+	document.addEventListener('keydown', e => {
+		if (e.key === '/' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); search.focus(); }
+	});
+
+	/* ---------------- start ---------------- */
+
+	renderHero(); renderRf(); renderSims(); renderPing(); quota(used);
+	go((location.hash || '#overview').slice(1) in titles ? location.hash.slice(1) || 'overview' : 'overview');
+	resizeChart(); requestAnimationFrame(draw);
+	setInterval(tick, 2000);
+	setInterval(logLine, 1300);
+})();
+</script>
+</body>
+</html>
