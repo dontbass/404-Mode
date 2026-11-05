@@ -180,10 +180,34 @@ function nikki_state() {
 
 	/* nodes from proxy-providers are listed only under /providers/proxies */
 	const prov = api(c, 'GET', '/providers/proxies')?.providers ?? {};
-	for (let pn in keys(prov))
-		for (let p in (prov[pn]?.proxies ?? []))
+	res.providers = [];
+	for (let pn in keys(prov)) {
+		const pv = prov[pn];
+		for (let p in (pv?.proxies ?? []))
 			if (p?.name && !all[p.name])
 				all[p.name] = p;
+		/* "default" holds the profile's own proxies: not a subscription */
+		if (pv?.vehicleType && pv.vehicleType != 'Compatible')
+			push(res.providers, {
+				name: pn,
+				vehicle: pv.vehicleType,
+				count: length(pv.proxies ?? []),
+				alive: length(filter(pv.proxies ?? [], (x) => (last_delay(x) ?? 0) > 0)),
+				updated: pv.updatedAt,
+				sub: pv.subscriptionInfo
+			});
+	}
+
+	const rprov = api(c, 'GET', '/providers/rules')?.providers ?? {};
+	res.rules = [];
+	for (let rn in keys(rprov))
+		push(res.rules, {
+			name: rn,
+			vehicle: rprov[rn]?.vehicleType,
+			behavior: rprov[rn]?.behavior,
+			count: rprov[rn]?.ruleCount,
+			updated: rprov[rn]?.updatedAt
+		});
 
 	const order = all.GLOBAL?.all ?? [];
 	const groups = [];
@@ -274,6 +298,16 @@ function nikki_set(req) {
 		return { ok: true };
 	}
 
+	if (action == 'subscription') {
+		const subs = [];
+		for (let line in split(trim(sh("uci -q show nikki 2>/dev/null | grep '=subscription$' | cut -d. -f2 | cut -d= -f1")), '\n'))
+			if (length(line))
+				push(subs, line);
+		for (let sec in subs)
+			system('(/etc/init.d/nikki update_subscription ' + shellquote(sec) + ') >/dev/null 2>&1 </dev/null &');
+		return { ok: true, count: length(subs) };
+	}
+
 	const c = controller();
 	if (!c)
 		return { error: 'api' };
@@ -297,6 +331,45 @@ function nikki_set(req) {
 			return { error: 'args' };
 		const r = api(c, 'GET', '/proxies/' + urlencode(a.name) + '/delay?timeout=5000&url=' + urlencode(DELAY_URL));
 		return { delay: r?.delay ?? 0 };
+	}
+
+	if (action == 'provider_update' || action == 'provider_check' || action == 'rules_update') {
+		if (type(a.name) != 'string')
+			return { error: 'args' };
+		if (action == 'rules_update')
+			api(c, 'PUT', '/providers/rules/' + urlencode(a.name));
+		else if (action == 'provider_update')
+			api(c, 'PUT', '/providers/proxies/' + urlencode(a.name));
+		else
+			api(c, 'GET', '/providers/proxies/' + urlencode(a.name) + '/healthcheck');
+		return { ok: true };
+	}
+
+	if (action == 'close_conns') {
+		api(c, 'DELETE', '/connections');
+		return { ok: true };
+	}
+
+	if (action == 'flush_fakeip') {
+		api(c, 'POST', '/cache/fakeip/flush');
+		return { ok: true };
+	}
+
+	if (action == 'restart') {
+		system('(' + NIKKI_INIT + ' restart) >/dev/null 2>&1 </dev/null &');
+		return { ok: true };
+	}
+
+	/* the web dashboard (zashboard / metacubexd) bundled with Nikki, with
+	   host, port and secret so it opens already connected */
+	if (action == 'dashboard') {
+		let raw = null;
+		try {
+			raw = json(sh("yq -M -p yaml -o json '{\"ui\": .\"external-ui-name\", \"api\": .\"external-controller\", \"tls\": .\"external-controller-tls\"}' " + NIKKI_RUN + ' 2>/dev/null'));
+		} catch (e) { raw = null; }
+		const listen = raw?.tls ?? raw?.api;
+		const port = listen ? match(listen, /:(\d+)$/) : null;
+		return { port: port ? port[1] : '9090', tls: !!raw?.tls, ui: raw?.ui, secret: c.secret };
 	}
 
 	if (action == 'group_delay') {

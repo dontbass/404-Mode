@@ -3,6 +3,7 @@
 'require rpc';
 'require uci';
 'require poll';
+'require ui';
 'require neon-404mode as x';
 
 /*
@@ -20,6 +21,13 @@ const callIfaces = rpc.declare({ object: 'network.interface', method: 'dump', ex
 const callRead = rpc.declare({ object: 'file', method: 'read', params: [ 'path' ], expect: { data: '' } });
 const callModemInfo = rpc.declare({ object: 'qmodem', method: 'info', params: [ 'config_section' ], expect: { '': {} } });
 const callModemStats = rpc.declare({ object: 'qmodem', method: 'get_stats', params: [ 'config_section' ], expect: { '': {} } });
+const callSimCaps = rpc.declare({ object: 'qmodem', method: 'get_sim_switch_capabilities', params: [ 'config_section' ], expect: { '': {} } });
+const callSimSlot = rpc.declare({ object: 'qmodem', method: 'get_sim_slot', params: [ 'config_section' ], expect: { '': {} } });
+const callSetSim = rpc.declare({ object: 'qmodem', method: 'set_sim_slot', params: [ 'config_section', 'slot' ], expect: { '': {} } });
+
+const ICON_MAP = '<path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>';
+const ICON_REFRESH = '<path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 20.5V16h-4.5"/>';
+const ICON_CHEVRON = '<path d="m6 9 6 6 6-6"/>';
 
 const T = (ru, en) => x.t(ru, en);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -225,8 +233,8 @@ return view.extend({
 		return E('section', { 'class': 'xd-card xd-modem', 'data-search': 'модем оператор сигнал sim сим lte 5g 4g бэнд band modem operator signal' }, [
 			E('div', { 'class': 'xd-modem-top' }, [
 				E('div', { 'class': 'xd-seg', 'role': 'group', 'aria-label': T('SIM-карта', 'SIM card') }, [
-					E('a', { 'class': 'xd-seg-btn', 'data-slot': '1', 'href': L.url('admin/modem/qmodem') }, [ 'SIM 1' ]),
-					E('a', { 'class': 'xd-seg-btn', 'data-slot': '2', 'href': L.url('admin/modem/qmodem') }, [ 'SIM 2' ])
+					E('button', { 'type': 'button', 'class': 'xd-seg-btn', 'data-slot': '1', 'click': ev => this.switchSim(ev.currentTarget) }, [ 'SIM 1' ]),
+					E('button', { 'type': 'button', 'class': 'xd-seg-btn', 'data-slot': '2', 'click': ev => this.switchSim(ev.currentTarget) }, [ 'SIM 2' ])
 				]),
 				E('span', { 'class': 'xd-net' }, [ '—' ]),
 				E('span', { 'class': 'xd-net-mode' }, [ '' ]),
@@ -255,7 +263,10 @@ return view.extend({
 				])
 			]),
 			E('dl', { 'class': 'xd-cellinfo' }, [
-				E('div', {}, [ E('dt', {}, [ 'Cell ID' ]), E('dd', { 'data-f': 'cell' }, [ '—' ]) ]),
+				E('div', {}, [ E('dt', {}, [ 'Cell ID' ]), E('dd', { 'class': 'xd-cell' }, [
+					E('span', { 'data-f': 'cell' }, [ '—' ]),
+					E('a', { 'class': 'xd-map', 'hidden': '', 'target': '_blank', 'rel': 'noreferrer', 'href': '#', 'data-tip': T('Показать вышку на карте', 'Show the tower on a map'), 'aria-label': T('Показать вышку на карте', 'Show the tower on a map') }, [ x.icon(ICON_MAP) ])
+				]) ]),
 				E('div', {}, [ E('dt', {}, [ 'PCI' ]), E('dd', { 'data-f': 'pci' }, [ '—' ]) ]),
 				E('div', {}, [ E('dt', {}, [ 'EARFCN' ]), E('dd', { 'data-f': 'arfcn' }, [ '—' ]) ]),
 				E('div', {}, [ E('dt', {}, [ 'TAC' ]), E('dd', { 'data-f': 'tac' }, [ '—' ]) ])
@@ -275,16 +286,22 @@ return view.extend({
 				E('div', { 'class': 'xd-px-cap' }, [ T('Текущий прокси-сервер', 'Current proxy server') ]),
 				sw
 			]),
-			E('a', { 'class': 'xd-px-node', 'href': L.url('admin/proxy') }, [
-				E('span', { 'class': 'xd-px-flag' }),
-				E('span', { 'class': 'xd-px-txt' }, [
-					E('b', { 'class': 'xd-px-name' }, [ '—' ]),
-					E('small', { 'class': 'xd-px-via' }, [ '' ])
-				])
+			E('div', { 'class': 'xd-px-pick' }, [
+				E('button', { 'type': 'button', 'class': 'xd-px-node', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'click': ev => this.toggleNodeMenu(ev) }, [
+					E('span', { 'class': 'xd-px-flag' }),
+					E('span', { 'class': 'xd-px-txt' }, [
+						E('b', {}, [ E('span', { 'class': 'xd-px-name' }, [ '—' ]), x.icon(ICON_CHEVRON, 'xd-px-chev') ]),
+						E('small', { 'class': 'xd-px-via' }, [ '' ])
+					])
+				]),
+				E('div', { 'class': 'xd-px-menu', 'role': 'listbox', 'hidden': '' })
 			]),
 			E('div', { 'class': 'xd-px-bottom' }, [
 				E('div', {}, [
-					E('div', { 'class': 'xd-px-ping' }, [ E('span', { 'class': 'xd-px-ping-v' }, [ '—' ]), E('small', {}, [ ' ' + T('мс', 'ms') ]) ]),
+					E('div', { 'class': 'xd-px-ping' }, [
+						E('span', { 'class': 'xd-px-ping-v' }, [ '—' ]), E('small', {}, [ ' ' + T('мс', 'ms') ]),
+						E('button', { 'type': 'button', 'class': 'xd-refresh', 'title': T('Проверить пинг сейчас', 'Test the delay now'), 'aria-label': T('Проверить пинг', 'Test delay'), 'click': ev => this.refreshPing(ev.currentTarget) }, [ x.icon(ICON_REFRESH) ])
+					]),
 					E('div', { 'class': 'xd-px-state' }, [ T('Проверяем Nikki…', 'Checking Nikki…') ])
 				]),
 				svg('svg', { 'viewBox': '0 0 120 36', 'class': 'xd-spark', 'preserveAspectRatio': 'none', 'aria-hidden': 'true' }, [ svg('polyline', { 'points': '' }) ])
@@ -599,6 +616,18 @@ return view.extend({
 			return Promise.resolve();
 		}
 
+		if (!this.state.simChecked) {
+			this.state.simChecked = true;
+			Promise.all([ L.resolveDefault(callSimCaps(m.id), null), L.resolveDefault(callSimSlot(m.id), null) ]).then(([ caps, slot ]) => {
+				const slots = caps && Array.isArray(caps.simSlots) ? caps.simSlots.map(String) : [];
+				this.state.sim = { ok: !!caps && caps.supportSwitch === '1' && slots.length > 1, slots: slots, cur: slot && slot.sim_slot != null ? String(slot.sim_slot) : null, note: caps && caps.ExtraInfo };
+				this.paintSim();
+			});
+		}
+
+		if (this.state.switching)
+			return Promise.resolve();
+
 		return Promise.all([
 			L.resolveDefault(callModemInfo(m.id), {}),
 			this.state.statsChecked ? Promise.resolve(null) : L.resolveDefault(callModemStats(m.id), null)
@@ -647,8 +676,18 @@ return view.extend({
 		online.className = 'xd-online' + (m.warn ? ' off' : '');
 		this.q('.xd-online-text').textContent = m.warn ? T('нет регистрации', 'not registered') : (m.number || T('в сети', 'online'));
 
-		const slot = m.slot != null ? (+m.slot === 0 ? 1 : +m.slot) : null;
-		this.root.querySelectorAll('.xd-modem [data-slot]').forEach(b => b.setAttribute('aria-current', slot == +b.getAttribute('data-slot') ? 'true' : 'false'));
+		this.state.infoSlot = m.slot != null ? String(+m.slot === 0 ? 1 : +m.slot) : null;
+		this.paintSim();
+
+		/* the tower on CellMapper: operator network and eNB of the serving cell */
+		const map = this.q('.xd-map');
+		const plmn = /^(\d{3})(\d{2,3})$/.exec(m.plmn || '');
+		const cid = parseInt(m.cell, 16);
+		map.hidden = !plmn;
+		if (plmn) {
+			map.href = 'https://www.cellmapper.net/map?MCC=' + plmn[1] + '&MNC=' + (+plmn[2]) + '&type=' + (/5G/.test(m.kind) && !/NSA/.test(m.kind) ? 'NR' : 'LTE') + (cid ? '&eNB=' + (cid >> 8) : '');
+			map.setAttribute('data-tip', T('Показать вышку на карте', 'Show the tower on a map') + (cid ? ' (eNB ' + (cid >> 8) + ')' : ''));
+		}
 
 		this.q('.xd-rsrp-v').textContent = m.rsrp != null ? x.minus(m.rsrp) : '—';
 		const qtxt = { ok: T('Хороший сигнал', 'Good signal'), warn: T('Средний сигнал', 'Fair signal'), bad: T('Слабый сигнал', 'Weak signal'), none: '' };
@@ -686,7 +725,7 @@ return view.extend({
 		const f = (k, v) => this.root.querySelectorAll('[data-f="' + k + '"]').forEach(el => el.textContent = v != null && v !== '' ? v : '—');
 		f('cell', m.cell); f('pci', m.pci); f('arfcn', m.arfcn); f('tac', m.tac);
 		f('cell2', m.cell); f('pci2', m.pci);
-		f('bands', m.bands.map(b => b.band).join(' + ') || null);
+		f('bands', m.bands.length ? m.bands.map(b => b.band).join(' + ') + (m.bands.length > 1 ? T(' (агрегация активна)', ' (aggregation on)') : '') : null);
 
 		Object.keys(RF).forEach(k => {
 			const tile = this.q('[data-rf="' + k + '"]');
@@ -707,11 +746,124 @@ return view.extend({
 	handleSaveApply: null,
 	handleReset: null,
 
+	/* ---------- SIM slot ---------- */
+
+	paintSim() {
+		const sim = this.state.sim || {};
+		const cur = this.state.switching || sim.cur || this.state.infoSlot;
+		this.root.querySelectorAll('.xd-modem [data-slot]').forEach(b => {
+			const slot = b.getAttribute('data-slot');
+			b.setAttribute('aria-current', cur == slot ? 'true' : 'false');
+			b.disabled = !!this.state.switching || (cur != slot && !sim.ok);
+			b.title = sim.ok ? (cur == slot ? T('Активная SIM-карта', 'Active SIM') : T('Переключиться на SIM ', 'Switch to SIM ') + slot)
+				: T('Модем не поддерживает переключение SIM', 'This modem cannot switch SIM slots');
+		});
+	},
+
+	switchSim(btn) {
+		const sim = this.state.sim || {};
+		const slot = btn.getAttribute('data-slot');
+		const m = this.modems[this.state.modemIdx];
+		if (!m || !sim.ok || slot == (sim.cur || this.state.infoSlot) || this.state.switching)
+			return;
+
+		const card = this.q('.xd-modem');
+		this.state.switching = slot;
+		card.classList.add('xd-switching');
+		card.setAttribute('data-switch', T('Переключаем на SIM ', 'Switching to SIM ') + slot + '…');
+		this.paintSim();
+
+		const min = new Promise(r => window.setTimeout(r, 1500));
+		Promise.all([ L.resolveDefault(callSetSim(m.id, slot), null), min ]).then(([ res ]) => {
+			const ok = res && res.success;
+			sim.cur = ok ? slot : sim.cur;
+			ui.addNotification(null, E('p', {}, [ ok ? T('Активна SIM ' + slot + '. Модем переподключается к сети.', 'SIM ' + slot + ' is active. The modem is reconnecting.') : T('Модем не переключил слот. Проверьте, вставлена ли SIM ' + slot + '.', 'The modem did not switch. Is SIM ' + slot + ' inserted?') ]), ok ? 'info' : 'warning');
+		}).then(() => {
+			this.state.switching = null;
+			card.classList.remove('xd-switching');
+			this.paintSim();
+			return this.tickModem();
+		});
+	},
+
+	/* ---------- proxy picker and delay ---------- */
+
+	toggleNodeMenu(ev) {
+		const p = this.state.proxy;
+		const btn = ev.currentTarget;
+		const menu = this.q('.xd-px-menu');
+		const open = menu.hidden;
+
+		const close = () => {
+			menu.hidden = true;
+			btn.setAttribute('aria-expanded', 'false');
+			document.removeEventListener('click', this.state.menuOff, true);
+		};
+
+		if (!open || !p || !p.api) {
+			if (!p || !p.api) location.href = L.url('admin/proxy');
+			return close();
+		}
+
+		const group = (p.groups || []).find(g => g.name == p.main);
+		if (!group)
+			return;
+
+		menu.innerHTML = '';
+		menu.appendChild(E('div', { 'class': 'xd-px-menu-h' }, [ T('Группа ', 'Group ') + x.nodeName(group.name) ]));
+		group.all.forEach(n => {
+			const sub = n.group ? (p.groups || []).find(g => g.name == n.name) : null;
+			menu.appendChild(E('button', {
+				'type': 'button',
+				'class': 'xd-px-opt' + (group.now == n.name ? ' active' : ''),
+				'role': 'option',
+				'aria-selected': group.now == n.name ? 'true' : 'false',
+				'click': () => {
+					close();
+					if (group.now == n.name) return;
+					this.q('.xd-px-name').textContent = x.nodeName(n.name);
+					x.proxySet('select', { group: group.name, name: n.name }).then(() => this.tickProxy());
+				}
+			}, [
+				n.group ? x.icon('<path d="M4 7h16M4 12h16M4 17h10"/>', 'xp-gi') : x.flag(n.name, 'xf-s'),
+				E('span', { 'class': 'xd-px-opt-n' }, [ x.nodeName(n.name), sub && sub.now ? E('small', {}, [ ' › ' + x.nodeName(sub.now) ]) : '' ]),
+				E('span', { 'class': 'xd-px-opt-d xd-' + x.delayClass(n.delay) }, [ n.delay ? n.delay + ' ' + T('мс', 'ms') : '' ])
+			]));
+		});
+
+		menu.hidden = false;
+		btn.setAttribute('aria-expanded', 'true');
+		this.state.menuOff = e => { if (!e.target.closest('.xd-px-pick')) close(); };
+		window.setTimeout(() => document.addEventListener('click', this.state.menuOff, true), 0);
+	},
+
+	refreshPing(btn) {
+		const p = this.state.proxy;
+		const node = p && p.node;
+		if (!node || btn.classList.contains('spin'))
+			return;
+
+		btn.classList.add('spin');
+		const min = new Promise(r => window.setTimeout(r, 1000));
+		Promise.all([ L.resolveDefault(x.proxySet('delay', { name: node.name }), null), min ]).then(([ r ]) => {
+			btn.classList.remove('spin');
+			const d = r && r.delay;
+			const v = this.q('.xd-px-ping-v');
+			v.textContent = d ? d : T('нет', 'n/a');
+			v.className = 'xd-px-ping-v xd-' + x.delayClass(d);
+			if (d) {
+				this.state.pings.push(d);
+				if (this.state.pings.length > 30) this.state.pings.shift();
+			}
+		});
+	},
+
 	tickProxy() {
 		return x.proxy().then(p => this.paintProxy(p));
 	},
 
 	paintProxy(p) {
+		this.state.proxy = p;
 		const card = this.q('.xd-px');
 		const sw = card.querySelector('.xs');
 		const state = this.q('.xd-px-state');
@@ -739,7 +891,11 @@ return view.extend({
 		this.q('.xd-px-via').textContent = node ? [ node.type, (p.chain || []).slice(0, -1).map(x.nodeName).join(' › ') ].filter(Boolean).join(T(', группа ', ', group ')) : (p.running ? '' : T('Трафик идёт напрямую', 'Traffic goes direct'));
 
 		const d = node ? node.delay : null;
-		this.q('.xd-px-ping-v').textContent = d ? d : '—';
+		if (!this.q('.xd-refresh').classList.contains('spin')) {
+			this.q('.xd-px-ping-v').textContent = d ? d : '—';
+			this.q('.xd-px-ping-v').className = 'xd-px-ping-v' + (d ? ' xd-' + x.delayClass(d) : '');
+		}
+		this.q('.xd-refresh').hidden = !(p.node && p.api);
 
 		if (p.running && p.api) {
 			const modes = { rule: T('по правилам', 'by rules'), global: T('весь трафик', 'all traffic'), direct: T('напрямую', 'direct') };

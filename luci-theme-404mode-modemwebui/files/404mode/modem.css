@@ -883,7 +883,9 @@ html[data-404] img[style*="width: 36px; height: 36px"] {
 }
 
 /* charts (G2, canvas): invert on dark schemes so axes stay readable */
-html[data-404] .ant-card-body canvas { filter: var(--m-chart-filter); }
+html[data-404] canvas[data-404-flip="1"] { filter: invert(.9) hue-rotate(180deg); }
+html[data-404="gost"] canvas[data-404-flip="1"] { filter: var(--m-chart-filter); }
+html[data-404] ::selection { background: rgba(var(--m-primary-rgb), .3); color: inherit; }
 
 /* AT terminal / code */
 html[data-404] pre,

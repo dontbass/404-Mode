@@ -33,6 +33,7 @@ return view.extend({
 			E('h2', { 'name': 'content' }, [ 'Proxy' ]),
 			E('p', { 'class': 'cbi-map-descr' }, [ T('Nikki и ядро mihomo: какой узел сейчас ведёт трафик, режим маршрутизации и группы узлов из подписки.', 'Nikki and the mihomo core: the node carrying traffic now, the routing mode and the node groups from your subscription.') ]),
 			E('div', { 'class': 'xp-top' }),
+			E('div', { 'class': 'xp-manage' }),
 			E('div', { 'class': 'xp-groups' })
 		]);
 
@@ -61,6 +62,13 @@ return view.extend({
 
 		top.appendChild(this.renderService(p));
 		top.appendChild(this.renderNow(p));
+
+		const manage = this.root.querySelector('.xp-manage');
+		if (!this.busy) {
+			manage.innerHTML = '';
+			if (p.running && p.api)
+				manage.appendChild(this.renderProviders(p));
+		}
 
 		if (!p.running || !p.api) {
 			groups.innerHTML = '';
@@ -122,7 +130,117 @@ return view.extend({
 				E('div', {}, [ E('dt', {}, [ T('Отправлено', 'Sent') ]), E('dd', {}, [ p.api ? uv + ' ' + uu : '—' ]) ])
 			]),
 			E('div', { 'class': 'xp-links' }, [
-				E('a', { 'class': 'btn cbi-button', 'href': L.url('admin/services/nikki') }, [ T('Настройки Nikki', 'Nikki settings') ])
+				E('a', { 'class': 'btn cbi-button', 'href': L.url('admin/services/nikki') }, [ T('Настройки Nikki', 'Nikki settings') ]),
+				p.api ? E('button', { 'type': 'button', 'class': 'btn cbi-button cbi-button-action', 'click': ev => this.openDashboard(ev.currentTarget) }, [ T('Панель mihomo', 'mihomo dashboard') ]) : '',
+				E('button', { 'type': 'button', 'class': 'btn cbi-button', 'click': ev => this.act(ev.currentTarget, 'restart', {}, T('Nikki перезапускается.', 'Nikki is restarting.'), 4000) }, [ T('Перезапустить', 'Restart') ])
+			])
+		]);
+	},
+
+	/* ---------- management ---------- */
+
+	act(btn, action, args, done, wait) {
+		const label = btn.textContent;
+		btn.disabled = true;
+		btn.classList.add('busy');
+		this.busy = true;
+		return x.proxySet(action, args || {}).then(r => {
+			if (r && r.error)
+				ui.addNotification(null, E('p', {}, [ T('Не получилось: ', 'Failed: ') + r.error ]), 'danger');
+			else if (done)
+				ui.addNotification(null, E('p', {}, [ done ]), 'info');
+		}).catch(e => {
+			ui.addNotification(null, E('p', {}, [ String(e) ]), 'danger');
+		}).then(() => new Promise(res => window.setTimeout(res, wait || 600))).then(() => {
+			btn.disabled = false;
+			btn.classList.remove('busy');
+			btn.textContent = label;
+			this.busy = false;
+			return x.proxy().then(r => this.paint(r));
+		});
+	},
+
+	openDashboard(btn) {
+		/* open the tab synchronously, fill the address once the router answers */
+		const w = window.open('', '_blank');
+		x.proxySet('dashboard').then(d => {
+			const host = location.hostname;
+			const q = new URLSearchParams({ hostname: host, host: host, port: d.port, secret: d.secret || '' }).toString();
+			const url = (d.tls ? 'https' : 'http') + '://' + host + ':' + d.port + '/ui/' + (d.ui ? d.ui + '/' : '') + '?' + q;
+			if (w) w.location = url; else location.href = url;
+		}).catch(() => { if (w) w.close(); });
+	},
+
+	ago(t) {
+		const ms = Date.parse(t || '');
+		if (!ms || ms < 946684800000)
+			return T('ещё не обновлялся', 'never updated');
+		const s = Math.max(0, (Date.now() - ms) / 1000);
+		if (s < 90) return T('обновлён только что', 'updated just now');
+		if (s < 3600) return T('обновлён ' + Math.round(s / 60) + ' мин назад', 'updated ' + Math.round(s / 60) + ' min ago');
+		if (s < 86400) return T('обновлён ' + Math.round(s / 3600) + ' ч назад', 'updated ' + Math.round(s / 3600) + ' h ago');
+		return T('обновлён ' + Math.round(s / 86400) + ' д назад', 'updated ' + Math.round(s / 86400) + ' d ago');
+	},
+
+	renderProviders(p) {
+		const btn = (label, cls, fn, title) => E('button', { 'type': 'button', 'class': 'btn cbi-button xd-btn-s ' + (cls || ''), 'title': title || null, 'click': ev => fn(ev.currentTarget) }, [ label ]);
+		const provs = p.providers || [], rules = p.rules || [];
+
+		const rows = provs.map(v => {
+			const sub = v.sub || {};
+			const used = (+sub.Upload || 0) + (+sub.Download || 0), total = +sub.Total || 0;
+			const [ uv, uu ] = x.bytes(used), [ tv, tu ] = x.bytes(total);
+			const exp = +sub.Expire ? new Date(sub.Expire * 1000).toLocaleDateString(x.RU ? 'ru-RU' : 'en-GB') : null;
+
+			return E('div', { 'class': 'xp-prov' }, [
+				E('div', { 'class': 'xp-prov-main' }, [
+					E('b', {}, [ v.name ]),
+					E('small', { 'class': 'xd-muted' }, [ [ T('узлов: ', 'nodes: ') + v.count + (v.alive ? T(', живых: ', ', alive: ') + v.alive : ''), v.vehicle, this.ago(v.updated) ].filter(Boolean).join(', ') ]),
+					total ? E('div', { 'class': 'xp-prov-quota' }, [
+						E('div', { 'class': 'xd-track' }, [ E('i', { 'style': 'width:' + Math.min(100, used / total * 100).toFixed(1) + '%', 'class': used / total > .9 ? 'warn' : '' }) ]),
+						E('small', { 'class': 'xd-muted' }, [ uv + ' ' + uu + T(' из ', ' of ') + tv + ' ' + tu + (exp ? T(', до ', ', until ') + exp : '') ])
+					]) : ''
+				]),
+				E('div', { 'class': 'xp-prov-act' }, [
+					btn(T('Обновить', 'Update'), 'cbi-button-action', b => this.act(b, 'provider_update', { name: v.name }, T('Провайдер «', 'Provider “') + v.name + T('» обновлён.', '” updated.'))),
+					btn(T('Пинг', 'Test'), '', b => this.act(b, 'provider_check', { name: v.name }, null, 1500), T('Проверить все узлы провайдера', 'Health-check every node'))
+				])
+			]);
+		});
+
+		return E('section', { 'class': 'xd-card xp-providers', 'data-search': 'провайдеры подписка обновить правила rule provider subscription dns fake-ip соединения' }, [
+			E('div', { 'class': 'xd-card-head' }, [
+				E('div', {}, [
+					E('h3', {}, [ T('Подписки и провайдеры', 'Subscriptions and providers') ]),
+					E('div', { 'class': 'xd-muted' }, [ T('Прокси-провайдеров: ', 'Proxy providers: ') + provs.length + T(', наборов правил: ', ', rule sets: ') + rules.length ])
+				]),
+				E('div', { 'class': 'xp-head-act' }, [
+					btn(T('Обновить подписки Nikki', 'Update Nikki subscriptions'), 'cbi-button-action', b => this.act(b, 'subscription', {}, T('Подписки обновляются, профиль перезагрузится.', 'Subscriptions are updating, the profile will reload.'), 3000)),
+					provs.length ? btn(T('Обновить всех провайдеров', 'Update all providers'), '', b => {
+						b.disabled = true;
+						Promise.all(provs.map(v => x.proxySet('provider_update', { name: v.name }))).then(() => this.act(b, 'flush_fakeip', {}, T('Провайдеры обновлены.', 'Providers updated.')));
+					}) : ''
+				])
+			]),
+			provs.length ? E('div', { 'class': 'xp-provs' }, rows) : E('p', { 'class': 'xd-muted' }, [ T('В профиле нет proxy-providers: узлы прописаны прямо в конфигурации.', 'The profile has no proxy-providers: nodes are defined inline.') ]),
+			rules.length ? E('div', { 'class': 'xp-rules' }, [
+				E('div', { 'class': 'xp-rules-head' }, [
+					E('span', { 'class': 'xd-muted' }, [ T('Наборы правил', 'Rule sets') ]),
+					btn(T('Обновить все', 'Update all'), '', b => {
+						b.disabled = true;
+						Promise.all(rules.map(r => x.proxySet('rules_update', { name: r.name }))).then(() => this.act(b, 'flush_fakeip', {}, T('Наборы правил обновлены.', 'Rule sets updated.')));
+					})
+				]),
+				E('div', { 'class': 'xp-rule-list' }, rules.map(r => E('button', {
+					'type': 'button',
+					'class': 'xp-rule',
+					'title': [ r.behavior, r.vehicle, this.ago(r.updated) ].filter(Boolean).join(', ') + T('. Нажмите, чтобы обновить.', '. Click to update.'),
+					'click': ev => this.act(ev.currentTarget, 'rules_update', { name: r.name }, T('Набор «', 'Rule set “') + r.name + T('» обновлён.', '” updated.'))
+				}, [ E('span', {}, [ r.name ]), E('small', {}, [ x.num(r.count || 0) ]) ])))
+			]) : '',
+			E('div', { 'class': 'xp-tools' }, [
+				btn(T('Закрыть все соединения', 'Close all connections'), 'cbi-button-negative', b => this.act(b, 'close_conns', {}, T('Соединения закрыты.', 'Connections closed.'))),
+				btn(T('Очистить кэш fake-ip', 'Flush fake-ip cache'), '', b => this.act(b, 'flush_fakeip', {}, T('Кэш fake-ip очищен.', 'Fake-ip cache flushed.')))
 			])
 		]);
 	},

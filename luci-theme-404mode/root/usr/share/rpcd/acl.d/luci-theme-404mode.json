@@ -3,23 +3,60 @@
 		"description": "404 Mode theme: header brief, dashboard, proxy panel",
 		"read": {
 			"ubus": {
-				"404mode": [ "weather", "rates", "news", "proxy" ],
-				"qmodem": [ "info", "base_info", "cell_info", "sim_info", "network_info", "get_stats" ],
-				"system": [ "info", "board" ],
-				"luci-rpc": [ "getNetworkDevices" ],
-				"network.interface": [ "dump" ],
-				"rc": [ "list" ],
-				"file": [ "read" ]
+				"404mode": [
+					"weather",
+					"rates",
+					"news",
+					"proxy"
+				],
+				"qmodem": [
+					"info",
+					"base_info",
+					"cell_info",
+					"sim_info",
+					"network_info",
+					"get_stats",
+					"get_sim_switch_capabilities",
+					"get_sim_slot"
+				],
+				"system": [
+					"info",
+					"board"
+				],
+				"luci-rpc": [
+					"getNetworkDevices"
+				],
+				"network.interface": [
+					"dump"
+				],
+				"rc": [
+					"list"
+				],
+				"file": [
+					"read"
+				]
 			},
-			"uci": [ "qmodem", "nikki" ],
+			"uci": [
+				"qmodem",
+				"nikki"
+			],
 			"file": {
-				"/proc/stat": [ "read" ],
-				"/sys/class/thermal/thermal_zone*/temp": [ "read" ]
+				"/proc/stat": [
+					"read"
+				],
+				"/sys/class/thermal/thermal_zone*/temp": [
+					"read"
+				]
 			}
 		},
 		"write": {
 			"ubus": {
-				"404mode": [ "proxy_set" ]
+				"404mode": [
+					"proxy_set"
+				],
+				"qmodem": [
+					"set_sim_slot"
+				]
 			}
 		}
 	}

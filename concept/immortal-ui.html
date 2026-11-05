@@ -128,6 +128,33 @@
 	@keyframes sweep { to { transform: rotate(360deg); } }
 
 	.log-line { animation: logIn .25s ease-out; }
+
+	/* tooltip */
+	.tip::after {
+		content: attr(data-tip);
+		position: absolute; left: -6px; bottom: calc(100% + 8px); z-index: 20;
+		padding: 6px 10px; border-radius: 9px; white-space: nowrap;
+		font: 500 12.5px Onest, sans-serif; color: #E7EEF6;
+		background: #18202D; border: 1px solid rgba(135,150,168,.3); box-shadow: 0 12px 30px rgba(0,0,0,.5);
+		opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity .15s, transform .15s;
+	}
+	.tip:hover::after, .tip:focus-visible::after { opacity: 1; transform: none; }
+
+	/* SIM switching overlay */
+	.switching::after {
+		content: attr(data-switch);
+		position: absolute; inset: 0; z-index: 10; border-radius: inherit;
+		display: flex; align-items: center; justify-content: center; padding-top: 72px;
+		font-weight: 600; color: #E7EEF6;
+		background: rgba(8,11,16,.6); backdrop-filter: blur(4px);
+	}
+	.switching::before {
+		content: ""; position: absolute; z-index: 11; left: calc(50% - 22px); top: calc(50% - 40px);
+		width: 44px; height: 44px; border-radius: 50%;
+		border: 3px solid rgba(43,228,255,.2); border-top-color: #2BE4FF; animation: spin .8s linear infinite;
+	}
+	.spin { animation: spin .8s linear infinite; }
+	@keyframes spin { to { transform: rotate(360deg); } }
 	@keyframes logIn { from { opacity: 0; transform: translateY(4px); } }
 
 	::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -301,7 +328,10 @@
 					</div>
 
 					<dl class="mt-7 pt-5 border-t border-line grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-						<div><dt class="text-dim">Cell ID</dt><dd class="font-mono num mt-1" id="cellId">26 754 817</dd></div>
+						<div><dt class="text-dim">Cell ID</dt><dd class="font-mono num mt-1 flex items-center gap-2"><span id="cellId">26 754 817</span>
+							<a id="mapBtn" href="#" class="tip relative inline-flex w-6 h-6 items-center justify-center rounded-md border border-line text-dim hover:text-cyan hover:border-cyan/50" data-tip="Показать вышку на карте" aria-label="Показать вышку на карте">
+								<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/></svg>
+							</a></dd></div>
 						<div><dt class="text-dim">eNB</dt><dd class="font-mono num mt-1" id="enb">104 511</dd></div>
 						<div><dt class="text-dim">PCI</dt><dd class="font-mono num mt-1" id="pci">312</dd></div>
 						<div><dt class="text-dim">EARFCN</dt><dd class="font-mono num mt-1" id="earfcn">1300 / 3050</dd></div>
@@ -309,23 +339,32 @@
 				</article>
 
 				<!-- VPN -->
-				<article id="card-vpn" data-keys="vpn прокси 3x-ui туннель финляндия обход пинг" class="col-span-12 md:col-span-6 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
+				<article id="card-vpn" data-keys="vpn прокси 3x-ui туннель финляндия обход пинг" class="relative z-20 col-span-12 md:col-span-6 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
 					<div class="flex items-start justify-between gap-4">
 						<div>
 							<div class="text-sm text-dim">Текущий прокси-сервер</div>
-							<div class="mt-3 flex items-center gap-3">
-								<svg viewBox="0 0 36 24" class="w-9 h-6 rounded-[4px] shadow" aria-label="Флаг Финляндии"><rect width="36" height="24" fill="#fff"/><rect x="10" width="7" height="24" fill="#18407E"/><rect y="8.5" width="36" height="7" fill="#18407E"/></svg>
-								<div>
-									<div class="font-semibold text-lg leading-tight">Финляндия, Хельсинки</div>
-									<div class="text-xs text-dim mt-0.5">VLESS Reality через LTE</div>
-								</div>
+							<div class="relative mt-3">
+								<button id="nodeBtn" type="button" aria-haspopup="listbox" aria-expanded="false" class="-mx-2 -my-1 px-2 py-1 rounded-xl flex items-center gap-3 text-left hover:bg-slate-700/40">
+									<span id="nodeFlag" class="w-9 h-6 rounded-[4px] overflow-hidden shadow flex-none"></span>
+									<span>
+										<span class="flex items-center gap-1.5 font-semibold text-lg leading-tight"><span id="nodeName">Finland-01</span>
+											<svg id="nodeChev" class="w-4 h-4 text-dim transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></span>
+										<span id="nodeMeta" class="block text-xs text-dim mt-0.5">VLESS Reality, Хельсинки</span>
+									</span>
+								</button>
+								<div id="nodeMenu" role="listbox" class="absolute left-0 top-full mt-3 z-30 w-72 bg-slate-800 border border-line rounded-2xl p-1.5 shadow-2xl" hidden></div>
 							</div>
 						</div>
 						<button id="vpnSwitch" class="switch mt-1" role="switch" aria-checked="true" aria-label="Туннель"></button>
 					</div>
 					<div class="mt-6 flex items-end justify-between gap-3">
 						<div>
-							<div class="font-mono text-3xl num"><span id="vpnPing">38</span><span class="text-base text-dim"> мс</span></div>
+							<div class="flex items-center gap-2">
+								<div class="font-mono text-3xl num"><span id="vpnPing">38</span><span class="text-base text-dim"> мс</span></div>
+								<button id="pingBtn" type="button" title="Проверить пинг сейчас" aria-label="Проверить пинг" class="w-8 h-8 rounded-lg border border-line text-dim hover:text-cyan hover:border-cyan/50 flex items-center justify-center">
+									<svg id="pingIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 20.5V16h-4.5"/></svg>
+								</button>
+							</div>
 							<div id="vpnState" class="text-sm text-ok">Трафик идёт через туннель</div>
 						</div>
 						<svg id="pingSpark" viewBox="0 0 120 36" class="w-32 h-9" preserveAspectRatio="none"><polyline fill="none" stroke="#2BE4FF" stroke-width="1.6" points=""/></svg>
@@ -680,7 +719,7 @@
 
 	const SIMS = {
 		1: { op: 'МегаФон', meta: 'PLMN 25002, Воронеж', type: '4G+', mode: 'LTE-A, агрегация двух несущих',
-		     bands: [['B3', '1800 МГц', '20 МГц', 'основная'], ['B7', '2600 МГц', '20 МГц', 'доп.']],
+		     bands: [['B3', '1800 МГц', '20 МГц', 'основная'], ['B7', '2600 МГц', '20 МГц', 'доп.'], ['B1', '2100 МГц', '10 МГц', 'доп.']],
 		     rf: { rsrp: -86, rsrq: -9, sinr: 14, rssi: -61 }, cell: '26 754 817', enb: '104 511', pci: '312', earfcn: '1300 / 3050', number: '+7 920 •••-••-14', apn: 'internet' },
 		2: { op: 'Билайн', meta: 'PLMN 25099, Воронеж', type: 'LTE', mode: 'одна несущая',
 		     bands: [['B20', '800 МГц', '10 МГц', 'основная']],
@@ -714,7 +753,7 @@
 				<div class="mt-3 h-1 rounded-full bg-slate-600/60 overflow-hidden"><div class="h-full rounded-full bg-${cls}" style="width:${pct}%"></div></div>
 			</div>`;
 		}).join('') + `<div class="col-span-2 grid grid-cols-3 gap-3 text-sm pt-1">
-			<div><div class="text-dim">Бэнд</div><div class="font-mono mt-1">${SIMS[sim].bands.map(b => b[0]).join(' + ')}</div></div>
+			<div class="col-span-3 sm:col-span-1"><div class="text-dim">Бэнд</div><div class="font-mono mt-1">${SIMS[sim].bands.map(b => b[0]).join(' + ')}${SIMS[sim].bands.length > 1 ? ' <span class="font-sans text-xs text-ok whitespace-nowrap">(Агрегация активна)</span>' : ''}</div></div>
 			<div><div class="text-dim">Cell ID</div><div class="font-mono mt-1 num">${SIMS[sim].cell}</div></div>
 			<div><div class="text-dim">PCI</div><div class="font-mono mt-1 num">${SIMS[sim].pci}</div></div>
 		</div>`;
@@ -754,11 +793,34 @@
 				<span class="font-mono font-bold text-cyan">${b}</span><span class="text-dim">${f}, ${w}</span><span class="text-xs text-faint">${role}</span></span>`).join('');
 	}
 
-	segmented('.sim-btn', b => {
-		sim = +b.dataset.sim; rf = { ...SIMS[sim].rf };
-		renderHero(); renderRf(); renderSims();
-		toast(`Активна SIM ${sim}: ${SIMS[sim].op}`);
-	});
+	let switching = false;
+	function paintSim() {
+		$$('.sim-btn').forEach(b => {
+			const on = +b.dataset.sim === sim;
+			b.setAttribute('aria-checked', on);
+			b.classList.toggle('bg-slate-600', on);
+			b.classList.toggle('text-ink', on);
+			b.classList.toggle('text-dim', !on);
+		});
+	}
+	function switchSim(n) {
+		if (switching || n === sim) return;
+		switching = true;
+		const card = $('#card-modem');
+		card.dataset.switch = `Переключаем на SIM ${n}…`;
+		card.classList.add('switching');
+		$$('.sim-btn').forEach(b => b.disabled = true);
+		setTimeout(() => {
+			sim = n; rf = { ...SIMS[sim].rf };
+			card.classList.remove('switching');
+			$$('.sim-btn').forEach(b => b.disabled = false);
+			switching = false;
+			paintSim(); renderHero(); renderRf(); renderSims();
+			toast(`Активна SIM ${sim}: ${SIMS[sim].op}`);
+		}, 1500);
+	}
+	$$('.sim-btn').forEach(b => b.addEventListener('click', () => switchSim(+b.dataset.sim)));
+	paintSim();
 
 	/* ---------------- VPN card ---------------- */
 
@@ -774,10 +836,67 @@
 		toast(on ? 'Туннель включён' : 'Туннель выключен');
 	});
 
+	const FLAG = {
+		FI: '<svg viewBox="0 0 36 24"><rect width="36" height="24" fill="#fff"/><rect x="10" width="7" height="24" fill="#18407E"/><rect y="8.5" width="36" height="7" fill="#18407E"/></svg>',
+		DE: '<svg viewBox="0 0 36 24"><rect width="36" height="8" fill="#000"/><rect y="8" width="36" height="8" fill="#DD0000"/><rect y="16" width="36" height="8" fill="#FFCE00"/></svg>',
+		NL: '<svg viewBox="0 0 36 24"><rect width="36" height="8" fill="#AE1C28"/><rect y="8" width="36" height="8" fill="#fff"/><rect y="16" width="36" height="8" fill="#21468B"/></svg>',
+		SE: '<svg viewBox="0 0 36 24"><rect width="36" height="24" fill="#006AA7"/><rect x="10" width="5" height="24" fill="#FECC00"/><rect y="9.5" width="36" height="5" fill="#FECC00"/></svg>'
+	};
+	const SERVERS = [
+		{ name: 'Finland-01', cc: 'FI', meta: 'VLESS Reality, Хельсинки', ping: 38 },
+		{ name: 'Germany-02', cc: 'DE', meta: 'Trojan gRPC, Франкфурт', ping: 47 },
+		{ name: 'Netherlands-01', cc: 'NL', meta: 'VLESS XHTTP, Амстердам', ping: 52 },
+		{ name: 'Sweden-03', cc: 'SE', meta: 'Hysteria 2, Стокгольм', ping: 61 }
+	];
+	let server = 0;
+	function paintServer() {
+		const s = SERVERS[server];
+		$('#nodeFlag').innerHTML = FLAG[s.cc];
+		$('#nodeName').textContent = s.name;
+		$('#nodeMeta').textContent = s.meta;
+	}
+	function closeNodes() { $('#nodeMenu').hidden = true; $('#nodeBtn').setAttribute('aria-expanded', 'false'); $('#nodeChev').style.transform = ''; }
+	$('#nodeBtn').addEventListener('click', e => {
+		e.stopPropagation();
+		const menu = $('#nodeMenu');
+		if (!menu.hidden) return closeNodes();
+		menu.innerHTML = '<div class="px-3 pt-2 pb-1.5 text-xs text-dim">Группа «Прокси»</div>' + SERVERS.map((s, i) =>
+			`<button type="button" role="option" aria-selected="${i === server}" data-i="${i}" class="srv w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left ${i === server ? 'bg-cyan/10 text-ink font-semibold' : 'hover:bg-slate-700/50'}">
+				<span class="w-6 h-4 rounded-[3px] overflow-hidden flex-none">${FLAG[s.cc]}</span>
+				<span class="flex-1">${s.name}</span><span class="font-mono text-xs ${s.ping < 50 ? 'text-ok' : 'text-warn'}">${s.ping} мс</span></button>`).join('');
+		menu.hidden = false; $('#nodeBtn').setAttribute('aria-expanded', 'true'); $('#nodeChev').style.transform = 'rotate(180deg)';
+	});
+	document.addEventListener('click', e => {
+		const o = e.target.closest('.srv');
+		if (o) {
+			server = +o.dataset.i; paintServer();
+			pings.push(SERVERS[server].ping); pings.shift(); renderPing();
+			toast('Выбран узел: ' + SERVERS[server].name);
+			closeNodes();
+		}
+		if (!e.target.closest('#nodeMenu')) closeNodes();
+	});
+	paintServer();
+
+	$('#pingBtn').addEventListener('click', () => {
+		const icon = $('#pingIcon');
+		if (icon.classList.contains('spin')) return;
+		icon.classList.add('spin'); $('#pingBtn').classList.add('text-cyan');
+		setTimeout(() => {
+			icon.classList.remove('spin'); $('#pingBtn').classList.remove('text-cyan');
+			const v = 40 + Math.round(Math.random() * 140);
+			pings.push(v); pings.shift(); renderPing();
+		}, 1000);
+	});
+
+	$('#mapBtn').addEventListener('click', e => { e.preventDefault(); toast('Открываем вышку ' + SIMS[sim].cell + ' на карте'); });
+
 	function renderPing() {
 		const on = vpnSwitch.getAttribute('aria-checked') === 'true';
-		$('#vpnPing').textContent = on ? Math.round(pings[pings.length - 1]) : '—';
-		const max = 60, pts = pings.map((p, i) => `${(i / (pings.length - 1) * 120).toFixed(1)},${(36 - p / max * 32).toFixed(1)}`).join(' ');
+		const last = Math.round(pings[pings.length - 1]);
+		$('#vpnPing').textContent = on ? last : '—';
+		$('#vpnPing').className = on ? (last < 80 ? 'text-ok' : last < 140 ? 'text-warn' : 'text-bad') : '';
+		const max = Math.max(60, ...pings) * 1.1, pts = pings.map((p, i) => `${(i / (pings.length - 1) * 120).toFixed(1)},${(36 - p / max * 32).toFixed(1)}`).join(' ');
 		$('#pingSpark polyline').setAttribute('points', pts);
 		$('#pingSpark polyline').setAttribute('stroke', on ? '#2BE4FF' : '#56657A');
 	}
@@ -859,7 +978,7 @@
 		$('#uptime').textContent = `аптайм ${d} д ${h} ч`; $('#sideUptime').textContent = `${d} д ${h} ч`;
 		$('#onlineFor').textContent = `В сети ${Math.floor(online / 3600)} ч ${Math.floor(online % 3600 / 60)} мин`;
 
-		pings.push(clamp(pings[pings.length - 1] + (Math.random() - .5) * 8, 28, 58)); pings.shift(); renderPing();
+		pings.push(clamp(pings[pings.length - 1] + (Math.random() - .5) * 8, 28, 190)); pings.shift(); renderPing();
 		if (reduce) draw(0);
 	}
 
@@ -891,7 +1010,7 @@
 	}
 	document.addEventListener('click', e => {
 		const c = e.target.closest('.simcard'); if (!c) return;
-		$(`.sim-btn[data-sim="${c.dataset.sim}"]`).click();
+		switchSim(+c.dataset.sim);
 	});
 
 	function luhn(s) {
