@@ -136,7 +136,7 @@ return baseclass.extend({
 
 	css() {
 		if (!document.querySelector('link[data-404view]'))
-			document.head.appendChild(E('link', { 'rel': 'stylesheet', 'data-404view': '1', 'href': L.resource('view/404mode/neon.css') + '?v=1.8.2' }));
+			document.head.appendChild(E('link', { 'rel': 'stylesheet', 'data-404view': '1', 'href': L.resource('view/404mode/neon.css') + '?v=1.8.3' }));
 	},
 
 	num(v, d) {

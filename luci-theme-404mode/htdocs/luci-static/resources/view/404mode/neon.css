@@ -820,3 +820,9 @@ html.no-fx .xd-sweep { animation: none; stroke-opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
 	.xd .xd-refresh.spin .xi, .xd-modem.xd-switching::before { animation-duration: 2s; }
 }
+
+/* pinned node in an automatic group */
+.xp-gnow .xp-unfix { min-height: 26px; line-height: 24px; padding: 0 10px; font-size: 12.5px; }
+.xp-pin { font-size: 12.5px; color: var(--xd-warn); }
+.xd .xp-tile[data-pinned] { border-color: var(--xd-warn); box-shadow: 0 0 16px -6px var(--xd-warn); }
+.xd .xp-tile.busy { opacity: .55; cursor: progress; }

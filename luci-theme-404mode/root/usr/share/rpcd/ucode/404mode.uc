@@ -222,6 +222,7 @@ function nikki_state() {
 			name: name,
 			type: g.type,
 			now: g.now,
+			fixed: g.fixed,
 			hidden: !!g.hidden,
 			icon: g.icon,
 			delay: last_delay(g),
@@ -315,7 +316,15 @@ function nikki_set(req) {
 	if (action == 'select') {
 		if (type(a.group) != 'string' || type(a.name) != 'string')
 			return { error: 'args' };
-		api(c, 'PUT', '/proxies/' + urlencode(a.group), { name: a.name });
+		const r = api(c, 'PUT', '/proxies/' + urlencode(a.group), { name: a.name });
+		return r?.message ? { error: r.message } : { ok: true };
+	}
+
+	/* URLTest / Fallback: drop the pinned node, back to automatic choice */
+	if (action == 'unfix') {
+		if (type(a.group) != 'string')
+			return { error: 'args' };
+		api(c, 'DELETE', '/proxies/' + urlencode(a.group));
 		return { ok: true };
 	}
 

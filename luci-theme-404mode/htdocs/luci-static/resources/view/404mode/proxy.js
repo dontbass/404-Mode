@@ -280,7 +280,10 @@ return view.extend({
 	/* one card per group, nodes as tiles — the way mihomo dashboards lay
 	   them out: name with flag, protocol / udp, last delay */
 	renderGroup(g, p, idx) {
-		const selectable = g.type == 'Selector';
+		/* mihomo lets any switchable group take a node: a Selector switches,
+		   URLTest / Fallback pin it until "auto" is pressed */
+		const selectable = g.type == 'Selector' || g.type == 'URLTest' || g.type == 'Fallback';
+		const auto = g.type != 'Selector';
 		const leaves = g.all.filter(n => !n.group);
 		const alive = g.all.filter(n => n.delay > 0).length;
 
@@ -316,12 +319,19 @@ return view.extend({
 			}, [ n.delay ? String(n.delay) : (n.delay === 0 ? T('нет', 'n/a') : (n.group ? '' : '⚡')) ]);
 
 			return E(selectable ? 'button' : 'div', {
+				'data-pinned': auto && g.fixed == n.name ? '1' : null,
 				'type': selectable ? 'button' : null,
 				'class': 'xp-tile' + (active ? ' active' : '') + (selectable ? ' pick' : ''),
 				'aria-pressed': selectable ? (active ? 'true' : 'false') : null,
 				'title': n.name,
-				'click': selectable && !active ? () => {
-					x.proxySet('select', { group: g.name, name: n.name }).then(() => x.proxy()).then(r => this.paint(r));
+				'click': selectable && !(active && (!auto || g.fixed == n.name)) ? ev => {
+					const t = ev.currentTarget;
+					t.classList.add('busy');
+					x.proxySet('select', { group: g.name, name: n.name }).then(r => {
+						if (r && r.error)
+							ui.addNotification(null, E('p', {}, [ T('mihomo не принял выбор: ', 'mihomo refused: ') + r.error ]), 'warning');
+						return x.proxy();
+					}).then(r => this.paint(r));
 				} : null
 			}, [
 				E('span', { 'class': 'xp-tile-name' }, [
@@ -345,6 +355,8 @@ return view.extend({
 				testAll
 			]),
 			g.now ? E('div', { 'class': 'xp-gnow' }, [
+				auto && g.fixed ? E('button', { 'type': 'button', 'class': 'btn cbi-button xd-btn-s xp-unfix', 'title': T('Вернуть автоматический выбор', 'Back to automatic choice'), 'click': ev => this.act(ev.currentTarget, 'unfix', { group: g.name }) }, [ T('Авто', 'Auto') ]) : '',
+				auto && g.fixed ? E('span', { 'class': 'xp-pin' }, [ T('закреплён вручную ›', 'pinned ›') ]) : '',
 				E('span', { 'class': 'xd-muted' }, [ (TYPES[g.type] || g.type) + ' › ' ]),
 				now && !now.group ? x.flag(now.name, 'xf-s') : '',
 				E('b', {}, [ x.nodeName(g.now) ])
