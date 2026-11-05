@@ -7,6 +7,9 @@
  *   news              latest headlines                 (OpenNet, Habr RSS)
  *   proxy             Nikki / mihomo state: service, mode, groups, nodes,
  *                     the node in use, traffic totals    (mihomo REST API)
+ *   cell { mcc, mnc, lac, cid }
+ *                     where the serving tower stands (open cell database
+ *                     api.mylnikov.org, cached for a month)
  *   proxy_set { action, group, name, mode, on }
  *                     select a node, test delays, switch the mode, start /
  *                     stop Nikki
@@ -145,6 +148,45 @@ function last_delay(p) {
 }
 
 const GROUPS = { Selector: true, URLTest: true, Fallback: true, LoadBalance: true, Relay: true };
+
+/* ---------- tower location ---------- */
+
+function cell_lookup(a) {
+	const num = (v) => (type(v) == 'string' && match(v, /^[0-9]{1,12}$/)) ? v : null;
+	const mcc = num(a.mcc), mnc = num(a.mnc), cid = num(a.cid);
+	const lacs = filter(type(a.lac) == 'array' ? a.lac : [ a.lac ], (v) => num(v));
+
+	if (!mcc || !mnc || !cid)
+		return { error: 'args' };
+
+	const key = DIR + '/cell-' + mcc + '-' + mnc + '-' + cid + '.json';
+	const st = stat(key);
+	if (st && time() - st.mtime < 30 * 86400) {
+		try { return json(readfile(key)); } catch (e) {}
+	}
+
+	system('mkdir -p ' + DIR);
+
+	let res = { found: false };
+	for (let lac in length(lacs) ? lacs : [ '0' ]) {
+		const out = trim(sh('uclient-fetch -q -T 8 -O - ' + shellquote('https://api.mylnikov.org/geolocation/cell?v=1.1&data=open&mcc=' + mcc + '&mnc=' + int(mnc) + '&lac=' + lac + '&cellid=' + cid) + ' 2>/dev/null'));
+		let j = null;
+		try { j = json(out); } catch (e) { j = null; }
+		if (j?.result == 200 && j.data?.lat) {
+			res = { found: true, lat: j.data.lat, lon: j.data.lon, range: j.data.range };
+			break;
+		}
+		if (!length(out)) {
+			res = { found: false, offline: true };
+			break;
+		}
+	}
+
+	if (!res.offline)
+		writefile(key, sprintf('%J', res));
+
+	return res;
+}
 
 function nikki_state() {
 	const res = {
@@ -415,6 +457,11 @@ return {
 
 		proxy: {
 			call: function() { return nikki_state(); }
+		},
+
+		cell: {
+			args: { mcc: 'mcc', mnc: 'mnc', lac: 'lac', cid: 'cid' },
+			call: function(req) { return cell_lookup(req.args ?? {}); }
 		},
 
 		proxy_set: {

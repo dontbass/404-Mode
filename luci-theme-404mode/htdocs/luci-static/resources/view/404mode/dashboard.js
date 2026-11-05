@@ -19,6 +19,31 @@ const callSystemInfo = rpc.declare({ object: 'system', method: 'info', expect: {
 const callDevices = rpc.declare({ object: 'luci-rpc', method: 'getNetworkDevices', expect: { '': {} } });
 const callIfaces = rpc.declare({ object: 'network.interface', method: 'dump', expect: { 'interface': [] } });
 const callRead = rpc.declare({ object: 'file', method: 'read', params: [ 'path' ], expect: { data: '' } });
+const callCellInfo = rpc.declare({ object: 'qmodem', method: 'cell_info', params: [ 'config_section' ], expect: { '': {} } });
+const callCell = rpc.declare({ object: '404mode', method: 'cell', params: [ 'mcc', 'mnc', 'lac', 'cid' ], expect: { '': {} } });
+
+/* EARFCN (downlink) → LTE band, NR-ARFCN → NR band */
+const LTE_BANDS = [ [ 1, 0, 599 ], [ 2, 600, 1199 ], [ 3, 1200, 1949 ], [ 4, 1950, 2399 ], [ 5, 2400, 2649 ], [ 7, 2750, 3449 ], [ 8, 3450, 3799 ],
+	[ 12, 5010, 5179 ], [ 13, 5180, 5279 ], [ 17, 5730, 5849 ], [ 20, 6150, 6449 ], [ 25, 8040, 8689 ], [ 26, 8690, 9039 ], [ 28, 9210, 9659 ],
+	[ 32, 9920, 10359 ], [ 38, 37750, 38249 ], [ 39, 38250, 38649 ], [ 40, 38650, 39649 ], [ 41, 39650, 41589 ], [ 42, 41590, 43589 ],
+	[ 43, 43590, 45589 ], [ 66, 66436, 67335 ], [ 71, 68586, 68935 ] ];
+const NR_BANDS = [ [ 78, 620000, 653333 ], [ 77, 653334, 680000 ], [ 79, 693334, 733333 ], [ 41, 499200, 537999 ], [ 28, 151600, 160600 ],
+	[ 20, 158200, 164200 ], [ 8, 185000, 192000 ], [ 3, 361000, 376000 ], [ 1, 422000, 434000 ], [ 7, 524000, 538000 ] ];
+
+function bandOf(arfcn, nr) {
+	const n = parseInt(arfcn, 10);
+	if (isNaN(n))
+		return null;
+	const hit = (nr || n > 100000 ? NR_BANDS : LTE_BANDS).find(b => n >= b[1] && n <= b[2]);
+	return hit ? (nr || n > 100000 ? 'n' : 'B') + hit[0] : null;
+}
+
+/* operators as a monogram in their brand colour (not their logos) */
+const OPCOLOR = [ [ /мегафон|megafon/i, '#00B956', '#fff' ], [ /мтс|mts/i, '#E30611', '#fff' ], [ /билайн|beeline/i, '#FFC800', '#111' ],
+	[ /^t2$|tele2|т2/i, '#1F2229', '#fff' ], [ /yota/i, '#00AEEF', '#fff' ], [ /мотив|motiv/i, '#E4007C', '#fff' ],
+	[ /ростелеком|rostelecom/i, '#7700FF', '#fff' ], [ /т-мобайл|t-mobile/i, '#FFDD2D', '#111' ], [ /летай|letai/i, '#00A651', '#fff' ],
+	[ /kcell|activ/i, '#7B2A90', '#fff' ], [ /altel/i, '#E31E24', '#fff' ], [ /a1/i, '#DA291C', '#fff' ] ];
+
 const callModemInfo = rpc.declare({ object: 'qmodem', method: 'info', params: [ 'config_section' ], expect: { '': {} } });
 const callModemStats = rpc.declare({ object: 'qmodem', method: 'get_stats', params: [ 'config_section' ], expect: { '': {} } });
 const callSimCaps = rpc.declare({ object: 'qmodem', method: 'get_sim_switch_capabilities', params: [ 'config_section' ], expect: { '': {} } });
@@ -119,6 +144,17 @@ function parseModem(list) {
 		if (!m.bands.some(x => x.band == b))
 			m.bands.push({ band: b, nr: isNr, bw: bw, ca: /\(CA\)/.test(e.key) || /^CA-/.test(e.extra_info || '') });
 	}
+
+	/* modems that report only channel numbers: band from (E)ARFCN */
+	if (!m.bands.length)
+		for (const e of entries) {
+			if (!/^(E?ARFCN)( \(CA\))?$/i.test(e.key || '') || e.value == null || e.value === '')
+				continue;
+			const isNr = /NR/.test(e.extra_info || '') || !/^EARFCN/i.test(e.key);
+			const b = bandOf(String(e.value).split(/[\s\/]/)[0], isNr);
+			if (b && !m.bands.some(x => x.band == b && !/\(CA\)/.test(e.key)))
+				m.bands.push({ band: b, nr: isNr, bw: val(/^DL Bandwidth$/i, e.extra_info), ca: /\(CA\)/.test(e.key) });
+		}
 
 	if (sa)
 		m.kind = '5G';
@@ -242,7 +278,10 @@ return view.extend({
 			]),
 			E('div', { 'class': 'xd-modem-body' }, [
 				E('div', { 'class': 'xd-modem-main' }, [
-					E('div', { 'class': 'xd-op' }, [ '…' ]),
+					E('div', { 'class': 'xd-op-row' }, [
+						E('span', { 'class': 'xd-op-badge', 'aria-hidden': 'true' }),
+						E('div', { 'class': 'xd-op' }, [ '…' ])
+					]),
 					E('div', { 'class': 'xd-op-meta' }, [ '' ]),
 					E('div', { 'class': 'xd-signal' }, [
 						bars,
@@ -265,7 +304,7 @@ return view.extend({
 			E('dl', { 'class': 'xd-cellinfo' }, [
 				E('div', {}, [ E('dt', {}, [ 'Cell ID' ]), E('dd', { 'class': 'xd-cell' }, [
 					E('span', { 'data-f': 'cell' }, [ '—' ]),
-					E('a', { 'class': 'xd-map', 'hidden': '', 'target': '_blank', 'rel': 'noreferrer', 'href': '#', 'data-tip': T('Показать вышку на карте', 'Show the tower on a map'), 'aria-label': T('Показать вышку на карте', 'Show the tower on a map') }, [ x.icon(ICON_MAP) ])
+					E('a', { 'class': 'xd-map', 'hidden': '', 'href': '#', 'click': ev => this.showTower(ev), 'data-tip': T('Показать вышку на карте', 'Show the tower on a map'), 'aria-label': T('Показать вышку на карте', 'Show the tower on a map') }, [ x.icon(ICON_MAP) ])
 				]) ]),
 				E('div', {}, [ E('dt', {}, [ 'PCI' ]), E('dd', { 'data-f': 'pci' }, [ '—' ]) ]),
 				E('div', {}, [ E('dt', {}, [ 'EARFCN' ]), E('dd', { 'data-f': 'arfcn' }, [ '—' ]) ]),
@@ -630,8 +669,16 @@ return view.extend({
 
 		return Promise.all([
 			L.resolveDefault(callModemInfo(m.id), {}),
-			this.state.statsChecked ? Promise.resolve(null) : L.resolveDefault(callModemStats(m.id), null)
-		]).then(([ res, stats ]) => {
+			this.state.statsChecked ? Promise.resolve(null) : L.resolveDefault(callModemStats(m.id), null),
+			L.resolveDefault(callCellInfo(m.id), {})
+		]).then(([ res, stats, cell ]) => {
+			/* "info" skips the cell part while QModem is not dialing itself
+			   (another app holds the data call): take it from cell_info */
+			const list = (res && res.modem_info) || [];
+			const have = {};
+			list.forEach(e => have[e.key + '|' + (e.extra_info || '')] = true);
+			((cell && cell.modem_info) || []).forEach(e => { if (!have[e.key + '|' + (e.extra_info || '')]) list.push(e); });
+			res = { modem_info: list };
 			if (stats) {
 				this.state.statsChecked = true;
 				if (stats.available) {
@@ -662,6 +709,13 @@ return view.extend({
 		const cls = quality('rsrp', m.rsrp);
 
 		this.q('.xd-op').textContent = m.operator || (m.warn ? T('Нет сети', 'No network') : '—');
+		this.q('.xd-op').style.setProperty('--len', Math.max(4, (this.q('.xd-op').textContent || '').length));
+		const badge = this.q('.xd-op-badge');
+		const brand = OPCOLOR.find(b => b[0].test(m.operator || ''));
+		badge.hidden = !m.operator;
+		badge.textContent = (m.operator || '').replace(/[^A-Za-zА-Яа-яЁё0-9]/g, '').slice(0, 1).toUpperCase();
+		badge.style.setProperty('--op', brand ? brand[1] : 'var(--xd-a)');
+		badge.style.setProperty('--op-ink', brand ? brand[2] : '#04121A');
 		this.q('.xd-op-meta').textContent = [
 			m.plmn ? 'PLMN ' + m.plmn : null,
 			m.name || (section && section.name)
@@ -679,15 +733,9 @@ return view.extend({
 		this.state.infoSlot = m.slot != null ? String(+m.slot === 0 ? 1 : +m.slot) : null;
 		this.paintSim();
 
-		/* the tower on CellMapper: operator network and eNB of the serving cell */
-		const map = this.q('.xd-map');
-		const plmn = /^(\d{3})(\d{2,3})$/.exec(m.plmn || '');
-		const cid = parseInt(m.cell, 16);
-		map.hidden = !plmn;
-		if (plmn) {
-			map.href = 'https://www.cellmapper.net/map?MCC=' + plmn[1] + '&MNC=' + (+plmn[2]) + '&type=' + (/5G/.test(m.kind) && !/NSA/.test(m.kind) ? 'NR' : 'LTE') + (cid ? '&eNB=' + (cid >> 8) : '');
-			map.setAttribute('data-tip', T('Показать вышку на карте', 'Show the tower on a map') + (cid ? ' (eNB ' + (cid >> 8) + ')' : ''));
-		}
+		/* the serving tower: looked up on click (open cell database) */
+		this.state.cellRef = m;
+		this.q('.xd-map').hidden = !(/^\d{5,6}$/.test(m.plmn || '') && m.cell);
 
 		this.q('.xd-rsrp-v').textContent = m.rsrp != null ? x.minus(m.rsrp) : '—';
 		const qtxt = { ok: T('Хороший сигнал', 'Good signal'), warn: T('Средний сигнал', 'Fair signal'), bad: T('Слабый сигнал', 'Weak signal'), none: '' };
@@ -745,6 +793,44 @@ return view.extend({
 	handleSave: null,
 	handleSaveApply: null,
 	handleReset: null,
+
+	/* ---------- tower on a map ---------- */
+
+	showTower(ev) {
+		ev.preventDefault();
+		const m = this.state.cellRef;
+		if (!m || !m.cell)
+			return;
+
+		const mcc = m.plmn.slice(0, 3), mnc = m.plmn.slice(3);
+		const cid = parseInt(m.cell, /^[0-9]+$/.test(m.cell) && !/[A-F]/i.test(m.cell) && m.cell.length > 7 ? 10 : 16);
+		const enb = cid >> 8;
+		const lacs = [];
+		if (m.tac) {
+			if (/^[0-9A-F]+$/i.test(m.tac)) lacs.push(String(parseInt(m.tac, 16)));
+			if (/^[0-9]+$/.test(m.tac)) lacs.push(String(parseInt(m.tac, 10)));
+		}
+
+		const a = ev.currentTarget;
+		const w = window.open('about:blank', '_blank');
+		a.classList.add('busy');
+
+		L.resolveDefault(callCell(mcc, mnc, lacs.filter((v, i) => lacs.indexOf(v) == i), String(cid)), {}).then(r => {
+			a.classList.remove('busy');
+			if (r && r.found) {
+				const url = 'https://yandex.ru/maps/?pt=' + r.lon + ',' + r.lat + '&z=15&l=map';
+				if (w) w.location = url; else window.open(url, '_blank');
+				return;
+			}
+			const net = 'https://www.cellmapper.net/map?MCC=' + mcc + '&MNC=' + (+mnc) + '&type=' + (/5G/.test(m.kind) && !/NSA/.test(m.kind) ? 'NR' : 'LTE');
+			if (w) w.location = net;
+			try { navigator.clipboard.writeText(String(enb)); } catch (e) {}
+			ui.addNotification(null, E('p', {}, [ r && r.offline
+				? T('Роутер не достучался до базы вышек. ', 'The router could not reach the tower database. ')
+				: T('Вышки нет в открытой базе. ', 'The tower is not in the open database. '),
+				T('Открыл CellMapper по сети оператора, номер eNB ' + enb + ' скопирован: вставьте его в поиск карты.', 'CellMapper is open on the operator network, eNB ' + enb + ' is copied: paste it into the map search.') ]), 'info');
+		});
+	},
 
 	/* ---------- SIM slot ---------- */
 
@@ -830,6 +916,45 @@ return view.extend({
 				E('span', { 'class': 'xd-px-opt-d xd-' + x.delayClass(n.delay) }, [ n.delay ? n.delay + ' ' + T('мс', 'ms') : '' ])
 			]));
 		});
+
+		/* nodes of the group the main selector points at: pick (pin) one */
+		const subName = (group.all.find(n => n.name == group.now && n.group) || {}).name;
+		const sub = subName ? (p.groups || []).find(g => g.name == subName) : null;
+		const leaves = sub ? sub.all.filter(n => !n.group) : [];
+
+		if (leaves.length) {
+			const list = E('div', { 'class': 'xd-px-list' });
+			const filterIn = E('input', { 'type': 'search', 'class': 'xd-px-filter', 'placeholder': T('Найти узел', 'Find a node'), 'aria-label': T('Найти узел', 'Find a node') });
+			const fill = () => {
+				const q = filterIn.value.trim().toLowerCase();
+				list.innerHTML = '';
+				leaves.filter(n => !q || n.name.toLowerCase().indexOf(q) > -1).sort((a, b) => (b.delay > 0) - (a.delay > 0) || (a.delay || 1e9) - (b.delay || 1e9)).forEach(n => {
+					list.appendChild(E('button', {
+						'type': 'button',
+						'class': 'xd-px-opt' + (sub.now == n.name ? ' active' : ''),
+						'role': 'option',
+						'aria-selected': sub.now == n.name ? 'true' : 'false',
+						'click': () => {
+							close();
+							this.q('.xd-px-name').textContent = x.nodeName(n.name);
+							x.proxySet('select', { group: sub.name, name: n.name }).then(() => this.tickProxy());
+						}
+					}, [
+						x.flag(n.name, 'xf-s'),
+						E('span', { 'class': 'xd-px-opt-n' }, [ x.nodeName(n.name) ]),
+						E('span', { 'class': 'xd-px-opt-d xd-' + x.delayClass(n.delay) }, [ n.delay ? n.delay + ' ' + T('мс', 'ms') : (n.delay === 0 ? T('нет', 'n/a') : '') ])
+					]));
+				});
+			};
+			filterIn.addEventListener('input', fill);
+			menu.appendChild(E('div', { 'class': 'xd-px-menu-h xd-px-menu-sub' }, [
+				T('Узлы группы ', 'Nodes of ') + x.nodeName(sub.name) + (sub.fixed ? T(', закреплён вручную', ', pinned') : T(', выбор автоматический', ', automatic'))
+			]));
+			if (leaves.length > 8)
+				menu.appendChild(filterIn);
+			menu.appendChild(list);
+			fill();
+		}
 
 		menu.hidden = false;
 		btn.setAttribute('aria-expanded', 'true');

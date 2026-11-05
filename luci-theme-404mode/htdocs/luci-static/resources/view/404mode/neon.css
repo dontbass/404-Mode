@@ -826,3 +826,48 @@ html.no-fx .xd-sweep { animation: none; stroke-opacity: 0; }
 .xp-pin { font-size: 12.5px; color: var(--xd-warn); }
 .xd .xp-tile[data-pinned] { border-color: var(--xd-warn); box-shadow: 0 0 16px -6px var(--xd-warn); }
 .xd .xp-tile.busy { opacity: .55; cursor: progress; }
+
+/* operator monogram in its brand colour */
+.xd-op-row { display: flex; align-items: center; gap: 18px; min-width: 0; }
+
+.xd-op-badge {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: clamp(46px, 5vw, 62px);
+	height: clamp(46px, 5vw, 62px);
+	font-family: var(--xd-display);
+	font-size: clamp(24px, 2.8vw, 34px);
+	font-weight: 700;
+	line-height: 1;
+	color: var(--op-ink, #fff);
+	background:
+		radial-gradient(120% 120% at 20% 0%, rgba(255, 255, 255, .35), transparent 55%),
+		var(--op, var(--xd-a));
+	border-radius: 18px;
+	box-shadow: 0 0 0 1px rgba(255, 255, 255, .08) inset, 0 10px 30px -10px var(--op, var(--xd-a));
+}
+
+[data-theme="light"] .xd-op-badge { box-shadow: 0 8px 20px -10px var(--op, var(--xd-a)); }
+.xd-op-badge[hidden] { display: none; }
+
+/* proxy picker: groups on top, the scrollable node list below */
+.xd-px-menu { max-height: none; overflow: visible; }
+.xd-px-menu-sub { margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--xd-line); }
+
+.xd .xd-px-filter {
+	width: 100%;
+	min-height: 34px;
+	margin: 2px 0 6px;
+	padding: 0 10px;
+	font-family: var(--n-font-ui, sans-serif);
+	font-size: 13.5px;
+	border-radius: 10px;
+}
+
+.xd-px-list { max-height: 260px; overflow-y: auto; overscroll-behavior: contain; }
+
+.xd-modem-main { container-type: inline-size; }
+/* the name fits its column: size from the column width and the name length */
+.xd-op-row .xd-op { min-width: 0; font-size: clamp(24px, calc((100cqw - 84px) / (var(--len, 7) * .9)), 64px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; padding-bottom: .06em; }

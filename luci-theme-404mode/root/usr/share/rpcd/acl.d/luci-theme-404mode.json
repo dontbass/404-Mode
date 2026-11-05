@@ -7,7 +7,8 @@
 					"weather",
 					"rates",
 					"news",
-					"proxy"
+					"proxy",
+					"cell"
 				],
 				"qmodem": [
 					"info",
