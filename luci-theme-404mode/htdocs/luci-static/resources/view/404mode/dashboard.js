@@ -51,6 +51,8 @@ const callModemStats = rpc.declare({ object: 'qmodem', method: 'get_stats', para
 const callSimCaps = rpc.declare({ object: 'qmodem', method: 'get_sim_switch_capabilities', params: [ 'config_section' ], expect: { '': {} } });
 const callSimSlot = rpc.declare({ object: 'qmodem', method: 'get_sim_slot', params: [ 'config_section' ], expect: { '': {} } });
 const callSetSim = rpc.declare({ object: 'qmodem', method: 'set_sim_slot', params: [ 'config_section', 'slot' ], expect: { '': {} } });
+const callAtCfg = rpc.declare({ object: 'qmodem', method: 'get_at_cfg', params: [ 'config_section' ], expect: { '': {} } });
+const callAt = rpc.declare({ object: 'qmodem', method: 'send_at', params: [ 'config_section', 'params' ], expect: { '': {} } });
 
 const ICON_MAP = '<path d="M9 4 3 6.5v13.5l6-2.5 6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13.5M15 6.5V20"/>';
 const ICON_REFRESH = '<path d="M20 11a8 8 0 0 0-14.6-4.5L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16"/><path d="M20 20.5V16h-4.5"/>';
@@ -662,9 +664,13 @@ return view.extend({
 
 		if (!this.state.simChecked) {
 			this.state.simChecked = true;
-			Promise.all([ L.resolveDefault(callSimCaps(m.id), null), L.resolveDefault(callSimSlot(m.id), null) ]).then(([ caps, slot ]) => {
+			Promise.all([ L.resolveDefault(callSimCaps(m.id), null), L.resolveDefault(callSimSlot(m.id), null), L.resolveDefault(callAtCfg(m.id), {}) ]).then(([ caps, slot, at ]) => {
 				const slots = caps && Array.isArray(caps.simSlots) ? caps.simSlots.map(String) : [];
-				this.state.sim = { ok: !!caps && caps.supportSwitch === '1' && slots.length > 1, slots: slots, cur: slot && slot.sim_slot != null ? String(slot.sim_slot) : null, note: caps && caps.ExtraInfo };
+				const cfg = at.at_cfg || {};
+				/* QModem without slot methods: the modem's own AT command, when QModem lists it */
+				const atPort = (cfg.cmds || []).some(c => /QUIMSLOT=/.test(c.value || '')) ? cfg.using_port : null;
+				const native = !!caps && caps.supportSwitch === '1' && slots.length > 1;
+				this.state.sim = { ok: native || !!atPort, at: native ? null : atPort, slots: slots, cur: slot && slot.sim_slot != null ? String(slot.sim_slot) : null, note: caps && caps.ExtraInfo };
 				this.paintSim();
 			});
 		}
@@ -913,7 +919,10 @@ return view.extend({
 		this.paintSim();
 
 		const min = new Promise(r => window.setTimeout(r, 1500));
-		Promise.all([ L.resolveDefault(callSetSim(m.id, slot), null), min ]).then(([ res ]) => {
+		const act = sim.at
+			? L.resolveDefault(callAt(m.id, { port: sim.at, at: 'AT+QUIMSLOT=' + slot }), {}).then(r => ({ success: /OK/.test((r.at_cfg || {}).res || '') }))
+			: L.resolveDefault(callSetSim(m.id, slot), null);
+		Promise.all([ act, min ]).then(([ res ]) => {
 			const ok = res && res.success;
 			sim.cur = ok ? slot : sim.cur;
 			ui.addNotification(null, E('p', {}, [ ok ? T('Активна SIM ' + slot + '. Модем переподключается к сети.', 'SIM ' + slot + ' is active. The modem is reconnecting.') : T('Модем не переключил слот. Проверьте, вставлена ли SIM ' + slot + '.', 'The modem did not switch. Is SIM ' + slot + ' inserted?') ]), ok ? 'info' : 'warning');

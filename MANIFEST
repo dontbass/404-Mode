@@ -24,6 +24,7 @@ luci-theme-404mode/htdocs/luci-static/resources/menu-404mode.js
 luci-theme-404mode/htdocs/luci-static/resources/neon-404mode.js
 luci-theme-404mode/htdocs/luci-static/resources/nfx-404mode.js
 luci-theme-404mode/htdocs/luci-static/resources/view/404mode/dashboard.js
+luci-theme-404mode/htdocs/luci-static/resources/view/404mode/modem.js
 luci-theme-404mode/htdocs/luci-static/resources/view/404mode/neon.css
 luci-theme-404mode/htdocs/luci-static/resources/view/404mode/proxy.js
 luci-theme-404mode/root/etc/uci-defaults/30_luci-theme-404mode

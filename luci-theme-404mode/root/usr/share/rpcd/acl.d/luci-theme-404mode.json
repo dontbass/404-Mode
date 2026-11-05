@@ -8,7 +8,8 @@
 					"rates",
 					"news",
 					"proxy",
-					"cell"
+					"cell",
+					"ttl"
 				],
 				"qmodem": [
 					"info",
@@ -18,7 +19,12 @@
 					"network_info",
 					"get_stats",
 					"get_sim_switch_capabilities",
-					"get_sim_slot"
+					"get_sim_slot",
+					"get_lockband",
+					"get_neighborcell",
+					"get_imei",
+					"get_sms",
+					"get_at_cfg"
 				],
 				"system": [
 					"info",
@@ -39,7 +45,8 @@
 			},
 			"uci": [
 				"qmodem",
-				"nikki"
+				"nikki",
+				"network"
 			],
 			"file": {
 				"/proc/stat": [
@@ -53,10 +60,16 @@
 		"write": {
 			"ubus": {
 				"404mode": [
-					"proxy_set"
+					"proxy_set",
+					"ttl_set"
 				],
 				"qmodem": [
-					"set_sim_slot"
+					"set_sim_slot",
+					"set_lockband",
+					"set_imei",
+					"send_at",
+					"delete_sms",
+					"do_reboot"
 				],
 				"file": [
 					"write",

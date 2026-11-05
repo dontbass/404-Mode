@@ -157,6 +157,47 @@
 	@keyframes spin { to { transform: rotate(360deg); } }
 	@keyframes logIn { from { opacity: 0; transform: translateY(4px); } }
 
+	/* modem page: band chips, banner, radar */
+	.bchip { position: relative; display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border: 1px solid rgba(135,150,168,.18); border-radius: 12px; cursor: pointer; user-select: none; transition: border-color .2s, background .2s, transform .12s; }
+	.bchip:hover { border-color: rgba(43,228,255,.45); }
+	.bchip:active { transform: scale(.96); }
+	.bchip > span:first-of-type { color: #8796A8; }
+	.bchip:has(input:checked) { background: rgba(43,228,255,.1); border-color: rgba(43,228,255,.55); box-shadow: inset 0 0 18px -10px #2BE4FF; }
+	.bchip:has(input:checked) > span:first-of-type { color: #E7EEF6; }
+	.bchip::after { content: ""; position: absolute; top: 8px; right: 8px; width: 11px; height: 11px; border: 1.5px solid #56657A; border-radius: 3px; }
+	.bchip:has(input:checked)::after { border-color: #2BE4FF; background: #2BE4FF; }
+	.bchip.live::before { content: ""; position: absolute; right: 9px; bottom: 9px; width: 6px; height: 6px; border-radius: 50%; background: #3DDC97; animation: ping 1.8s ease-out infinite; }
+	@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(61,220,151,.6); } 100% { box-shadow: 0 0 0 8px rgba(61,220,151,0); } }
+	.locking #lteBands, .locking #nrBands { opacity: .45; pointer-events: none; transition: opacity .3s; }
+	.banner { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 14px; overflow: hidden; font-size: 14px; font-weight: 500; border-radius: 12px; border: 1px solid rgba(43,228,255,.35); background: rgba(43,228,255,.08); animation: drop .35s cubic-bezier(.2,.8,.3,1.2) both; }
+	.banner.ok { color: #3DDC97; border-color: rgba(61,220,151,.35); background: rgba(61,220,151,.08); }
+	.banner .eq { display: flex; align-items: center; gap: 3px; height: 18px; }
+	.banner .eq i { width: 3px; height: 100%; border-radius: 2px; background: #2BE4FF; animation: eq 1s ease-in-out infinite; }
+	.banner .eq i:nth-child(2) { animation-delay: -.8s; } .banner .eq i:nth-child(3) { animation-delay: -.6s; } .banner .eq i:nth-child(4) { animation-delay: -.4s; } .banner .eq i:nth-child(5) { animation-delay: -.2s; }
+	.banner.ok .eq i { background: currentColor; animation: none; transform: scaleY(.5); }
+	.banner .scanline { position: absolute; left: 0; bottom: 0; width: 40%; height: 2px; background: linear-gradient(90deg, transparent, #2BE4FF, transparent); animation: scanline 1.6s ease-in-out infinite; }
+	.banner.ok .scanline { display: none; }
+	@keyframes eq { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
+	@keyframes scanline { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+	@keyframes drop { from { opacity: 0; transform: translateY(-8px); } }
+	.radar { position: absolute; inset: 0; z-index: 2; min-height: 230px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+	#scanBody:has(.radar:not([hidden])) { min-height: 240px; }
+	.radar .dish { position: relative; width: 160px; height: 160px; border-radius: 50%; border: 1px solid rgba(43,228,255,.35);
+		background: radial-gradient(circle, transparent 0 32%, rgba(43,228,255,.22) 32.5% 33%, transparent 33.5% 65%, rgba(43,228,255,.22) 65.5% 66%, transparent 66.5%), linear-gradient(transparent calc(50% - .5px), rgba(43,228,255,.18) 0 calc(50% + .5px), transparent 0), linear-gradient(90deg, transparent calc(50% - .5px), rgba(43,228,255,.18) 0 calc(50% + .5px), transparent 0);
+		box-shadow: 0 0 40px -10px rgba(43,228,255,.5), inset 0 0 30px -10px rgba(43,228,255,.4); }
+	.radar .sw { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(43,228,255,.55), rgba(43,228,255,0) 70deg, transparent); animation: spin 1.8s linear infinite; }
+	.radar b { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: #2BE4FF; box-shadow: 0 0 10px #2BE4FF; opacity: 0; animation: blip 1.8s ease-out infinite; }
+	.radar b:nth-of-type(1) { left: 66%; top: 24%; animation-delay: .15s; } .radar b:nth-of-type(2) { left: 74%; top: 62%; animation-delay: .55s; } .radar b:nth-of-type(3) { left: 30%; top: 72%; animation-delay: 1s; } .radar b:nth-of-type(4) { left: 22%; top: 30%; animation-delay: 1.45s; }
+	@keyframes blip { 0% { opacity: 1; transform: scale(1.4); } 70%, 100% { opacity: 0; transform: scale(.6); } }
+	.row-in { animation: logIn .4s ease both; }
+	.grow { transform-origin: left; animation: grow .7s cubic-bezier(.2,.8,.3,1) both; }
+	@keyframes grow { from { transform: scaleX(0); } }
+	.typing { display: inline-flex; gap: 4px; } .typing i { width: 6px; height: 6px; border-radius: 50%; background: #8796A8; animation: bounce 1.1s ease-in-out infinite; }
+	.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+	@keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-4px); opacity: 1; } }
+	#card-sim, #card-bands { position: relative; }
+	.opsms { transition: opacity .3s, transform .3s; }
+
 	::-webkit-scrollbar { width: 8px; height: 8px; }
 	::-webkit-scrollbar-thumb { background: #222C3B; border-radius: 8px; }
 	::-webkit-scrollbar-track { background: transparent; }
@@ -442,57 +483,89 @@
 
 			<!-- =================== Модем и сеть =================== -->
 			<section data-view="modem" class="grid grid-cols-12 gap-4 sm:gap-5" hidden>
-				<article id="card-bands" data-keys="бэнд band частоты lte nr 5g фиксация" class="col-span-12 xl:col-span-7 glass rounded-3xl p-5 sm:p-6">
-					<h2 class="font-semibold">Частотные диапазоны</h2>
-					<p class="mt-1 text-sm text-dim">Модем выбирает только отмеченные бэнды. Если снять все — работает автовыбор.</p>
-					<div class="mt-5 text-xs text-dim">LTE</div>
-					<div class="mt-2 flex flex-wrap gap-2" id="lteBands"></div>
-					<div class="mt-5 text-xs text-dim">5G NR</div>
-					<div class="mt-2 flex flex-wrap gap-2" id="nrBands"></div>
-					<div class="mt-6 flex flex-wrap gap-3">
-						<button class="act px-4 h-10 rounded-xl bg-cyan text-obsidian font-semibold hover:brightness-110" data-toast="Бэнды применены, модем переподключается">Применить бэнды</button>
-						<button class="px-4 h-10 rounded-xl border border-line text-dim hover:text-ink" id="bandsAuto">Сбросить на авто</button>
-					</div>
-				</article>
+				<div class="col-span-12 flex flex-wrap items-center justify-between gap-3">
+					<p class="text-sm text-dim">Quectel RM520N-GL · прошивка RM520NGLAAR03A03M4G</p>
+					<div class="flex flex-wrap gap-2 text-sm" id="modemFacts"></div>
+				</div>
 
-				<article id="card-ttl" data-keys="ttl фиксация раздача тетеринг hop limit" class="col-span-12 md:col-span-6 xl:col-span-5 glass rounded-3xl p-5 sm:p-6">
-					<div class="flex items-start justify-between gap-4">
-						<div>
-							<h2 class="font-semibold">Фиксация TTL</h2>
-							<p class="mt-1 text-sm text-dim">Оператор видит весь трафик как трафик телефона.</p>
+				<!-- 1. SIM, IMEI, TTL -->
+				<article data-keys="sim сим imei ttl профиль pin" class="col-span-12 glass rounded-3xl p-5 sm:p-6">
+					<h2 class="font-semibold">Управление SIM и профилями</h2>
+					<p class="mt-1 text-sm text-dim">Какая SIM работает, под каким IMEI модем виден сети и какой TTL уходит оператору.</p>
+					<div class="mt-5 grid gap-4 grid-cols-1 lg:grid-cols-3">
+						<div id="card-sim" data-keys="sim сим переключение карта слот" class="min-w-0 relative rounded-2xl bg-slate-900/60 border border-line p-4">
+							<div class="text-sm font-semibold">Слот SIM</div>
+							<div class="mt-3 grid grid-cols-2 gap-3" id="simList"></div>
 						</div>
-						<button id="ttlSwitch" class="switch" role="switch" aria-checked="true" aria-label="Фиксация TTL"></button>
-					</div>
-					<label class="mt-5 block text-sm text-dim" for="ttlVal">Значение для исходящих пакетов</label>
-					<div class="mt-2 flex items-center gap-3">
-						<input id="ttlVal" type="number" value="65" min="1" max="255" class="w-28 h-11 px-3 rounded-xl bg-slate-900 border border-line font-mono text-lg focus:outline-none focus:border-cyan">
-						<span class="text-sm text-dim">IPv4 TTL и IPv6 hop limit</span>
+						<div id="card-imei" data-keys="imei смена модем идентификатор" class="min-w-0 rounded-2xl bg-slate-900/60 border border-line p-4">
+							<div class="text-sm font-semibold">IMEI</div>
+							<div class="mt-3 flex gap-2">
+								<input id="imeiNew" inputmode="numeric" maxlength="15" value="867181059432172" aria-label="IMEI" class="flex-1 min-w-0 h-11 px-3 rounded-xl bg-slate-900 border border-line font-mono focus:outline-none focus:border-cyan">
+								<button id="imeiBtn" class="px-4 h-11 rounded-xl border border-cyan/50 text-cyan hover:bg-cyan/10 disabled:opacity-40" disabled>Применить</button>
+							</div>
+							<div id="imeiHint" class="mt-2 text-xs text-faint">Этот IMEI уже в модеме.</div>
+							<div class="mt-1 text-xs text-faint">Сейчас в модеме: <span class="font-mono" id="imeiCur">867181059432172</span></div>
+						</div>
+						<div id="card-ttl" data-keys="ttl фиксация раздача тетеринг hop limit" class="min-w-0 rounded-2xl bg-slate-900/60 border border-line p-4">
+							<div class="flex items-center justify-between text-sm"><span class="font-semibold">Фиксация TTL</span><span class="font-mono text-xs text-ok" id="ttlState">исх. 65</span></div>
+							<div class="mt-3 space-y-3" id="ttlRows"></div>
+							<button id="ttlApply" class="mt-3 w-full h-10 rounded-xl border border-cyan/50 text-cyan hover:bg-cyan/10">Применить TTL</button>
+						</div>
 					</div>
 				</article>
 
-				<article id="card-sim" data-keys="sim сим переключение карта слот" class="col-span-12 md:col-span-6 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
-					<h2 class="font-semibold">SIM-карты</h2>
-					<div class="mt-4 space-y-3" id="simList"></div>
-				</article>
-
-				<article id="card-imei" data-keys="imei смена модем идентификатор" class="col-span-12 md:col-span-6 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
-					<h2 class="font-semibold">Смена IMEI</h2>
-					<p class="mt-1 text-sm text-dim">Текущий: <span class="font-mono text-ink">86 718105 943217 2</span></p>
-					<label class="mt-4 block text-sm text-dim" for="imeiNew">Новый IMEI, 15 цифр</label>
-					<input id="imeiNew" inputmode="numeric" maxlength="15" placeholder="867181059432172" class="mt-2 w-full h-11 px-3 rounded-xl bg-slate-900 border border-line font-mono focus:outline-none focus:border-cyan">
-					<div id="imeiHint" class="mt-2 text-xs text-faint">Контрольная цифра проверяется по алгоритму Луна.</div>
-					<button id="imeiBtn" class="mt-4 w-full h-10 rounded-xl border border-warn/50 text-warn hover:bg-warn/10 disabled:opacity-40" disabled>Записать в модем</button>
-				</article>
-
-				<article id="card-scan" data-keys="сканирование вышек бс базовые станции соседи" class="col-span-12 xl:col-span-4 glass rounded-3xl p-5 sm:p-6">
-					<div class="flex items-center justify-between">
-						<h2 class="font-semibold">Вышки рядом</h2>
-						<button id="scanBtn" class="px-3 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 text-sm">Сканировать</button>
+				<!-- 2. bands -->
+				<article id="card-bands" data-keys="бэнд band частоты lte nr 5g фиксация" class="col-span-12 xl:col-span-7 glass rounded-3xl p-5 sm:p-6">
+					<div class="flex items-start justify-between gap-3">
+						<div>
+							<h2 class="font-semibold">Выбор частот и бэндов</h2>
+							<p class="mt-1 text-sm text-dim">Модем работает только на отмеченных диапазонах.</p>
+						</div>
+						<span class="px-2.5 py-1 rounded-full border border-cyan/40 bg-cyan/10 text-cyan font-mono text-xs whitespace-nowrap">Сейчас B3</span>
 					</div>
-					<div id="scanProgress" class="mt-4 h-1 rounded-full bg-slate-600/60 overflow-hidden" hidden><div class="h-full w-0 bg-cyan transition-all duration-[2400ms]" id="scanFill"></div></div>
-					<ul id="scanList" class="mt-4 space-y-2 text-sm">
-						<li class="text-dim">Сканирование занимает около 20 секунд, на это время связь прервётся.</li>
-					</ul>
+					<div class="mt-5 flex justify-between text-xs text-dim"><span>4G LTE</span><span id="lteCount"></span></div>
+					<div class="mt-2 grid grid-cols-4 sm:grid-cols-7 gap-2" id="lteBands"></div>
+					<div class="mt-5 flex justify-between text-xs text-dim"><span>5G NR</span><span id="nrCount"></span></div>
+					<div class="mt-2 grid grid-cols-4 sm:grid-cols-7 gap-2" id="nrBands"></div>
+					<div id="bandBanner" class="banner mt-5" hidden><span class="eq"><i></i><i></i><i></i><i></i><i></i></span><span id="bandBannerText">Модем переподключается к выбранным диапазонам…</span><i class="scanline"></i></div>
+					<div class="mt-5 pt-4 border-t border-line flex flex-wrap items-center gap-3">
+						<button class="px-4 h-10 rounded-xl border border-line text-dim hover:text-ink" id="bandsInvert">Инвертировать выбор</button>
+						<span class="ml-auto text-xs text-warn" id="bandsDirty"></span>
+						<button class="px-4 h-10 rounded-xl bg-cyan text-obsidian font-semibold hover:brightness-110 disabled:opacity-40" id="bandsLock" disabled>Зафиксировать бэнды</button>
+					</div>
+				</article>
+
+				<!-- 4. SMS and USSD -->
+				<article id="card-mussd" data-keys="ussd sms баланс *100# сообщения" class="col-span-12 xl:col-span-5 glass rounded-3xl p-5 sm:p-6">
+					<h2 class="font-semibold">SMS и USSD</h2>
+					<form id="mUssdForm" class="mt-4 flex gap-2">
+						<input id="mUssdInput" value="*100#" aria-label="USSD-запрос" class="flex-1 min-w-0 h-11 px-3 rounded-xl bg-slate-900 border border-line font-mono text-lg focus:outline-none focus:border-cyan">
+						<button class="px-4 h-11 rounded-xl bg-cyan text-obsidian font-semibold disabled:opacity-50" id="mUssdBtn">Отправить</button>
+					</form>
+					<div id="mUssdOut" class="mt-4 flex flex-col gap-2" hidden></div>
+					<div class="mt-5 pt-4 border-t border-line flex justify-between text-sm"><span class="font-semibold">Последние SMS оператора</span><button class="text-dim hover:text-ink text-xs" data-goto="sms">Все сообщения</button></div>
+					<ul id="mSms" class="mt-2 space-y-1"></ul>
+				</article>
+
+				<!-- 3. scanner -->
+				<article id="card-scan" data-keys="сканирование вышек бс базовые станции соседи pci cell" class="col-span-12 glass rounded-3xl p-5 sm:p-6">
+					<div class="flex flex-wrap items-start justify-between gap-3">
+						<div>
+							<h2 class="font-semibold">Сканирование сети и вышек</h2>
+							<p class="mt-1 text-sm text-dim" id="scanSub">Соседние соты, которые модем слышит со своего места.</p>
+						</div>
+						<button id="scanBtn" class="px-4 h-10 rounded-xl border border-cyan/50 text-cyan hover:bg-cyan/10 disabled:opacity-50">Начать сканирование эфира</button>
+					</div>
+					<div class="relative mt-4" id="scanBody">
+						<div id="radar" class="radar" hidden><div class="dish"><i class="sw"></i><b></b><b></b><b></b><b></b></div><span class="text-sm text-dim pulse">Слушаем эфир…</span></div>
+						<p id="scanEmpty" class="py-6 text-sm text-dim">Нажмите «Начать сканирование эфира», чтобы увидеть вышки вокруг и их сигнал.</p>
+						<div class="overflow-x-auto" id="scanTableWrap" hidden>
+							<table class="w-full text-sm">
+								<thead><tr class="text-left text-xs text-faint border-b border-line"><th class="py-2 pr-3 font-medium">Оператор</th><th class="py-2 pr-3 font-medium">dBm</th><th class="py-2 pr-3 font-medium">Band</th><th class="py-2 pr-3 font-medium">PCI</th><th class="py-2 font-medium">Cell ID</th></tr></thead>
+								<tbody id="scanList"></tbody>
+							</table>
+						</div>
+					</div>
 				</article>
 			</section>
 
@@ -984,33 +1057,27 @@
 
 	/* ---------------- modem page ---------------- */
 
-	const LTE = ['B1', 'B3', 'B7', 'B8', 'B20', 'B38', 'B40'], NR = ['n1', 'n3', 'n28', 'n41', 'n78'];
-	const picked = new Set(['B3', 'B7', 'B20']);
+	$('#modemFacts').innerHTML = [['Сеть', 'МегаФон · B3'], ['Связь', 'в сети', 'text-ok'], ['Температура', '47 °C']].map(([l, v, c]) =>
+		`<span class="rounded-xl bg-slate-900/60 border border-line px-3 py-1.5"><span class="block text-[11px] text-faint">${l}</span><span class="font-mono ${c || ''}">${v}</span></span>`).join('');
 
-	function bandBtns(list, box) {
-		$(box).innerHTML = list.map(b => `<button class="chip px-3.5 h-9 rounded-xl border border-line font-mono text-sm text-dim hover:text-ink" aria-pressed="${picked.has(b)}">${b}</button>`).join('');
-	}
-	bandBtns(LTE, '#lteBands'); bandBtns(NR, '#nrBands');
-	document.addEventListener('click', e => {
-		const c = e.target.closest('.chip'); if (!c) return;
-		const on = c.getAttribute('aria-pressed') !== 'true';
-		c.setAttribute('aria-pressed', on);
-		on ? picked.add(c.textContent) : picked.delete(c.textContent);
-	});
-	$('#bandsAuto').addEventListener('click', () => { picked.clear(); bandBtns(LTE, '#lteBands'); bandBtns(NR, '#nrBands'); toast('Автовыбор бэндов включён'); });
-
+	/* 1. SIM, IMEI, TTL */
 	function renderSims() {
 		$('#simList').innerHTML = [1, 2].map(n => {
 			const s = SIMS[n], act = n === sim;
-			return `<button class="simcard w-full text-left rounded-2xl border ${act ? 'border-cyan/60 bg-cyan/5' : 'border-line bg-slate-900/60 hover:border-faint'} p-4" data-sim="${n}">
-				<div class="flex items-center justify-between"><span class="font-semibold">SIM ${n}: ${s.op}</span><span class="text-xs ${act ? 'text-cyan' : 'text-faint'}">${act ? 'активна' : 'в резерве'}</span></div>
-				<div class="mt-1 text-sm text-dim font-mono">${s.number}</div>
-				<div class="mt-1 text-xs text-faint">APN ${s.apn}</div></button>`;
+			return `<button class="simcard min-w-0 text-left rounded-xl border ${act ? 'border-cyan/60 bg-cyan/5 shadow-[0_10px_30px_-18px_#2BE4FF]' : 'border-line hover:border-faint'} p-3 transition" data-sim="${n}">
+				<span class="flex items-center gap-2"><span class="font-semibold">SIM ${n}</span>${act ? '<span class="text-[11px] text-cyan">активна</span>' : ''}</span>
+				<span class="mt-1 flex items-center gap-2 text-sm"><span class="w-2 h-2 rounded-full ${act ? 'bg-ok pulse' : 'bg-faint'}"></span>${act ? 'Готова' : 'Резерв'}</span>
+				<span class="mt-1 block text-xs text-dim">${act ? 'PIN-код не требуется' : 'Нажмите, чтобы переключиться'}</span>
+				<span class="mt-1 block text-xs text-faint">${s.op}</span></button>`;
 		}).join('');
 	}
 	document.addEventListener('click', e => {
-		const c = e.target.closest('.simcard'); if (!c) return;
+		const c = e.target.closest('.simcard'); if (!c || switching || +c.dataset.sim === sim) return;
+		const box = $('#card-sim');
+		box.dataset.switch = `Переключаем на SIM ${c.dataset.sim}…`;
+		box.classList.add('switching');
 		switchSim(+c.dataset.sim);
+		setTimeout(() => box.classList.remove('switching'), 1500);
 	});
 
 	function luhn(s) {
@@ -1018,32 +1085,128 @@
 		for (let i = 0; i < s.length; i++) { let d = +s[s.length - 1 - i]; if (i % 2) { d *= 2; if (d > 9) d -= 9; } sum += d; }
 		return sum % 10 === 0;
 	}
+	let imeiCur = '867181059432172';
 	$('#imeiNew').addEventListener('input', e => {
 		const v = e.target.value = e.target.value.replace(/\D/g, '');
-		const ok = v.length === 15 && luhn(v);
+		const ok = v.length === 15 && luhn(v) && v !== imeiCur;
 		$('#imeiBtn').disabled = !ok;
-		$('#imeiHint').textContent = v.length < 15 ? `Введено ${v.length} из 15 цифр.` : ok ? 'IMEI корректен. После записи модем перезапустится.' : 'Контрольная цифра не сходится — проверьте номер.';
-		$('#imeiHint').className = 'mt-2 text-xs ' + (v.length < 15 ? 'text-faint' : ok ? 'text-ok' : 'text-bad');
+		$('#imeiHint').textContent = v.length < 15 ? `Введено ${v.length} из 15 цифр.` : v === imeiCur ? 'Этот IMEI уже в модеме.' : luhn(v) ? 'Контрольная цифра в порядке.' : 'Контрольная цифра не сходится — проверьте номер.';
+		$('#imeiHint').className = 'mt-2 text-xs ' + (v.length < 15 || v === imeiCur ? 'text-faint' : luhn(v) ? 'text-ok' : 'text-bad');
 	});
-	$('#imeiBtn').addEventListener('click', () => toast('IMEI записан, модем перезапускается'));
-
-	$('#scanBtn').addEventListener('click', () => {
-		const btn = $('#scanBtn'); btn.disabled = true; btn.textContent = 'Идёт поиск…';
-		$('#scanProgress').hidden = false; $('#scanFill').style.width = '0';
-		requestAnimationFrame(() => $('#scanFill').style.width = '100%');
+	$('#imeiBtn').addEventListener('click', () => {
+		const b = $('#imeiBtn'); b.disabled = true; b.textContent = 'Записываем…';
 		setTimeout(() => {
-			const towers = [
-				['МегаФон', 'B3', 312, -86, true], ['МегаФон', 'B7', 312, -91], ['МТС', 'B7', 145, -95], ['Билайн', 'B20', 87, -104], ['T2', 'B1', 402, -108]
-			];
-			$('#scanList').innerHTML = towers.map(([op, b, pci, r, cur]) => {
-				const [cls] = quality('rsrp', r);
-				return `<li class="flex items-center gap-3 rounded-xl bg-slate-900/60 border ${cur ? 'border-cyan/50' : 'border-line'} px-3 py-2.5">
-					<span class="w-2 h-2 rounded-full bg-${cls}"></span><span class="flex-1">${op}${cur ? ' <span class="text-xs text-cyan">текущая</span>' : ''}</span>
-					<span class="font-mono text-dim">${b}</span><span class="font-mono text-dim w-12 text-right">${pci}</span><span class="font-mono w-16 text-right">${minus(r)}</span></li>`;
-			}).join('');
-			btn.disabled = false; btn.textContent = 'Сканировать'; $('#scanProgress').hidden = true;
-		}, 2500);
+			imeiCur = $('#imeiNew').value; $('#imeiCur').textContent = imeiCur;
+			b.textContent = 'Применить';
+			$('#imeiHint').textContent = 'Этот IMEI уже в модеме.'; $('#imeiHint').className = 'mt-2 text-xs text-faint';
+			toast('IMEI успешно изменен, требуется перезагрузка модема');
+		}, 900);
 	});
+
+	const ttl = { out: 65, in: 0 };
+	function renderTtl() {
+		$('#ttlRows').innerHTML = [['out', 'Исходящий'], ['in', 'Входящий']].map(([k, l]) => `
+			<div><div class="flex items-center justify-between text-sm text-dim">${l}
+				<input type="number" min="1" max="255" value="${ttl[k] || ''}" placeholder="—" data-ttlin="${k}" class="w-16 h-8 px-2 text-center rounded-lg bg-slate-900 border border-line font-mono text-ink focus:outline-none focus:border-cyan"></div>
+				<div class="mt-2 grid grid-cols-4 gap-1 p-1 rounded-xl bg-slate-900 border border-line">${[0, 64, 65, 128].map(v =>
+					`<button class="ttlp h-7 rounded-lg text-sm ${ttl[k] === v ? 'bg-slate-600 text-ink' : 'text-dim hover:text-ink'}" data-k="${k}" data-v="${v}">${v || 'Выкл'}</button>`).join('')}</div></div>`).join('');
+	}
+	document.addEventListener('click', e => { const b = e.target.closest('.ttlp'); if (!b) return; ttl[b.dataset.k] = +b.dataset.v; renderTtl(); });
+	document.addEventListener('input', e => { const i = e.target.closest('[data-ttlin]'); if (i) ttl[i.dataset.ttlin] = Math.min(255, +i.value || 0); });
+	$('#ttlApply').addEventListener('click', () => {
+		const t = [ttl.out ? 'исх. ' + ttl.out : '', ttl.in ? 'вх. ' + ttl.in : ''].filter(Boolean).join(' · ');
+		$('#ttlState').textContent = t || 'не задан'; $('#ttlState').className = 'font-mono text-xs ' + (t ? 'text-ok' : 'text-faint');
+		renderTtl(); toast(t ? 'TTL зафиксирован: ' + t : 'Фиксация TTL снята');
+	});
+	renderTtl();
+
+	/* 2. bands */
+	const FREQ = { B1: 2100, B3: 1800, B7: 2600, B8: 900, B20: 800, B38: 2600, B40: 2300, n78: 3500, n79: 4700 };
+	const LTE = ['B1', 'B3', 'B7', 'B8', 'B20', 'B38', 'B40'], NR = ['n78', 'n79'];
+	let locked = new Set(['B3', 'B7', 'B20', 'n78']), picked = new Set(locked);
+	function renderBands() {
+		const chip = b => `<label class="bchip ${b === 'B3' ? 'live' : ''}"><input type="checkbox" class="sr-only" data-band="${b}" ${picked.has(b) ? 'checked' : ''}><span class="font-mono font-semibold">${b}</span><span class="text-[11px] text-faint">${FREQ[b]} МГц</span></label>`;
+		$('#lteBands').innerHTML = LTE.map(chip).join(''); $('#nrBands').innerHTML = NR.map(chip).join('');
+		$('#lteCount').textContent = `${LTE.filter(b => picked.has(b)).length} из ${LTE.length}`;
+		$('#nrCount').textContent = `${NR.filter(b => picked.has(b)).length} из ${NR.length}`;
+		const dirty = [...picked].sort().join() !== [...locked].sort().join();
+		$('#bandsDirty').textContent = dirty ? 'Не применено' : ''; $('#bandsLock').disabled = !dirty;
+	}
+	document.addEventListener('change', e => { const c = e.target.closest('[data-band]'); if (!c) return; c.checked ? picked.add(c.dataset.band) : picked.delete(c.dataset.band); renderBands(); });
+	$('#bandsInvert').addEventListener('click', () => { picked = new Set([...LTE, ...NR].filter(b => !picked.has(b))); renderBands(); });
+	$('#bandsLock').addEventListener('click', () => {
+		if (!LTE.some(b => picked.has(b))) { toast('Отметьте хотя бы один диапазон LTE'); return; }
+		const banner = $('#bandBanner'), box = $('#card-bands');
+		banner.className = 'banner mt-5'; banner.hidden = false;
+		$('#bandBannerText').textContent = 'Модем переподключается к выбранным диапазонам…';
+		box.classList.add('locking'); $('#bandsLock').disabled = true; $('#bandsDirty').textContent = '';
+		setTimeout(() => {
+			locked = new Set(picked); box.classList.remove('locking'); renderBands();
+			const now = LTE.find(b => picked.has(b));
+			banner.className = 'banner ok mt-5'; $('#bandBannerText').textContent = `В сети: ${now}, RSRP −88 дБм`;
+			toast(`Бэнды зафиксированы. Модем работает на ${now}`);
+			setTimeout(() => banner.hidden = true, 3500);
+		}, 3200);
+	});
+	renderBands();
+
+	/* 3. scanner */
+	$('#scanBtn').addEventListener('click', () => {
+		const btn = $('#scanBtn'); btn.disabled = true;
+		$('#radar').hidden = false; $('#scanEmpty').hidden = true; $('#scanTableWrap').classList.add('opacity-10');
+		setTimeout(() => {
+			const cells = [
+				['МегаФон', -86, 'B3', 312, '1984E01', true], ['МегаФон', -91, 'B7', 293, '1984E02'], ['МТС', -95, 'B7', 145, '5A1C303'],
+				['Билайн', -104, 'B20', 87, '23F0B11'], ['T2', -108, 'B1', 402, '0C4D2A5'], ['МегаФон', -112, 'n78', 501, '—']
+			];
+			$('#scanList').innerHTML = cells.map(([op, r, b, pci, id, cur], i) => {
+				const [cls] = quality('rsrp', r), w = Math.max(4, Math.min(100, (r + 130) / 60 * 100));
+				return `<tr class="row-in border-b border-line/60 ${cur ? 'bg-cyan/5' : ''}" style="animation-delay:${i * 50}ms">
+					<td class="py-2.5 pr-3">${op}${cur ? ' <span class="ml-1 px-2 py-0.5 rounded-full border border-cyan/40 text-[11px] text-cyan">обслуживает</span>' : ''}</td>
+					<td class="py-2.5 pr-3"><span class="flex items-center gap-2"><span class="font-mono text-${cls} w-10">${minus(r)}</span><span class="w-20 h-1.5 rounded-full bg-slate-600/60 overflow-hidden"><i class="block h-full bg-${cls} grow" style="width:${w}%"></i></span></span></td>
+					<td class="py-2.5 pr-3 font-mono">${b}</td><td class="py-2.5 pr-3 font-mono text-dim">${pci}</td><td class="py-2.5 font-mono text-dim">${id}</td></tr>`;
+			}).join('');
+			$('#radar').hidden = true; $('#scanTableWrap').hidden = false; $('#scanTableWrap').classList.remove('opacity-10');
+			$('#scanSub').textContent = `Найдено соседних сот: ${cells.length - 1}`;
+			btn.disabled = false;
+		}, 2800);
+	});
+
+	/* 4. USSD and operator SMS */
+	$('#mUssdForm').addEventListener('submit', e => {
+		e.preventDefault();
+		const q = $('#mUssdInput').value.trim(), out = $('#mUssdOut'), btn = $('#mUssdBtn');
+		btn.disabled = true; out.hidden = false;
+		out.innerHTML = `<div class="self-end px-3 py-1.5 rounded-xl rounded-br-sm bg-cyan text-obsidian font-mono text-sm">${q}</div>
+			<div class="self-start px-3 py-2.5 rounded-xl rounded-bl-sm bg-slate-900 border border-line text-sm"><span class="typing"><i></i><i></i><i></i></span></div>`;
+		setTimeout(() => {
+			out.lastElementChild.innerHTML = q === '*100#' ? 'Баланс: 450 руб. Пакет интернета: Безлимитно' : `Запрос ${q} выполнен, оператор не прислал ответ.`;
+			out.lastElementChild.classList.add('border-cyan/40');
+			btn.disabled = false;
+		}, 1300);
+	});
+	const OPSMS = [
+		['МегаФон', 'Пополнение баланса на 500 руб. Баланс: 450 руб.', 'сегодня, 09:12'],
+		['MegaFon', 'Вы в сети LTE+. Скорость до 300 Мбит/с в зоне покрытия.', 'вчера, 18:40'],
+		['МегаФон', 'Остаток пакета: безлимитный интернет до 12.11.', '2 ноября'],
+		['МегаФон', 'Подключена услуга «Раздача интернета».', '30 октября']
+	];
+	function renderOpSms() {
+		$('#mSms').innerHTML = OPSMS.slice(0, 3).map(([from, text, when], i) => `
+			<li class="opsms flex gap-3 p-2.5 rounded-xl hover:bg-slate-700/40 transition-all" data-i="${i}">
+				<span class="w-8 h-8 flex-none rounded-full grid place-items-center bg-cyan/10 border border-cyan/30 text-cyan text-sm font-semibold">${from[0]}</span>
+				<span class="min-w-0 flex-1"><span class="flex justify-between gap-2 text-sm"><span class="font-semibold">${from}</span><span class="text-xs text-faint whitespace-nowrap">${when}</span></span>
+				<span class="block text-sm text-dim mt-0.5">${text}</span></span>
+				<button class="smsdel self-start px-1.5 h-7 rounded-lg text-faint hover:text-bad text-xs" aria-label="Удалить">✕</button></li>`).join('') || '<li class="text-sm text-faint p-2">Сообщений от оператора нет.</li>';
+	}
+	document.addEventListener('click', e => {
+		const d = e.target.closest('.smsdel'); if (!d) return;
+		if (!d.classList.contains('confirm')) { d.classList.add('confirm', 'text-bad', 'border', 'border-bad/50'); d.textContent = 'Удалить?'; return; }
+		const li = d.closest('.opsms'); li.classList.add('opacity-0', 'translate-x-6');
+		setTimeout(() => { OPSMS.splice(+li.dataset.i, 1); renderOpSms(); toast('Сообщение удалено'); }, 300);
+	});
+	renderOpSms();
+	$$('[data-goto]').forEach(b => b.addEventListener('click', () => go(b.dataset.goto)));
 
 	/* ---------------- VPN page ---------------- */
 

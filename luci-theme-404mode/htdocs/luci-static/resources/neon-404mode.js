@@ -136,7 +136,7 @@ return baseclass.extend({
 
 	css() {
 		if (!document.querySelector('link[data-404view]'))
-			document.head.appendChild(E('link', { 'rel': 'stylesheet', 'data-404view': '1', 'href': L.resource('view/404mode/neon.css') + '?v=1.8.6' }));
+			document.head.appendChild(E('link', { 'rel': 'stylesheet', 'data-404view': '1', 'href': L.resource('view/404mode/neon.css') + '?v=1.8.7' }));
 	},
 
 	num(v, d) {
@@ -239,6 +239,51 @@ return baseclass.extend({
 		});
 
 		return btn;
+	},
+
+	/* a short message in the corner: kind ok | info | warn | bad,
+	   action { label, fn } adds a button; returns a close function */
+	toast(text, kind, action, ms) {
+		let stack = document.querySelector('.xt-stack');
+		if (!stack) {
+			stack = E('div', { 'class': 'xt-stack', 'role': 'status', 'aria-live': 'polite' });
+			document.body.appendChild(stack);
+		}
+
+		const ICON = {
+			ok: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+			info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/>',
+			warn: '<path d="M12 4 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.5"/>',
+			bad: '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>'
+		};
+		kind = ICON[kind] ? kind : 'info';
+		ms = ms || (action ? 9000 : 5500);
+
+		let timer = null;
+		const el = E('div', { 'class': 'xt xt-' + kind, 'style': '--xt-ms:' + ms + 'ms' });
+		const close = () => {
+			window.clearTimeout(timer);
+			el.classList.add('xt-out');
+			window.setTimeout(() => el.remove(), 260);
+		};
+
+		el.appendChild(this.icon(ICON[kind], 'xt-i'));
+		el.appendChild(E('div', { 'class': 'xt-body' }, [
+			E('div', { 'class': 'xt-text' }, [ text ]),
+			action ? E('button', { 'type': 'button', 'class': 'xt-act', 'click': () => { close(); action.fn(); } }, [ action.label ]) : ''
+		]));
+		el.appendChild(E('button', { 'type': 'button', 'class': 'xt-x', 'aria-label': this.t('Закрыть', 'Close'), 'click': close }, [ '×' ]));
+		el.appendChild(E('i', { 'class': 'xt-bar' }));
+
+		stack.appendChild(el);
+		while (stack.children.length > 4)
+			stack.firstChild.remove();
+
+		timer = window.setTimeout(close, ms);
+		el.addEventListener('mouseenter', () => { window.clearTimeout(timer); el.classList.add('xt-hold'); });
+		el.addEventListener('mouseleave', () => { el.classList.remove('xt-hold'); timer = window.setTimeout(close, 2500); });
+
+		return close;
 	},
 
 	icon(path, cls) {

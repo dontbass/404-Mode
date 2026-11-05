@@ -42,6 +42,16 @@ function icon(name) {
 	return span;
 }
 
+/* the theme's own menu titles, for languages LuCI has no catalogue entry for */
+const OWN_TITLES = { 'Modem control': { ru: 'Управление' } };
+
+function tt(title) {
+	const r = _(title);
+	const own = OWN_TITLES[title];
+	const lang = (document.documentElement.getAttribute('lang') || '').slice(0, 2);
+	return (r === title && own && own[lang]) ? own[lang] : r;
+}
+
 /* words people type that are not in the menu titles */
 const SYNONYMS = {
 	wireless: 'wifi wi-fi вайфай вай-фай беспроводн точка доступа ssid',
@@ -133,7 +143,7 @@ return baseclass.extend({
 				: index === 0;
 
 			ul.appendChild(E('li', { 'class': isActive ? 'active' : '' }, [
-				E('a', { 'href': L.url(child.name) }, [ _(child.title) ])
+				E('a', { 'href': L.url(child.name) }, [ tt(child.title) ])
 			]));
 
 			if (isActive)
@@ -155,7 +165,7 @@ return baseclass.extend({
 			const catUrl = url + '/' + cat.name;
 			const items = ui.menu.getChildren(cat);
 			const isActive = (L.env.dispatchpath[1] == cat.name);
-			const title = _(cat.title);
+			const title = tt(cat.title);
 
 			/* leaf at top level (e.g. Logout) */
 			if (!items.length) {
@@ -177,7 +187,7 @@ return baseclass.extend({
 				const itemActive = isActive && (L.env.dispatchpath[2] == item.name);
 
 				sub.appendChild(E('li', { 'class': itemActive ? 'active' : '' }, [
-					E('a', { 'href': L.url(catUrl, item.name) }, [ _(item.title) ])
+					E('a', { 'href': L.url(catUrl, item.name) }, [ tt(item.title) ])
 				]));
 			});
 
@@ -248,7 +258,7 @@ return baseclass.extend({
 			ul.appendChild(E('li', {
 				'class': 'tabmenu-item-%s%s'.format(child.name, isActive ? ' active' : '')
 			}, [
-				E('a', { 'href': L.url(url, child.name) }, [ _(child.title) ])
+				E('a', { 'href': L.url(url, child.name) }, [ tt(child.title) ])
 			]));
 
 			if (isActive)
@@ -348,11 +358,11 @@ return baseclass.extend({
 		const walk = (node, path, titles, depth) => {
 			ui.menu.getChildren(node).forEach(child => {
 				const p = path.concat(child.name);
-				const t = titles.concat(_(child.title));
+				const t = titles.concat(tt(child.title));
 				const kids = ui.menu.getChildren(child);
 
 				out.push({
-					title: _(child.title),
+					title: tt(child.title),
 					trail: titles.join(' › '),
 					url: L.url.apply(L, [ 'admin' ].concat(p)),
 					keys: norm(t.join(' ') + ' ' + p.join(' ') + ' ' + p.map(n => SYNONYMS[n] || '').join(' ')),

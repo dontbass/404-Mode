@@ -10,6 +10,10 @@
  *   cell { mcc, mnc, lac, cid }
  *                     where the serving tower stands (open cell database
  *                     api.mylnikov.org, cached for a month)
+ *   ttl               TTL / hop limit fixed on the modem link
+ *   ttl_set { out, in, dev }
+ *                     write /etc/nftables.d/90-404mode-ttl.nft, reload fw4
+ *                     (0 and 0 removes it)
  *   proxy_set { action, group, name, mode, on }
  *                     select a node, test delays, switch the mode, start /
  *                     stop Nikki
@@ -432,6 +436,72 @@ function nikki_set(req) {
 	return { error: 'action' };
 }
 
+/* ---------- TTL / hop limit on the modem link ---------- */
+
+const TTL_FILE = '/etc/nftables.d/90-404mode-ttl.nft';
+
+function ttl_state() {
+	const raw = readfile(TTL_FILE);
+	const m = raw ? match(raw, /# 404mode-ttl out=([0-9]+) in=([0-9]+) dev=([^\n]*)/) : null;
+	const live = trim(sh('nft list chain inet fw4 ttl404_post 2>/dev/null; nft list chain inet fw4 ttl404_pre 2>/dev/null'));
+
+	return {
+		out: m ? +m[1] : 0,
+		in: m ? +m[2] : 0,
+		dev: m ? split(trim(m[3]), ' ') : [],
+		active: length(live) > 0,
+		nft: access('/usr/sbin/nft') || access('/sbin/nft')
+	};
+}
+
+function ttl_set(a) {
+	const out = +(a.out ?? 0), inn = +(a.in ?? 0);
+	let dev = [];
+
+	for (let d in split(replace(a.dev ?? '', ',', ' '), ' ')) {
+		if (!length(d))
+			continue;
+		if (!match(d, /^[A-Za-z0-9_.-]{1,15}$/))
+			return { error: 'dev' };
+		push(dev, d);
+	}
+
+	if (out != out || inn != inn || out < 0 || out > 255 || inn < 0 || inn > 255)
+		return { error: 'value' };
+
+	if (!out && !inn)
+		system('rm -f ' + TTL_FILE);
+	else {
+		if (!length(dev))
+			return { error: 'dev' };
+
+		const set = '{ ' + join(', ', map(dev, d => '"' + d + '"')) + ' }';
+		let nft = '# 404mode-ttl out=' + out + ' in=' + inn + ' dev=' + join(' ', dev) + '\n' +
+			'# written by the 404 Mode modem page; delete the file to undo\n';
+
+		if (out)
+			nft += 'chain ttl404_post {\n\ttype filter hook postrouting priority mangle + 10; policy accept;\n' +
+				'\toifname ' + set + ' ip ttl set ' + out + '\n' +
+				'\toifname ' + set + ' ip6 hoplimit set ' + out + '\n}\n';
+		if (inn)
+			nft += 'chain ttl404_pre {\n\ttype filter hook prerouting priority mangle + 10; policy accept;\n' +
+				'\tiifname ' + set + ' ip ttl set ' + inn + '\n' +
+				'\tiifname ' + set + ' ip6 hoplimit set ' + inn + '\n}\n';
+
+		system('mkdir -p /etc/nftables.d');
+		if (!writefile(TTL_FILE, nft))
+			return { error: 'write' };
+	}
+
+	const rc = system('fw4 -q reload >/dev/null 2>&1');
+	if (rc != 0) {
+		system('rm -f ' + TTL_FILE + '; fw4 -q reload >/dev/null 2>&1');
+		return { error: 'nft' };
+	}
+
+	return ttl_state();
+}
+
 return {
 	'404mode': {
 		weather: {
@@ -467,6 +537,15 @@ return {
 		proxy_set: {
 			args: { action: 'action', group: 'group', name: 'name', mode: 'mode', on: false },
 			call: function(req) { return nikki_set(req); }
+		},
+
+		ttl: {
+			call: function() { return ttl_state(); }
+		},
+
+		ttl_set: {
+			args: { out: 0, in: 0, dev: 'dev' },
+			call: function(req) { return ttl_set(req.args ?? {}); }
 		}
 	}
 };

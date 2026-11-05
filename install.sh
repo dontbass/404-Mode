@@ -138,6 +138,11 @@ if [ "$ACTION" = "remove" ]; then
 	       "$WWW/resources/brief-$NAME.js" "$RPCD/ucode/$NAME.uc" "$RPCD/acl.d/luci-theme-$NAME.json" "$LIBEXEC/$NAME-brief" /tmp/404mode-brief \
 	       "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost"
 	reload_rpcd
+	# the TTL rule set from the modem page goes with the theme
+	if [ -f /etc/nftables.d/90-404mode-ttl.nft ]; then
+		rm -f /etc/nftables.d/90-404mode-ttl.nft
+		fw4 -q reload >/dev/null 2>&1 || true
+	fi
 	uci -q delete luci.themes.404Mode || true
 	uci -q delete luci.themes.404ModeDark || true
 	uci -q delete luci.themes.404ModeLight || true
