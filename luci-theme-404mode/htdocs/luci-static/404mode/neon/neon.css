@@ -305,15 +305,17 @@
 [data-skin="neon"] #view > div > .cbi-section::after,
 [data-skin="neon"] .hud-ticker { display: none !important; }
 
-[data-skin="neon"] a,
-[data-skin="neon"] a:visited { color: var(--x-cyan); }
+/* zero-specificity links, so a.btn / a.cbi-button keep their button colours */
+[data-skin="neon"] :where(a, a:visited) { color: var(--x-cyan); }
 
-[data-skin="neon"] a:hover,
-[data-skin="neon"][data-theme="light"] a:hover {
+[data-skin="neon"] :where(a:hover) {
 	color: var(--x-volt);
 	text-shadow: none;
 	text-decoration: none;
 }
+
+[data-skin="neon"] a:hover,
+[data-skin="neon"][data-theme="light"] a:hover { text-shadow: none; text-decoration: none; }
 
 [data-skin="neon"] :focus-visible,
 [data-skin="neon"] a:focus-visible,
@@ -554,7 +556,9 @@
 [data-skin="neon"] .hud-scheme-icon { width: 13px; height: 13px; border-width: 1.6px; }
 
 /* header brief: pill cells */
-[data-skin="neon"] .hud-brief { font-family: var(--n-font-ui); font-size: 12.5px; letter-spacing: 0; gap: 8px; }
+[data-skin="neon"] .hud-brief { font-family: var(--n-font-ui); font-size: 12.5px; letter-spacing: 0; gap: 8px; overflow: hidden; }
+
+[data-skin="neon"] .hb-city { color: var(--n-text); border-bottom-color: var(--n-line-strong); }
 
 [data-skin="neon"] .hb-cell {
 	height: 34px;
@@ -1098,7 +1102,7 @@
 
 [data-skin="neon"] .btn,
 [data-skin="neon"] .cbi-button,
-[data-skin="neon"] button:where(:not(.hud-toggle, .hud-sw, .nav-head, .sidebar-collapse, .hs-item)),
+[data-skin="neon"] button:where(:not(.hud-toggle, .hud-sw, .nav-head, .sidebar-collapse, .hs-item, .hb-city)),
 [data-skin="neon"] input[type="button"],
 [data-skin="neon"] input[type="submit"],
 [data-skin="neon"] input[type="reset"] {
@@ -1119,13 +1123,13 @@
 
 [data-skin="neon"] .btn:hover,
 [data-skin="neon"] .cbi-button:hover,
-[data-skin="neon"] button:where(:not(.hud-toggle, .hud-sw, .nav-head, .sidebar-collapse, .hs-item)):hover,
+[data-skin="neon"] button:where(:not(.hud-toggle, .hud-sw, .nav-head, .sidebar-collapse, .hs-item, .hb-city)):hover,
 [data-skin="neon"] input[type="button"]:hover,
 [data-skin="neon"] input[type="submit"]:hover,
 [data-skin="neon"] input[type="reset"]:hover,
 [data-skin="neon"][data-theme="light"] .btn:hover,
 [data-skin="neon"][data-theme="light"] .cbi-button:hover,
-[data-skin="neon"][data-theme="light"] button:where(:not(.hud-toggle, .hud-sw, .nav-head, .sidebar-collapse, .hs-item)):hover {
+[data-skin="neon"][data-theme="light"] button:where(:not(.hud-toggle, .hud-sw, .nav-head, .sidebar-collapse, .hs-item, .hb-city)):hover {
 	color: var(--n-heading);
 	background: rgba(var(--n-neutral-rgb), .24);
 	border-color: var(--n-line-strong) !important;
@@ -1258,6 +1262,15 @@
 
 [data-skin="neon"] .cbi-dropdown.cbi-button > .open { border-left-color: rgba(0, 0, 0, .2) !important; }
 [data-skin="neon"] .cbi-dropdown.cbi-button > ul.dropdown > li { text-transform: none; letter-spacing: 0; }
+
+/* buttons drawn as links (iStore, app pages): the link colour must not win */
+[data-skin="neon"] a:is(.btn, .cbi-button),
+[data-skin="neon"] a:is(.btn, .cbi-button):visited,
+[data-skin="neon"] a:is(.btn, .cbi-button):hover { color: var(--b); text-decoration: none; }
+
+[data-skin="neon"] a:is(.cbi-button-apply, .important, .x-btn-primary),
+[data-skin="neon"] a:is(.cbi-button-apply, .important, .x-btn-primary):visited,
+[data-skin="neon"] a:is(.cbi-button-apply, .important, .x-btn-primary):hover { color: var(--x-btn-text); }
 
 /* page actions: floating glass bar */
 [data-skin="neon"] .cbi-page-actions {
@@ -1551,8 +1564,12 @@
 
 /* ---------- responsive ---------- */
 
+@media screen and (max-width: 1600px) {
+	[data-skin="neon"] .hud-search { flex-basis: 340px; }
+}
+
 @media screen and (max-width: 1100px) {
-	[data-skin="neon"] .hud-search { flex-basis: 320px; }
+	[data-skin="neon"] .hud-search { flex-basis: 280px; }
 }
 
 @media screen and (max-width: 854px) {
@@ -1641,3 +1658,50 @@
 }
 
 [data-skin="neon"] [data-nfx~="b-plain"]:not(#\#):not(#\#) { --b: var(--n-text); --b-rgb: var(--n-neutral-rgb); }
+
+/* app labels that happen to use LuCI's .label class are text, not badges */
+[data-skin="neon"] .label { text-transform: none; font-family: var(--n-font-ui); letter-spacing: 0; }
+
+[data-skin="neon"] .label[data-nfx]:not([data-nfx~="badge"]):not(#\#) {
+	padding: 0;
+	background: none;
+	border: 0;
+	font-size: inherit;
+	font-weight: 500;
+}
+
+/* app charts: no well behind the canvas, lines tinted to the accent */
+[data-skin="neon"] canvas[data-nfx~="chart"]:not(#\#):not(#\#),
+[data-skin="neon"] svg[data-nfx~="chart"]:not(#\#):not(#\#) {
+	background: transparent !important;
+	border: 0 !important;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+	filter: grayscale(1) sepia(1) hue-rotate(150deg) saturate(3.2) brightness(1.08);
+}
+
+[data-skin="neon"][data-theme="light"] canvas[data-nfx~="chart"]:not(#\#):not(#\#),
+[data-skin="neon"][data-theme="light"] svg[data-nfx~="chart"]:not(#\#):not(#\#) {
+	filter: grayscale(1) sepia(1) hue-rotate(170deg) saturate(3) brightness(.8);
+}
+
+/* ---------- iStore ---------- */
+
+[data-skin="neon"] #app .containers { border-radius: var(--x-r-lg); }
+[data-skin="neon"] #app .containers .app-container {
+	background: var(--x-well);
+	border: 1px solid var(--n-line);
+	border-radius: var(--x-r);
+}
+[data-skin="neon"] #app .app-container .app-icon,
+[data-skin="neon"] #app .app-container img { border-radius: 14px; }
+[data-skin="neon"] #app .app-container .app-tags .tag { border-radius: 7px; }
+[data-skin="neon"] #app .app-container .app-title { font-family: var(--n-font-ui); letter-spacing: -.01em; }
+[data-skin="neon"] #app form.search input { border-radius: var(--x-r) !important; padding-left: 38px; font-family: var(--n-font-ui); }
+[data-skin="neon"] #app .tags-container .cbi-button { border-radius: 10px; min-height: 32px; line-height: 30px; font-size: 13px; }
+[data-skin="neon"] #app button.upload-button,
+[data-skin="neon"] #app .upload-file .button { border-radius: var(--x-r) !important; }
+[data-skin="neon"] #app .app-btns .app-btn { min-height: 34px; line-height: 32px; padding: 0 14px; font-size: 13.5px; }
+[data-skin="neon"] .quickinstalled-dialog_main,
+[data-skin="neon"] #tasks_dialog { border-radius: var(--x-r-lg) !important; }
+[data-skin="neon"] .quickinstalled-dialog_main-footer button { border-radius: 12px !important; }

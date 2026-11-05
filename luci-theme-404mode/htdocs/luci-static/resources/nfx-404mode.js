@@ -118,7 +118,9 @@
 			else if (v && v.length < 120 && !/gradient|url\(|var\(/.test(v))
 				c = resolve(v);
 
-			if (c)
+			/* hairlines and glass tints are not surfaces: a 4% white edge
+			   token must not make an app's solid white card "ours" */
+			if (c && (c.a == null || c.a >= .5))
 				palette.push(c);
 		}
 
@@ -133,6 +135,14 @@
 	function themed(c, isBg) {
 		/* the neon skin's light surfaces are cool porcelain: plain palette match */
 		if (root.getAttribute('data-skin') == 'neon') {
+			/* a background is ours only on the right side of the scheme: text
+			   tokens (near-white in dark, ink in light) never make a surface */
+			if (isBg) {
+				var lum = (c.r * .299 + c.g * .587 + c.b * .114) / 255;
+				if ((root.getAttribute('data-theme') == 'light') != (lum > .6))
+					return false;
+			}
+
 			for (var j = 0; j < palette.length; j++) {
 				var q = palette[j];
 				if (Math.abs(q.r - c.r) + Math.abs(q.g - c.g) + Math.abs(q.b - c.b) < ((c.r + c.g + c.b) / 3 > 205 ? 10 : 21))

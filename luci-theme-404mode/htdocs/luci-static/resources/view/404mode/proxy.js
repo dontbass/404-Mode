@@ -128,7 +128,7 @@ return view.extend({
 	},
 
 	renderNow(p) {
-		const node = p.node;
+		const node = p.node || (p.running && p.chain && p.chain.length > 1 ? { name: p.chain[p.chain.length - 1], delay: null } : null);
 		const test = E('button', { 'type': 'button', 'class': 'btn cbi-button cbi-button-action', 'disabled': (!node || !p.api) || null, 'click': ev => {
 			const b = ev.currentTarget;
 			b.disabled = true;
@@ -159,51 +159,79 @@ return view.extend({
 		]);
 	},
 
+	/* one card per group, nodes as tiles — the way mihomo dashboards lay
+	   them out: name with flag, protocol / udp, last delay */
 	renderGroup(g, p, idx) {
 		const selectable = g.type == 'Selector';
+		const leaves = g.all.filter(n => !n.group);
 		const alive = g.all.filter(n => n.delay > 0).length;
 
-		const testAll = E('button', { 'type': 'button', 'class': 'btn cbi-button xd-btn-s', 'click': ev => {
+		const testAll = E('button', { 'type': 'button', 'class': 'btn cbi-button xd-btn-s xp-test', 'title': T('Проверить пинг всех узлов группы', 'Test every node of the group'), 'click': ev => {
 			const b = ev.currentTarget;
 			b.disabled = true;
-			b.textContent = T('Проверяем…', 'Testing…');
+			b.classList.add('busy');
 			x.proxySet('group_delay', { group: g.name }).then(() => x.proxy()).then(r => {
 				b.disabled = false;
+				b.classList.remove('busy');
 				this.paint(r);
 			});
-		} }, [ T('Проверить пинг', 'Test delays') ]);
+		} }, [ x.icon('<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>'), E('span', {}, [ T('Пинг', 'Test') ]) ]);
 
-		const rows = g.all.map(n => {
+		const tiles = g.all.map(n => {
 			const active = g.now == n.name;
-			const cls = x.delayClass(n.group ? null : n.delay);
+			const proto = n.group ? String(n.type || '').toLowerCase() : String(n.type || '').toLowerCase();
+			const meta = [ proto, n.xudp ? 'xudp' : (n.udp ? 'udp' : null) ].filter(Boolean).join(' / ');
+
+			const delay = E('span', {
+				'class': 'xp-tile-delay xd-' + x.delayClass(n.delay),
+				'title': n.group ? '' : T('Проверить этот узел', 'Test this node'),
+				'click': n.group ? null : ev => {
+					ev.stopPropagation();
+					const el = ev.currentTarget;
+					el.textContent = '…';
+					x.proxySet('delay', { name: n.name }).then(r => {
+						const d = r && r.delay;
+						el.textContent = d ? d : x.t('нет', 'n/a');
+						el.className = 'xp-tile-delay xd-' + x.delayClass(d);
+					});
+				}
+			}, [ n.delay ? String(n.delay) : (n.delay === 0 ? T('нет', 'n/a') : (n.group ? '' : '⚡')) ]);
+
 			return E(selectable ? 'button' : 'div', {
 				'type': selectable ? 'button' : null,
-				'class': 'xp-node' + (active ? ' active' : '') + (selectable ? ' pick' : ''),
+				'class': 'xp-tile' + (active ? ' active' : '') + (selectable ? ' pick' : ''),
 				'aria-pressed': selectable ? (active ? 'true' : 'false') : null,
 				'title': n.name,
 				'click': selectable && !active ? () => {
 					x.proxySet('select', { group: g.name, name: n.name }).then(() => x.proxy()).then(r => this.paint(r));
 				} : null
 			}, [
-				E('span', { 'class': 'xp-radio', 'aria-hidden': 'true' }),
-				n.group ? x.icon('<path d="M4 7h16M4 12h16M4 17h10"/>', 'xp-gi') : x.flag(n.name, 'xf-s'),
-				E('span', { 'class': 'xp-node-txt' }, [
-					E('span', {}, [ x.nodeName(n.name) ]),
-					E('small', {}, [ n.group ? T('группа', 'group') : (n.type || '') ])
+				E('span', { 'class': 'xp-tile-name' }, [
+					n.group ? x.icon('<path d="M4 7h16M4 12h16M4 17h10"/>', 'xp-gi') : x.flag(n.name, 'xf-s'),
+					E('span', {}, [ x.nodeName(n.name) ])
 				]),
-				E('span', { 'class': 'xp-delay xd-' + cls }, [ n.group ? '' : x.delayText(n.delay) ])
+				E('span', { 'class': 'xp-tile-meta' }, [ E('small', {}, [ meta ]), delay ])
 			]);
 		});
 
+		const now = g.now ? g.all.find(n => n.name == g.now) : null;
+
 		return E('section', { 'class': 'xd-card xp-group', 'data-group': g.name, 'data-search': g.name + ' ' + g.all.map(n => n.name).join(' ') }, [
-			E('div', { 'class': 'xd-card-head' }, [
-				E('div', {}, [
+			E('div', { 'class': 'xp-ghead' }, [
+				E('div', { 'class': 'xp-gtitle' }, [
 					E('h3', {}, [ x.nodeName(g.name) ]),
-					E('div', { 'class': 'xd-muted' }, [ (TYPES[g.type] || g.type) + ', ' + T('узлов: ', 'nodes: ') + g.all.length + (alive ? T(', живых: ', ', alive: ') + alive : '') ])
+					E('span', { 'class': 'xp-gtype' }, [ g.type ]),
+					E('span', { 'class': 'xp-gcount' }, [ (leaves.length ? alive + '/' : '') + g.all.length ]),
+					g.delay ? E('span', { 'class': 'xp-gdelay xd-' + x.delayClass(g.delay) }, [ g.delay + ' ' + T('мс', 'ms') ]) : ''
 				]),
 				testAll
 			]),
-			E('div', { 'class': 'xp-nodes' }, rows)
+			g.now ? E('div', { 'class': 'xp-gnow' }, [
+				E('span', { 'class': 'xd-muted' }, [ (TYPES[g.type] || g.type) + ' › ' ]),
+				now && !now.group ? x.flag(now.name, 'xf-s') : '',
+				E('b', {}, [ x.nodeName(g.now) ])
+			]) : '',
+			E('div', { 'class': 'xp-nodes' }, tiles)
 		]);
 	},
 

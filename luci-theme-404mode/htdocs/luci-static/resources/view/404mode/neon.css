@@ -466,45 +466,88 @@
 .xp-now-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 22px; }
 .xp-now-ping { font-family: var(--xd-mono); font-size: 28px; font-weight: 500; }
 
-.xp-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; align-items: start; }
+.xp-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 560px), 1fr)); gap: 20px; align-items: start; }
 
-.xp-nodes { max-height: 420px; overflow-y: auto; margin: 0 -10px; padding: 0 4px; }
+.xp-ghead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.xp-gtitle { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; min-width: 0; }
+.xp-gtitle h3 { font-size: 17px; }
+.xp-gtype { font-family: var(--xd-mono); font-size: 11px; color: var(--xd-faint); }
+.xp-gcount { font-family: var(--xd-mono); font-size: 12px; color: var(--xd-dim); }
+.xp-gdelay { font-family: var(--xd-mono); font-size: 12px; padding: 1px 8px; border-radius: 999px; background: currentColor; }
+.xp-gdelay.xd-ok, .xp-gdelay.xd-warn, .xp-gdelay.xd-bad { background: transparent; box-shadow: inset 0 0 0 1px currentColor; }
 
-.xd .xp-node {
+.xd .xp-test { gap: 6px; }
+.xd .xp-test .xi { width: 15px; height: 15px; }
+.xd .xp-test.busy .xi { animation: xd-pulse 1s ease-in-out infinite; }
+
+.xp-gnow { display: flex; align-items: center; gap: 8px; margin: 8px 0 14px; font-size: 13.5px; }
+.xp-gnow b { color: var(--xd-a); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.xp-nodes {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+	gap: 8px;
+	max-height: 360px;
+	overflow-y: auto;
+	padding: 2px;
+	margin: 0 -2px;
+}
+
+.xd .xp-tile {
 	all: unset;
 	box-sizing: border-box;
 	display: flex;
-	align-items: center;
-	gap: 12px;
-	width: 100%;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 6px;
 	min-width: 0;
-	min-height: 52px;
-	padding: 8px 10px;
+	min-height: 58px;
+	padding: 9px 10px 8px;
+	background: var(--xd-well);
+	border: 1px solid var(--xd-line);
 	border-radius: 12px;
 	color: var(--xd-text);
+	transition: border-color .15s, background-color .15s;
 }
 
-.xd .xp-node + .xp-node { box-shadow: 0 -1px 0 var(--xd-line); }
-.xd .xp-node.pick { cursor: pointer; }
-.xd .xp-node.pick:hover { background: rgba(var(--n-neutral-rgb, 135, 150, 168), .08); box-shadow: none; }
-.xd .xp-node.pick:hover + .xp-node { box-shadow: none; }
-.xd .xp-node:focus-visible { outline: 2px solid var(--xd-a); outline-offset: -2px; }
-.xd .xp-node.active { background: rgba(var(--xd-a-rgb), .08); box-shadow: none; }
-.xd .xp-node.active + .xp-node { box-shadow: none; }
+.xd .xp-tile.pick { cursor: pointer; }
+.xd .xp-tile.pick:hover { border-color: rgba(var(--xd-a-rgb), .45); }
+.xd .xp-tile:focus-visible { outline: 2px solid var(--xd-a); outline-offset: 1px; }
 
-.xp-radio { flex: 0 0 auto; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--xd-faint); }
-.xp-node.active .xp-radio { border-color: var(--xd-a); background: var(--xd-a); box-shadow: 0 0 10px rgba(var(--xd-a-rgb), .8), inset 0 0 0 3px var(--n-surface, #121925); }
-[data-theme="light"] .xp-node.active .xp-radio { box-shadow: inset 0 0 0 3px #fff; }
-.xp-node:not(.pick) .xp-radio { visibility: hidden; width: 0; margin-right: -12px; }
+.xd .xp-tile.active {
+	background: rgba(var(--xd-a-rgb), .12);
+	border-color: var(--xd-a);
+	box-shadow: 0 0 18px -6px rgba(var(--xd-a-rgb), .7);
+}
 
-.xp-gi { color: var(--xd-dim); width: 24px; height: 18px; }
-.xp-node-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
-.xp-node-txt > span { font-size: 14.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.xp-node.active .xp-node-txt > span { color: var(--xd-ink); font-weight: 600; }
-.xp-node-txt small { font-family: var(--xd-mono); font-size: 11.5px; color: var(--xd-faint); }
-.xp-delay { flex: 0 0 auto; font-family: var(--xd-mono); font-size: 13px; white-space: nowrap; }
+[data-theme="light"] .xd .xp-tile.active { box-shadow: none; }
 
-.xd .xd-btn-s { min-height: 32px; line-height: 30px; padding: 0 12px; font-size: 13px; }
+.xp-tile-name { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 13.5px; line-height: 1.25; }
+.xp-tile-name > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xp-tile.active .xp-tile-name > span:last-child { color: var(--xd-ink); font-weight: 600; }
+.xp-tile-name .xf-s { width: 20px; height: 14px; }
+.xp-tile-name .xp-gi { width: 18px; height: 16px; color: var(--xd-dim); flex: 0 0 auto; }
+
+.xp-tile-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.xp-tile-meta small { font-family: var(--xd-mono); font-size: 10.5px; color: var(--xd-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.xp-tile-delay {
+	flex: 0 0 auto;
+	min-width: 28px;
+	padding: 0 7px;
+	font-family: var(--xd-mono);
+	font-size: 11px;
+	line-height: 18px;
+	text-align: center;
+	border-radius: 999px;
+	background: rgba(var(--n-neutral-rgb, 135, 150, 168), .12);
+	cursor: pointer;
+}
+
+.xp-tile-delay.xd-ok { background: rgba(var(--x-ok-rgb, 61, 220, 151), .14); }
+.xp-tile-delay.xd-warn { background: rgba(var(--x-warn-rgb, 255, 182, 72), .14); }
+.xp-tile-delay.xd-bad { background: rgba(var(--x-bad-rgb, 255, 84, 112), .14); }
+.xp-tile-delay.xd-none { color: var(--xd-faint); }
 
 /* ---------- responsive ---------- */
 
@@ -529,7 +572,7 @@
 	.xd-cellinfo, .xp-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	.xd-traffic-body { grid-template-columns: 1fr; }
 	.xd-ring { margin: 0 auto; }
-	.xp-groups { grid-template-columns: 1fr; }
+	.xp-nodes { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); max-height: 420px; }
 	.xd-rsrp { font-size: 34px; }
 }
 
@@ -540,3 +583,9 @@
 }
 
 html.no-fx .xd-sweep { animation: none; stroke-opacity: 0; }
+
+/* LuCI's "#maincontent button { min-width: max-content }" must not stretch tiles */
+#maincontent .xd .xp-tile { min-width: 0; overflow: hidden; }
+#maincontent .xd .xp-tile-name { width: 100%; overflow: hidden; }
+#maincontent .xd .xs,
+#maincontent .xd .xd-seg-btn { min-width: 0; }

@@ -731,10 +731,11 @@ return view.extend({
 			sw.setAttribute('aria-checked', p.running ? 'true' : 'false');
 
 		const node = p.node;
+		const leafName = node ? node.name : (p.running && p.chain && p.chain.length ? p.chain[p.chain.length - 1] : '');
 		flag.innerHTML = '';
-		flag.appendChild(x.flag(node ? node.name : '', 'xf-l'));
+		flag.appendChild(x.flag(leafName, 'xf-l'));
 
-		this.q('.xd-px-name').textContent = node ? x.nodeName(node.name) : (p.running ? (p.chain && p.chain.length ? p.chain[p.chain.length - 1] : '—') : T('Прокси выключен', 'Proxy is off'));
+		this.q('.xd-px-name').textContent = leafName ? x.nodeName(leafName) : (p.running ? '—' : T('Прокси выключен', 'Proxy is off'));
 		this.q('.xd-px-via').textContent = node ? [ node.type, (p.chain || []).slice(0, -1).map(x.nodeName).join(' › ') ].filter(Boolean).join(T(', группа ', ', group ')) : (p.running ? '' : T('Трафик идёт напрямую', 'Traffic goes direct'));
 
 		const d = node ? node.delay : null;

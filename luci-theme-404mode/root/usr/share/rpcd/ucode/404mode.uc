@@ -177,6 +177,14 @@ function nikki_state() {
 	res.tun_stack = cfg?.tun?.stack;
 
 	const all = api(c, 'GET', '/proxies')?.proxies ?? {};
+
+	/* nodes from proxy-providers are listed only under /providers/proxies */
+	const prov = api(c, 'GET', '/providers/proxies')?.providers ?? {};
+	for (let pn in keys(prov))
+		for (let p in (prov[pn]?.proxies ?? []))
+			if (p?.name && !all[p.name])
+				all[p.name] = p;
+
 	const order = all.GLOBAL?.all ?? [];
 	const groups = [];
 	const seen = {};
@@ -192,10 +200,12 @@ function nikki_state() {
 			now: g.now,
 			hidden: !!g.hidden,
 			icon: g.icon,
+			delay: last_delay(g),
 			all: map(g.all ?? [], (n) => ({
 				name: n,
 				type: all[n]?.type,
 				udp: !!all[n]?.udp,
+				xudp: !!all[n]?.xudp,
 				group: !!GROUPS[all[n]?.type],
 				delay: last_delay(all[n])
 			}))
@@ -207,13 +217,14 @@ function nikki_state() {
 	for (let n in keys(all))
 		if (n != 'GLOBAL')
 			add(n);
+	add('GLOBAL');
 
 	res.groups = groups;
 
 	/* the main group: the first selector the user can switch */
 	let main = null;
 	for (let g in groups)
-		if (g.type == 'Selector' && !g.hidden) { main = g.name; break; }
+		if (g.type == 'Selector' && !g.hidden && g.name != 'GLOBAL') { main = g.name; break; }
 	if (!main)
 		main = groups[0]?.name;
 	res.main = main;
@@ -232,7 +243,12 @@ function nikki_state() {
 
 	const leaf = all[chain[-1]];
 	if (leaf && !GROUPS[leaf.type])
-		res.node = { name: chain[-1], type: leaf.type, udp: !!leaf.udp, delay: last_delay(leaf) };
+		res.node = { name: chain[-1], type: leaf.type, udp: !!leaf.udp, xudp: !!leaf.xudp, delay: last_delay(leaf) };
+
+	/* a group in the chain that tests by itself knows the delay too */
+	if (res.node && !res.node.delay)
+		for (let i = length(chain) - 2; i >= 0; i--)
+			if (last_delay(all[chain[i]])) { res.node.delay = last_delay(all[chain[i]]); break; }
 
 	/* traffic totals and the number of open connections, streamed through awk
 	   so the router never parses the whole connection list */

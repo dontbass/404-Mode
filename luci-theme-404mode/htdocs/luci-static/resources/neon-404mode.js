@@ -54,7 +54,29 @@ const FLAGS = {
 	CZ: '<rect width="30" height="20" fill="#D7141A"/><rect width="30" height="10" fill="#fff"/><path d="M0 0l14 10L0 20z" fill="#11457E"/>',
 	ES: '<rect width="30" height="20" fill="#AA151B"/><rect y="5" width="30" height="10" fill="#F1BF00"/>',
 	GE: '<rect width="30" height="20" fill="#fff"/><path d="M15 0v20M0 10h30" stroke="#FF0000" stroke-width="4"/>',
-	AE: '<rect width="30" height="20" fill="#000"/><rect width="30" height="13.34" fill="#fff"/><rect width="30" height="6.67" fill="#00732F"/><rect width="8" height="20" fill="#FF0000"/>'
+	AE: '<rect width="30" height="20" fill="#000"/><rect width="30" height="13.34" fill="#fff"/><rect width="30" height="6.67" fill="#00732F"/><rect width="8" height="20" fill="#FF0000"/>',
+	BY: '<rect width="30" height="20" fill="#4AA657"/><rect width="30" height="13.3" fill="#C8313E"/><rect width="4" height="20" fill="#fff"/>',
+	BR: '<rect width="30" height="20" fill="#009C3B"/><path d="M15 3 27 10 15 17 3 10z" fill="#FFDF00"/><circle cx="15" cy="10" r="4.2" fill="#002776"/>',
+	IN: hband('#FF9933', '#fff', '#138808') + '<circle cx="15" cy="10" r="2.4" fill="none" stroke="#000080" stroke-width=".8"/>',
+	PT: '<rect width="30" height="20" fill="#FF0000"/><rect width="12" height="20" fill="#006600"/><circle cx="12" cy="10" r="3.4" fill="#FFCC00"/>',
+	AU: '<rect width="30" height="20" fill="#00247D"/><path d="M0 0l13 9M13 0 0 9" stroke="#fff" stroke-width="2.4"/><path d="M6.5 0v9M0 4.5h13" stroke="#fff" stroke-width="3"/><path d="M6.5 0v9M0 4.5h13" stroke="#CF142B" stroke-width="1.6"/>',
+	KR: '<rect width="30" height="20" fill="#fff"/><circle cx="15" cy="10" r="5" fill="#CD2E3A"/><path d="M10 10a5 5 0 0 0 10 0 2.5 2.5 0 0 0-5 0 2.5 2.5 0 0 1-5 0" fill="#0047A0"/>',
+	TW: '<rect width="30" height="20" fill="#FE0000"/><rect width="15" height="10" fill="#000095"/><circle cx="7.5" cy="5" r="2.4" fill="#fff"/>',
+	SK: hband('#fff', '#0B4EA2', '#EE1C25'),
+	SI: hband('#fff', '#0000FF', '#FF0000'),
+	RS: hband('#C6363C', '#0C4076', '#fff'),
+	HR: hband('#FF0000', '#fff', '#171796'),
+	LU: hband('#ED2939', '#fff', '#00A1DE'),
+	AZ: hband('#0092BC', '#E4002B', '#00AF66'),
+	UZ: hband('#0099B5', '#fff', '#1EB53A'),
+	KG: '<rect width="30" height="20" fill="#E8112D"/><circle cx="15" cy="10" r="3.6" fill="#FFEF00"/>',
+	GR: '<rect width="30" height="20" fill="#0D5EAF"/>' + [1, 3, 5, 7].map(i => '<rect y="' + (i * 20 / 9) + '" width="30" height="' + (20 / 9) + '" fill="#fff"/>').join('') + '<rect width="11" height="11.1" fill="#0D5EAF"/><path d="M5.5 0v11.1M0 5.55h11" stroke="#fff" stroke-width="2.2"/>',
+	IL: '<rect width="30" height="20" fill="#fff"/><rect y="2.5" width="30" height="3" fill="#0038B8"/><rect y="14.5" width="30" height="3" fill="#0038B8"/><path d="M15 6.5l3 5.2h-6zM15 13.5l-3-5.2h6z" fill="none" stroke="#0038B8" stroke-width=".9"/>',
+	CN: '<rect width="30" height="20" fill="#DE2910"/><circle cx="6" cy="6" r="2.6" fill="#FFDE00"/>',
+	VN: '<rect width="30" height="20" fill="#DA251D"/><circle cx="15" cy="10" r="4" fill="#FFFF00"/>',
+	TH: '<rect width="30" height="20" fill="#A51931"/><rect y="3.3" width="30" height="13.4" fill="#F4F5F8"/><rect y="6.7" width="30" height="6.6" fill="#2D2A4A"/>',
+	MX: vband('#006847', '#fff', '#CE1126'),
+	AR: hband('#74ACDF', '#fff', '#74ACDF')
 };
 
 /* country names in node titles, for subscriptions without flag emoji */
@@ -66,8 +88,13 @@ const NAMES = {
 	IT: 'итал|italy|milan', IE: 'ирланд|ireland', BE: 'бельги|belgium', RO: 'румын|romania', MD: 'молдов|moldova',
 	PL: 'польш|poland|warsaw', UA: 'украин|ukrain', JP: 'япон|japan|tokyo', CH: 'швейцар|switzerland|zurich',
 	TR: 'турц|turkey|türkiye|istanbul|стамбул', KZ: 'казах|kazakh|almaty|алмат', US: 'сша|америк|usa|united states|new york|los angeles',
-	GB: 'британ|англи|united kingdom|london|лондон|\\buk\\b', CA: 'канад|canada|toronto', SG: 'сингапур|singapore',
-	HK: 'гонконг|hong kong', CZ: 'чехи|czech|prague', ES: 'испан|spain|madrid', GE: 'грузи|georgia|tbilisi', AE: 'оаэ|эмират|emirates|dubai|дубай'
+	GB: 'британ|англи|britain|england|united kingdom|london|лондон|\\buk\\b', CA: 'канад|canada|toronto', SG: 'сингапур|singapore',
+	HK: 'гонконг|hong kong', CZ: 'чехи|czech|prague', ES: 'испан|spain|madrid', GE: 'грузи|georgia|tbilisi', AE: 'оаэ|эмират|emirates|dubai|дубай',
+	BY: 'беларус|белорус|belarus|minsk|минск', BR: 'бразил|brazil', IN: 'инди|india|mumbai', PT: 'португал|portugal|lisbon',
+	AU: 'австрал|australia|sydney', KR: 'коре|korea|seoul', TW: 'тайван|taiwan', SK: 'словаки|slovakia', SI: 'словени|slovenia',
+	RS: 'серби|serbia|belgrade', HR: 'хорвати|croatia', LU: 'люксембург|luxembourg', AZ: 'азербайджан|azerbaijan|baku', UZ: 'узбек|uzbek|tashkent',
+	KG: 'киргиз|кыргыз|kyrgyz|bishkek', GR: 'греци|greece|athens', IL: 'израил|israel', CN: 'китай|china|beijing|shanghai',
+	VN: 'вьетнам|vietnam', TH: 'таиланд|тайланд|thailand|bangkok', MX: 'мексик|mexico', AR: 'аргентин|argentina'
 };
 
 const PLMN = {
@@ -109,7 +136,7 @@ return baseclass.extend({
 
 	css() {
 		if (!document.querySelector('link[data-404view]'))
-			document.head.appendChild(E('link', { 'rel': 'stylesheet', 'data-404view': '1', 'href': L.resource('view/404mode/neon.css') + '?v=1.8.0' }));
+			document.head.appendChild(E('link', { 'rel': 'stylesheet', 'data-404view': '1', 'href': L.resource('view/404mode/neon.css') + '?v=1.8.1' }));
 	},
 
 	num(v, d) {
