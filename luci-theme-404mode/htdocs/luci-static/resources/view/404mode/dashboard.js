@@ -202,6 +202,42 @@ function svg(tag, attrs, kids) {
 
 function arcLen(r, frac) { return 2 * Math.PI * r * frac; }
 
+/* AT+QCAINFO (Quectel): every component carrier, also two on the same band
+   (QModem's info folds those into one). LTE bandwidth comes in resource
+   blocks, NR as a code. */
+const LTE_RB = { 6: 1.4, 15: 3, 25: 5, 50: 10, 75: 15, 100: 20 };
+const NR_BW = [ 5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 200, 400 ];
+
+function parseCa(res) {
+	const out = [];
+	const re = /\+QCAINFO:\s*"(PCC|SCC)",(\d+),(\d+),"(LTE|NR5G) BAND (\d+)"((?:,[^\r\n]*)?)/g;
+	let r;
+	while ((r = re.exec(res || ''))) {
+		const nr = r[4] == 'NR5G';
+		const rest = r[6].split(',').slice(1).map(v => v.trim());
+		const bw = nr ? NR_BW[+r[3]] : LTE_RB[+r[3]];
+		out.push({
+			pcc: r[1] == 'PCC',
+			band: (nr ? 'n' : 'B') + r[5],
+			nr: nr,
+			arfcn: r[2],
+			bw: bw != null ? bw + ' MHz' : null,
+			/* LTE SCC state: 0 not configured, 1 configured but idle, 2 active */
+			active: r[1] == 'PCC' || nr || rest[0] == '2',
+			ca: r[1] == 'SCC'
+		});
+	}
+	out.sort((a, b) => (b.pcc - a.pcc) || (a.nr - b.nr));
+	return out.some(c => c.pcc) ? out : [];
+}
+
+function caCombo(bands) {
+	if (!bands.length)
+		return '';
+	const head = bands[0];
+	return (head.nr ? 'NR ' : 'LTE ') + bands.map((b, i) => i && b.nr == head.nr ? b.band.slice(1) : b.band).join('+');
+}
+
 return view.extend({
 	modems: [],
 
@@ -670,6 +706,8 @@ return view.extend({
 				/* QModem without slot methods: the modem's own AT command, when QModem lists it */
 				const atPort = (cfg.cmds || []).some(c => /QUIMSLOT=/.test(c.value || '')) ? cfg.using_port : null;
 				const native = !!caps && caps.supportSwitch === '1' && slots.length > 1;
+				this.state.atPort = cfg.using_port || null;
+				this.state.qca = (cfg.cmds || []).some(c => /QCAINFO/.test(c.value || ''));
 				this.state.sim = { ok: native || !!atPort, at: native ? null : atPort, slots: slots, cur: slot && slot.sim_slot != null ? String(slot.sim_slot) : null, note: caps && caps.ExtraInfo };
 				this.paintSim();
 			});
@@ -681,8 +719,9 @@ return view.extend({
 		return Promise.all([
 			L.resolveDefault(callModemInfo(m.id), {}),
 			this.state.statsChecked ? Promise.resolve(null) : L.resolveDefault(callModemStats(m.id), null),
-			L.resolveDefault(callCellInfo(m.id), {})
-		]).then(([ res, stats, cell ]) => {
+			L.resolveDefault(callCellInfo(m.id), {}),
+			this.state.atPort && this.state.qca ? L.resolveDefault(callAt(m.id, { port: this.state.atPort, at: 'AT+QCAINFO' }), {}) : null
+		]).then(([ res, stats, cell, ca ]) => {
 			/* "info" skips the cell part while QModem is not dialing itself
 			   (another app holds the data call): take it from cell_info */
 			const list = (res && res.modem_info) || [];
@@ -698,7 +737,19 @@ return view.extend({
 					this.paintQuota();
 				}
 			}
-			this.paintModem(parseModem(res && res.modem_info), m);
+			const pm = parseModem(res && res.modem_info);
+			const carriers = parseCa(ca && ca.at_cfg && ca.at_cfg.res);
+			if (pm && carriers.length && !/5G/.test(pm.kind)) {
+				pm.bands = carriers;
+				const scc = carriers.filter(c => c.ca);
+				if (scc.length) {
+					pm.kind = '4G+';
+					pm.modeText = scc.some(c => c.active)
+						? T('LTE-A, агрегация несущих', 'LTE-A, carrier aggregation')
+						: T('LTE-A, доп. несущая в ожидании', 'LTE-A, secondary carrier idle');
+				}
+			}
+			this.paintModem(pm, m);
 		});
 	},
 
@@ -776,16 +827,22 @@ return view.extend({
 
 		const bands = this.q('.xd-bands');
 		bands.innerHTML = '';
-		m.bands.forEach((b, i) => bands.appendChild(E('span', { 'class': 'xd-band' }, [
+		if (m.bands.length > 1)
+			bands.appendChild(E('span', { 'class': 'xd-band xd-band-combo', 'title': T('Агрегация несущих', 'Carrier aggregation') }, [ E('b', {}, [ caCombo(m.bands) ]) ]));
+		m.bands.forEach((b, i) => bands.appendChild(E('span', {
+			'class': 'xd-band' + (b.active === false ? ' xd-band-idle' : ''),
+			'title': b.active === false ? T('Несущая настроена, но сейчас без трафика: модем включит её под нагрузкой', 'Configured, idle now: the modem turns it on under load') : null
+		}, [
 			E('b', {}, [ b.band ]),
 			b.bw ? E('span', {}, [ String(b.bw).replace(/\s*MHz/i, '') + ' ' + T('МГц', 'MHz') ]) : '',
-			E('small', {}, [ i == 0 ? T('основная', 'primary') : (b.nr && !m.bands[0].nr ? '5G NR' : T('доп.', 'secondary')) ])
+			E('small', {}, [ i == 0 ? T('основная', 'primary') : (b.nr && !m.bands[0].nr ? '5G NR' : T('доп.', 'secondary')) + (b.active === false ? T(', ждёт', ', idle') : '') ])
 		])));
 
 		const f = (k, v) => this.root.querySelectorAll('[data-f="' + k + '"]').forEach(el => el.textContent = v != null && v !== '' ? v : '—');
 		f('cell', m.cell); f('pci', m.pci); f('arfcn', m.arfcn); f('tac', m.tac);
 		f('cell2', m.cell); f('pci2', m.pci);
-		f('bands', m.bands.length ? m.bands.map(b => b.band).join(' + ') + (m.bands.length > 1 ? T(' (агрегация активна)', ' (aggregation on)') : '') : null);
+		f('bands', !m.bands.length ? null : m.bands.length == 1 ? m.bands[0].band
+			: caCombo(m.bands) + (m.bands.some((b, i) => i && b.active === false) ? T(' (доп. несущая ждёт)', ' (secondary idle)') : T(' (агрегация активна)', ' (aggregation on)')));
 
 		Object.keys(RF).forEach(k => {
 			const tile = this.q('[data-rf="' + k + '"]');

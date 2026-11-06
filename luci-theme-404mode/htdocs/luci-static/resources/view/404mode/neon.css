@@ -320,6 +320,10 @@
 
 .xd-band b { font-family: var(--xd-mono); color: var(--xd-a); font-weight: 700; }
 .xd-band small { font-size: 12px; color: var(--xd-faint); }
+.xd-band-combo { color: var(--xd-ink); border-color: rgba(var(--xd-a-rgb), .45); background: rgba(var(--xd-a-rgb), .1); }
+.xd-band-combo b { color: var(--xd-ink); letter-spacing: .01em; }
+.xd-band-idle { border-style: dashed; }
+.xd-band-idle b { color: var(--xd-dim); }
 
 .xd-orbit { position: relative; width: 240px; height: 262px; }
 .xd-orbit-svg { width: 240px; height: 240px; display: block; }

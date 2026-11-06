@@ -652,6 +652,45 @@
 			}
 	}).observe(document.documentElement, { childList: true, subtree: true });
 
+
+	/* iStore QuickStart picks the ECharts palette by itself, sometimes the
+	   wrong one for the scheme (a black traffic chart in a light theme):
+	   sample the painted background and flip the canvas when it fights */
+	function canvasBg(c) {
+		var w = c.width, h = c.height, data;
+		if (!w || !h)
+			return null;
+		try { data = c.getContext('2d').getImageData(0, 0, w, h).data; } catch (e) { return null; }
+
+		var step = Math.max(4, Math.floor(data.length / 4 / 6000)) * 4, sum = 0, n = 0, all = 0;
+		for (var i = 0; i < data.length; i += step) {
+			all++;
+			if (data[i + 3] < 200)
+				continue;
+			sum += (data[i] + data[i + 1] + data[i + 2]) / 3;
+			n++;
+		}
+
+		/* mostly transparent: no background of its own, nothing to fix */
+		return n < all * 0.5 ? 'none' : (sum / n > 128 ? 'light' : 'dark');
+	}
+
+	function chartsTick() {
+		var list = document.querySelectorAll('#app .echart canvas, #app .chart_box canvas');
+		var theme = document.documentElement.getAttribute('data-theme') == 'light' ? 'light' : 'dark';
+
+		for (var i = 0; i < list.length; i++) {
+			var bg = canvasBg(list[i]);
+			if (bg)
+				list[i].setAttribute('data-404-flip', bg != 'none' && bg != theme ? '1' : '0');
+		}
+	}
+
+	window.setInterval(function() {
+		if (document.getElementById('app') && !document.hidden)
+			chartsTick();
+	}, 2500);
+
 	/* and a couple of passes for views that finish rendering late */
 	[ 1500, 4000 ].forEach(function(ms) { window.setTimeout(function() { rescanSoon(0); }, ms); });
 })();

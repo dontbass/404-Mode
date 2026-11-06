@@ -5553,6 +5553,12 @@ html[data-theme="dark"] #app .echart canvas { mix-blend-mode: lighten; }
 #app .tag_up,
 #app .tag_dn { border-radius: 0 !important; }
 
+/* a chart that painted its own background in the other scheme's colours
+   (nfx-404mode.js samples it): turn it over, keep the hue */
+#app canvas[data-404-flip="1"] {
+	filter: invert(1) hue-rotate(180deg) var(--qs-chart-filter) !important;
+}
+
 #app .center-label { color: var(--n-heading) !important; font-family: var(--n-font); font-variant-numeric: tabular-nums; }
 
 /* links and actions hardcoded in iStore blue / violet: the theme accent */
