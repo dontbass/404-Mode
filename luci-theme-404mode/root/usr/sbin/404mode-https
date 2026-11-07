@@ -100,6 +100,16 @@ done
 mkdir -p "$DIR" "$HOME_ACME"
 chmod 700 "$DIR"
 
+# acme.sh remembers credentials (SAVED_CF_Token, …) and prefers them on the
+# next run even when they are wrong: new ones given here replace that whole
+# family (CF_*, REGRU_*, …)
+if [ $# -gt 0 ] && [ -f "$HOME_ACME/account.conf" ]; then
+	for kv in "$@"; do
+		fam="${kv%%=*}"; fam="${fam%%_*}_"
+		sed -i "/^SAVED_${fam}/d" "$HOME_ACME/account.conf"
+	done
+fi
+
 # ---- acme.sh: the package if there is one, else the upstream script ----
 A="$(find_acme || true)"
 if [ -z "$A" ]; then
