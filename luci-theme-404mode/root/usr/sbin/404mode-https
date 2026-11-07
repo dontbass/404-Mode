@@ -61,6 +61,7 @@ case "$1" in
 		A="$(find_acme || true)"
 		[ -n "$A" ] && [ -n "$d" ] && "$A" --home "$HOME_ACME" --remove -d "$d" --ecc >/dev/null 2>&1 || true
 		sed -i '/404mode-https --cron\|acme.sh --cron --home \/etc\/404mode/d' /etc/crontabs/root 2>/dev/null || true
+		sed -i '/404mode-https --cron/d' /etc/rc.local 2>/dev/null || true
 		/etc/init.d/cron restart >/dev/null 2>&1 || true
 		hosts_set ""
 		if [ "$(uci -q get uhttpd.main.cert)" = "$CRT" ]; then
@@ -171,12 +172,18 @@ uci commit uhttpd
 
 echo "$DOMAIN" > "$DIR/domain"
 
-# ---- renewals ----
+# ---- renewals: every morning, and five minutes after each boot (a mobile
+#      router is often off at night); acme.sh renews only when 30 days are left ----
 touch /etc/crontabs/root
 sed -i '/404mode-https --cron/d' /etc/crontabs/root
-echo "17 4 * * * /usr/sbin/404mode-https --cron" >> /etc/crontabs/root
+echo "50 7 * * * /usr/sbin/404mode-https --cron" >> /etc/crontabs/root
 /etc/init.d/cron enable >/dev/null 2>&1 || true
 /etc/init.d/cron restart >/dev/null 2>&1 || true
+if [ -f /etc/rc.local ]; then
+	sed -i '/404mode-https --cron/d' /etc/rc.local
+	sed -i 's|^exit 0$|(sleep 300; /usr/sbin/404mode-https --cron) \&\nexit 0|' /etc/rc.local
+	grep -q '404mode-https --cron' /etc/rc.local || echo '(sleep 300; /usr/sbin/404mode-https --cron) &' >> /etc/rc.local
+fi
 
 # ---- mihomo answers DNS for phones when Nikki hijacks it: it reads /etc/hosts at start ----
 if pidof mihomo >/dev/null 2>&1 && [ -x /etc/init.d/nikki ]; then
