@@ -13,7 +13,7 @@
 	<link rel="manifest" href="manifest.webmanifest">
 	<link rel="icon" href="icons/icon-192.png" sizes="192x192">
 	<link rel="apple-touch-icon" href="icons/apple-180.png">
-	<link rel="stylesheet" href="app.css?v=1">
+	<link rel="stylesheet" href="app.css?v=2">
 </head>
 <body>
 	<main class="app" id="app" aria-live="polite">
@@ -100,9 +100,11 @@
 
 			<nav class="actions">
 				<a class="btn" id="openLuci" href="/cgi-bin/luci/">Открыть панель роутера</a>
+				<a class="btn btn-ghost" id="widget" href="#" hidden>Настроить Android-виджет</a>
+				<small class="hint" id="widgetHint" hidden>Нужно приложение «Роутер 404». Если его нет, откроется страница загрузки.</small>
 			</nav>
 		</div>
 	</main>
-	<script src="app.js?v=1"></script>
+	<script src="app.js?v=2"></script>
 </body>
 </html>

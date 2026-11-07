@@ -1628,6 +1628,9 @@ html.no-fx .xd-sweep { animation: none; stroke-opacity: 0; }
 
 .xa-qr-card { grid-column: span 12; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 28px; align-items: center; }
 .xa-https, .xa-key { grid-column: span 6; }
+.xa-widget { grid-column: span 12; }
+.xa-widget .xa-steps a { color: var(--xd-a); }
+.xa-widget code { font-family: var(--xd-mono); color: var(--xd-ink); }
 
 .xa-qr { width: 240px; height: 240px; padding: 10px; background: #fff; border-radius: var(--xd-r-s); box-shadow: 0 0 0 1px var(--xd-line), 0 20px 50px -24px rgba(var(--xd-a-rgb), .7); }
 .xa-qr:empty { background: var(--xd-well); }

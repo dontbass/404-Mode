@@ -148,6 +148,17 @@
 			note.textContent = c.online === false ? 'Модем не в сети' : 'Вторая несущая настроена, сейчас без трафика';
 		}
 
+		/* Android: hand the address and the key to the widget app */
+		if (/Android/i.test(navigator.userAgent) && token) {
+			const host = s.lan || location.host;
+			const fallback = 'https://github.com/dontbass/404-Mode/releases/tag/android-widget';
+			const w = $('widget');
+			w.href = 'intent://setup?h=' + encodeURIComponent(host) + '&t=' + token +
+				'#Intent;scheme=router404;package=io.github.dontbass.router404;S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end';
+			w.hidden = false;
+			$('widgetHint').hidden = false;
+		}
+
 		set('sUp', dur(s.uptime));
 		set('sLoad', s.load != null ? s.load.toFixed(2) : '—');
 		set('sMem', s.mem_total ? Math.round(100 * s.mem_used / s.mem_total) + '%' : '—');

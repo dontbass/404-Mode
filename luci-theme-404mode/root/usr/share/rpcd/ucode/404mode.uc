@@ -778,7 +778,9 @@ function sys_brief() {
 		load: +la[0],
 		mem_total: mem.MemTotal ? int(mem.MemTotal / 1024) : null,
 		mem_used: mem.MemTotal ? int((mem.MemTotal - (mem.MemAvailable ?? 0)) / 1024) : null,
-		temp: temp
+		temp: temp,
+		lan: split(uci_get('network.lan.ipaddr'), '/')[0] || null,
+		domain: trim(readfile(DOMAIN_FILE) ?? '') || null
 	};
 }
 

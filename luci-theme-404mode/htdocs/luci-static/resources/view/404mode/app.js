@@ -71,6 +71,17 @@ return view.extend({
 						E('small', { 'class': 'xm-note', 'id': 'xa-mode' })
 					])
 				]),
+				E('section', { 'class': 'xd-card xa-widget' }, [
+					E('div', { 'class': 'xd-card-head' }, [ E('div', {}, [
+						E('h3', {}, [ T('Android-виджет', 'Android widget') ]),
+						E('div', { 'class': 'xd-muted' }, [ T('Интернет, нода прокси и сигнал LTE прямо на рабочем столе. Работает по IP роутера, домен и сертификат ему не нужны.', 'Internet, proxy node and LTE signal on the home screen. Talks to the router by IP, no domain or certificate needed.') ])
+					]) ]),
+					E('ol', { 'class': 'xa-steps' }, [
+						E('li', {}, [ T('Скачайте на телефон и установите ', 'Download to the phone and install '), E('a', { 'href': 'https://github.com/dontbass/404-Mode/releases/tag/android-widget', 'target': '_blank', 'rel': 'noopener' }, [ '404mode-widget.apk' ]), '.' ]),
+						E('li', {}, [ T('Откройте приложение роутера по QR-коду выше и нажмите «Настроить Android-виджет»: адрес и ключ подставятся сами.', 'Open the router app from the QR code above and tap Set up Android widget: address and key fill in by themselves.') ]),
+						E('li', {}, [ T('Или введите в приложении адрес ', 'Or type the address '), E('code', {}, [ info.lan || location.hostname ]), T(' и ключ доступа.', ' and the access key.') ])
+					])
+				]),
 				E('section', { 'class': 'xd-card xa-https' }, [
 					E('div', { 'class': 'xd-card-head' }, [ E('div', {}, [ E('h3', {}, [ 'HTTPS' ]), E('div', { 'class': 'xd-muted', 'id': 'xa-https-state' }) ]) ]),
 					E('p', { 'class': 'xa-p' }, [ T('Установить сайт как приложение Chrome даёт только по HTTPS. Сертификат Let\'s Encrypt выпускается на роутере через DNS вашего домена: открывать роутер в интернет и арендовать сервер не нужно. Выполните в SSH:', 'Chrome installs a site as an app only over HTTPS. The router gets a Let\'s Encrypt certificate through your domain\'s DNS: no open ports, no server. Run over SSH:') ]),

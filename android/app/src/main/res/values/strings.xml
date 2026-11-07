@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Роутер 404</string>
+    <string name="widget_name">Роутер</string>
+    <string name="widget_desc">Интернет, прокси и сигнал LTE</string>
+</resources>

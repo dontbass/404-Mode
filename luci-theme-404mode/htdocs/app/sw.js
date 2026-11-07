@@ -2,9 +2,9 @@
    the status itself always comes from the router. */
 'use strict';
 
-const CACHE = '404mode-app-1';
+const CACHE = '404mode-app-2';
 const SHELL = [
-	'./', 'index.html', 'app.css?v=1', 'app.js?v=1', 'manifest.webmanifest',
+	'./', 'index.html', 'app.css?v=2', 'app.js?v=2', 'manifest.webmanifest',
 	'icons/icon-192.png', 'icons/icon-512.png',
 	'/luci-static/404mode/neon/fonts/onest-cyrillic-wght-normal.woff2',
 	'/luci-static/404mode/neon/fonts/onest-latin-wght-normal.woff2',

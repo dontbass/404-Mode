@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#FF080B10</color>
+    <color name="glass">#F2111823</color>
+    <color name="edge">#332BE4FF</color>
+    <color name="well">#FF0B1119</color>
+    <color name="ink">#FFF2F6FB</color>
+    <color name="text">#FFC9D4E1</color>
+    <color name="dim">#FF8796A8</color>
+    <color name="faint">#FF56657A</color>
+    <color name="cyan">#FF2BE4FF</color>
+    <color name="volt">#FF4C7DFF</color>
+    <color name="ok">#FF3DDC97</color>
+    <color name="warn">#FFFFB648</color>
+    <color name="bad">#FFFF5470</color>
+</resources>
