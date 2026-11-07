@@ -532,6 +532,22 @@ function ubus_json(obj, method, args) {
 	return out;
 }
 
+/* QModem is an rpcd exec plugin: asking it through ubus from inside rpcd
+   would wait on rpcd itself (it serves one call at a time) until the
+   timeout. Run the plugin directly, the way rpcd does: "call <method>"
+   with the arguments as JSON on stdin. */
+const QM_EXEC = '/usr/libexec/rpcd/qmodem';
+
+function qm_call(method, args) {
+	if (!access(QM_EXEC, 'x'))
+		return ubus_json('qmodem', method, args);
+	let out = null;
+	try {
+		out = json(sh('printf %s ' + shellquote(sprintf('%J', args ?? {})) + ' | ' + QM_EXEC + ' call ' + method + ' 2>/dev/null'));
+	} catch (e) { out = null; }
+	return out;
+}
+
 /* internet: one ping is enough, either target */
 function net_probe() {
 	for (let host in [ '77.88.8.8', '1.1.1.1' ]) {
@@ -677,10 +693,10 @@ function modem_brief() {
 	if (!sec)
 		return { present: false };
 
-	const list = ubus_json('qmodem', 'info', { config_section: sec })?.modem_info ?? [];
+	const list = qm_call('info', { config_section: sec })?.modem_info ?? [];
 	const have = {};
 	for (let e in list) have[e.key + '|' + (e.extra_info ?? '')] = true;
-	for (let e in (ubus_json('qmodem', 'cell_info', { config_section: sec })?.modem_info ?? []))
+	for (let e in (qm_call('cell_info', { config_section: sec })?.modem_info ?? []))
 		if (!have[e.key + '|' + (e.extra_info ?? '')]) push(list, e);
 
 	const v = {};
@@ -714,7 +730,7 @@ function modem_brief() {
 	/* the bands: every carrier from AT+QCAINFO on Quectel, else the EARFCN */
 	let bands = [], scc = 0, idle = 0;
 	if (v.at_port && match(lc(v.manufacturer ?? ''), /quectel/)) {
-		const r = ubus_json('qmodem', 'send_at', { config_section: sec, params: { port: v.at_port, at: 'AT+QCAINFO' } });
+		const r = qm_call('send_at', { config_section: sec, params: { port: v.at_port, at: 'AT+QCAINFO' } });
 		for (let line in split(r?.at_cfg?.res ?? '', '\n')) {
 			const m = match(line, /\+QCAINFO:\s*"(PCC|SCC)",(\d+),(\d+),"(LTE|NR5G) BAND (\d+)"(.*)$/);
 			if (!m) continue;

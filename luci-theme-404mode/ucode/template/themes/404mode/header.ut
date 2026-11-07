@@ -182,12 +182,12 @@
 			}
 		})();
 	</script>
-	<link rel="stylesheet" href="{{ media }}/cascade.css?v=1.9.1">
+	<link rel="stylesheet" href="{{ media }}/cascade.css?v=1.9.2">
 	<link rel="stylesheet" media="screen and (max-width: 854px)" href="{{ media }}/mobile.css">
 	{% if (gost): %}
 	<link rel="stylesheet" href="{{ media }}/gost/gost.css">
 	{% else %}
-	<link rel="stylesheet" href="{{ media }}/neon/neon.css?v=1.9.1">
+	<link rel="stylesheet" href="{{ media }}/neon/neon.css?v=1.9.2">
 	{% endif %}
 	<link rel="icon" href="{{ media }}/logo.svg" sizes="any" type="image/svg+xml">
 	<link rel="icon" href="{{ media }}/logo_48.png" sizes="48x48">
