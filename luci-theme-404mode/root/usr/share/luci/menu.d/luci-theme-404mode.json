@@ -43,5 +43,18 @@
 				"qmodem": true
 			}
 		}
+	},
+	"admin/system/phone_app": {
+		"title": "Phone app",
+		"order": 95,
+		"action": {
+			"type": "view",
+			"path": "404mode/app"
+		},
+		"depends": {
+			"acl": [
+				"luci-theme-404mode"
+			]
+		}
 	}
 }

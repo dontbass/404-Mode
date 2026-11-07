@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<title>Роутер</title>
+	<meta name="description" content="Состояние роутера: интернет, прокси, сотовая связь">
+	<meta name="theme-color" content="#080B10" media="(prefers-color-scheme: dark)">
+	<meta name="theme-color" content="#EEF2F7" media="(prefers-color-scheme: light)">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<link rel="manifest" href="manifest.webmanifest">
+	<link rel="icon" href="icons/icon-192.png" sizes="192x192">
+	<link rel="apple-touch-icon" href="icons/apple-180.png">
+	<link rel="stylesheet" href="app.css?v=1">
+</head>
+<body>
+	<main class="app" id="app" aria-live="polite">
+		<header class="top">
+			<svg class="glyph" viewBox="0 0 48 48" aria-hidden="true">
+				<defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="var(--volt)"/><stop offset="1" stop-color="var(--cyan)"/></linearGradient></defs>
+				<path d="M8 24c0-5 4-8 8-8 7 0 9 16 16 16 4 0 8-3 8-8s-4-8-8-8c-7 0-9 16-16 16-4 0-8-3-8-8z" fill="none" stroke="url(#g)" stroke-width="3.2" stroke-linecap="round"/>
+				<circle cx="24" cy="24" r="2.6" fill="var(--cyan)"/>
+			</svg>
+			<div class="who">
+				<b id="host">Роутер</b>
+				<small id="model"></small>
+			</div>
+			<button class="fresh" id="fresh" type="button" aria-label="Обновить">
+				<i class="live" aria-hidden="true"></i><span id="age">…</span>
+			</button>
+		</header>
+
+		<div class="banner" id="banner" hidden></div>
+
+		<section class="setup" id="setup" hidden>
+			<h1>Подключите роутер</h1>
+			<p>Откройте на роутере <b>Система › Приложение на телефон</b> и отсканируйте QR-код камерой телефона. Или вставьте ключ доступа сюда.</p>
+			<form id="setupForm">
+				<input id="tokenIn" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Ключ из 32 символов" aria-label="Ключ доступа">
+				<button type="submit">Подключить</button>
+			</form>
+			<p class="err" id="setupErr" hidden></p>
+		</section>
+
+		<div class="cards" id="cards" hidden>
+			<section class="card net" id="net">
+				<div class="net-head">
+					<span class="dot" id="netDot" aria-hidden="true"></span>
+					<span class="label">Интернет</span>
+					<span class="via" id="netVia"></span>
+				</div>
+				<div class="net-state" id="netState">—</div>
+				<div class="net-meta">
+					<span><small>Пинг</small><b id="netPing">—</b></span>
+					<span><small>Загрузка</small><b id="netDown">—</b></span>
+					<span><small>Отдача</small><b id="netUp">—</b></span>
+				</div>
+			</section>
+
+			<section class="card proxy" id="proxy">
+				<div class="card-h"><span class="label">Прокси</span><span class="chip" id="pxMode"></span></div>
+				<div class="px-node">
+					<span class="flag" id="pxFlag" aria-hidden="true"></span>
+					<b id="pxNode">—</b>
+					<span class="ms" id="pxDelay"></span>
+				</div>
+				<small class="px-chain" id="pxChain"></small>
+			</section>
+
+			<section class="card cell" id="cell">
+				<div class="card-h">
+					<span class="label">Сотовая связь</span>
+					<span class="chip chip-a" id="cKind"></span>
+				</div>
+				<div class="cell-main">
+					<div class="bars" id="cBars" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+					<div class="rsrp"><b id="cRsrp">—</b><small>дБм</small></div>
+					<div class="op">
+						<b id="cOp">—</b>
+						<span id="cCombo"></span>
+					</div>
+				</div>
+				<div class="cell-meta">
+					<span><small>SINR</small><b id="cSinr">—</b></span>
+					<span><small>RSRQ</small><b id="cRsrq">—</b></span>
+					<span><small>SIM</small><b id="cSim">—</b></span>
+					<span><small>Модем</small><b id="cTemp">—</b></span>
+				</div>
+				<small class="cell-note" id="cNote" hidden></small>
+			</section>
+
+			<section class="card sys" id="sys">
+				<span><small>Работает</small><b id="sUp">—</b></span>
+				<span><small>Нагрузка</small><b id="sLoad">—</b></span>
+				<span><small>Память</small><b id="sMem">—</b></span>
+				<span><small>Процессор</small><b id="sTemp">—</b></span>
+			</section>
+
+			<nav class="actions">
+				<a class="btn" id="openLuci" href="/cgi-bin/luci/">Открыть панель роутера</a>
+			</nav>
+		</div>
+	</main>
+	<script src="app.js?v=1"></script>
+</body>
+</html>

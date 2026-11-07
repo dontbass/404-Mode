@@ -43,7 +43,7 @@ function icon(name) {
 }
 
 /* the theme's own menu titles, for languages LuCI has no catalogue entry for */
-const OWN_TITLES = { 'Modem control': { ru: 'Управление' } };
+const OWN_TITLES = { 'Modem control': { ru: 'Управление' }, 'Phone app': { ru: 'Приложение на телефон' } };
 
 function tt(title) {
 	const r = _(title);

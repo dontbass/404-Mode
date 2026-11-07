@@ -10,6 +10,11 @@
  *   cell { mcc, mnc, lac, cid }
  *                     where the serving tower stands (open cell database
  *                     api.mylnikov.org, cached for a month)
+ *   status            internet, proxy node, cell and system in one answer
+ *                     (the phone app and widget read it via /cgi-bin/404status)
+ *   app               the phone app token, HTTPS domain and certificate date
+ *   app_set { action: "rotate" }
+ *                     a new token: phones with the old one stop reading
  *   ttl               TTL / hop limit fixed on the modem link
  *   ttl_set { out, in, dev }
  *                     write /etc/nftables.d/90-404mode-ttl.nft, reload fw4
@@ -502,6 +507,335 @@ function ttl_set(a) {
 	return ttl_state();
 }
 
+/* ---------- phone app: one short status for the PWA and the widget ---------- */
+
+const ST_DIR = '/tmp/404mode-status';
+const APP_DIR = '/etc/404mode';
+const TOKEN_FILE = APP_DIR + '/token';
+const DOMAIN_FILE = APP_DIR + '/domain';
+
+function cached(key, ttl, fn) {
+	const file = ST_DIR + '/' + key + '.json';
+	let c = null;
+	try { c = json(readfile(file)); } catch (e) { c = null; }
+	if (c && time() - (c.ts ?? 0) < ttl)
+		return c.v;
+	const v = fn();
+	system('mkdir -p ' + ST_DIR);
+	writefile(file, sprintf('%J', { ts: time(), v: v }));
+	return v;
+}
+
+function ubus_json(obj, method, args) {
+	let out = null;
+	try { out = json(sh('ubus -t 8 call ' + obj + ' ' + method + ' ' + shellquote(sprintf('%J', args ?? {})) + ' 2>/dev/null')); } catch (e) { out = null; }
+	return out;
+}
+
+/* internet: one ping is enough, either target */
+function net_probe() {
+	for (let host in [ '77.88.8.8', '1.1.1.1' ]) {
+		const out = sh('ping -c 1 -W 2 -q ' + host + ' 2>/dev/null');
+		const m = match(out, /= [0-9.]+\/([0-9.]+)\//);
+		if (m)
+			return { online: true, ping: int(+m[1] + 0.5), target: host };
+	}
+	return { online: false, ping: null, target: null };
+}
+
+/* the uplink: the default route with the lowest metric */
+function uplink() {
+	let best = null;
+	for (let line in split(sh('ip -4 route show default 2>/dev/null'), '\n')) {
+		const dev = match(line, /dev (\S+)/);
+		if (!dev)
+			continue;
+		const met = match(line, /metric (\d+)/);
+		const m = met ? +met[1] : 0;
+		if (!best || m < best.metric)
+			best = { dev: dev[1], metric: m };
+	}
+	if (!best)
+		return null;
+
+	/* the logical interface name people know (wan, USB, …) */
+	const dump = ubus_json('network.interface', 'dump');
+	for (let i in (dump?.interface ?? []))
+		if ((i.l3_device ?? i.device) == best.dev && i.up) {
+			best.iface = i.interface;
+			break;
+		}
+
+	/* bytes per second since the previous call */
+	const now = +split(readfile('/proc/uptime') ?? '0', ' ')[0];
+	let rx = null, tx = null;
+	for (let line in split(readfile('/proc/net/dev') ?? '', '\n')) {
+		const m = match(line, /^\s*([^:]+):\s*(\d+)\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+(\d+)/);
+		if (m && m[1] == best.dev) { rx = +m[2]; tx = +m[3]; break; }
+	}
+	if (rx != null) {
+		const file = ST_DIR + '/rate.json';
+		let p = null;
+		try { p = json(readfile(file)); } catch (e) { p = null; }
+		if (p && p.dev == best.dev && now > p.t && rx >= p.rx && tx >= p.tx) {
+			best.down = int((rx - p.rx) / (now - p.t));
+			best.up = int((tx - p.tx) / (now - p.t));
+		}
+		if (!p || now - p.t >= 1) {
+			system('mkdir -p ' + ST_DIR);
+			writefile(file, sprintf('%J', { dev: best.dev, t: now, rx: rx, tx: tx }));
+		}
+	}
+	return best;
+}
+
+function proxy_brief() {
+	if (!access(NIKKI_INIT, 'x'))
+		return { installed: false };
+
+	const res = { installed: true, running: length(trim(sh('pidof mihomo 2>/dev/null'))) > 0 };
+	const c = res.running ? controller() : null;
+	if (!c)
+		return res;
+
+	res.mode = api(c, 'GET', '/configs')?.mode;
+	const all = api(c, 'GET', '/proxies')?.proxies;
+	if (!all)
+		return res;
+
+	let main = null;
+	for (let n in (all.GLOBAL?.all ?? []))
+		if (all[n]?.type == 'Selector' && !all[n]?.hidden) { main = n; break; }
+	if (!main)
+		main = 'GLOBAL';
+	if (res.mode == 'global')
+		main = 'GLOBAL';
+	if (res.mode == 'direct') {
+		res.direct = true;
+		return res;
+	}
+
+	const chain = [];
+	let cur = main;
+	while (cur && length(chain) < 8) {
+		push(chain, cur);
+		const p = all[cur];
+		if (!p || !GROUPS[p.type] || !p.now)
+			break;
+		cur = p.now;
+	}
+	res.group = main;
+	res.chain = chain;
+
+	const leafName = chain[-1];
+	const leaf = all[leafName];
+	res.node = leafName;
+	res.type = leaf?.type;
+	res.delay = last_delay(leaf);
+	if (!res.delay)
+		for (let i = length(chain) - 2; i >= 0; i--)
+			if (last_delay(all[chain[i]])) { res.delay = last_delay(all[chain[i]]); break; }
+
+	/* nodes from subscriptions are listed only under /providers/proxies */
+	if (leafName && !leaf) {
+		const prov = api(c, 'GET', '/providers/proxies')?.providers ?? {};
+		for (let pn in keys(prov))
+			for (let p in (prov[pn]?.proxies ?? []))
+				if (p?.name == leafName) { res.type = p.type; res.delay = last_delay(p) || res.delay; }
+	}
+	return res;
+}
+
+const PLMN_RU = {
+	'25001': 'МТС', '25002': 'МегаФон', '25099': 'Билайн', '25028': 'Билайн', '25020': 'T2', '25011': 'Yota',
+	'25062': 'Т-Мобайл', '25035': 'Мотив', '25039': 'Ростелеком', '25027': 'Летай', '25032': 'Win mobile', '25060': 'Волна мобайл'
+};
+
+const LTE_EARFCN = [ [ 1, 0, 599 ], [ 3, 1200, 1949 ], [ 5, 2400, 2649 ], [ 7, 2750, 3449 ], [ 8, 3450, 3799 ], [ 20, 6150, 6449 ],
+	[ 28, 9210, 9659 ], [ 32, 9920, 10359 ], [ 38, 37750, 38249 ], [ 40, 38650, 39649 ], [ 41, 39650, 41589 ], [ 42, 41590, 43589 ], [ 43, 43590, 45589 ] ];
+const LTE_RB = { '6': 1.4, '15': 3, '25': 5, '50': 10, '75': 15, '100': 20 };
+
+function modem_section() {
+	let first = null;
+	const off = {};
+	for (let line in split(sh('uci -q show qmodem 2>/dev/null'), '\n')) {
+		let m = match(line, /^qmodem\.([^.=]+)=modem-device$/);
+		if (m && first == null) { first = m[1]; continue; }
+		m = match(line, /^qmodem\.([^.=]+)\.enabled='0'$/);
+		if (m) off[m[1]] = true;
+	}
+	for (let line in split(sh('uci -q show qmodem 2>/dev/null'), '\n')) {
+		const m = match(line, /^qmodem\.([^.=]+)=modem-device$/);
+		if (m && !off[m[1]])
+			return m[1];
+	}
+	return first;
+}
+
+function modem_brief() {
+	const sec = modem_section();
+	if (!sec)
+		return { present: false };
+
+	const list = ubus_json('qmodem', 'info', { config_section: sec })?.modem_info ?? [];
+	const have = {};
+	for (let e in list) have[e.key + '|' + (e.extra_info ?? '')] = true;
+	for (let e in (ubus_json('qmodem', 'cell_info', { config_section: sec })?.modem_info ?? []))
+		if (!have[e.key + '|' + (e.extra_info ?? '')]) push(list, e);
+
+	const v = {};
+	for (let e in list)
+		if (e?.key && e.value != null && e.value != '' && e.value != '-' && v[e.key] == null)
+			v[e.key] = '' + e.value;
+
+	const num = (k) => (v[k] != null && match(v[k], /^-?[0-9.]+/)) ? +match(v[k], /^-?[0-9.]+/)[0] : null;
+
+	const res = {
+		present: true,
+		section: sec,
+		name: v.name,
+		online: v.connect_status == 'Yes',
+		sim: v['SIM Slot'] ? +v['SIM Slot'] || 1 : null,
+		sim_ready: match(lc(v['SIM Status'] ?? ''), /ready/) ? true : false,
+		plmn: (v.MCC ?? '') + (v.MNC ?? ''),
+		rsrp: num('RSRP'),
+		rsrq: num('RSRQ'),
+		sinr: num('SINR'),
+		temp: num('temperature')
+	};
+	if (!length(res.plmn))
+		res.plmn = v.ISP;
+	res.operator = PLMN_RU[res.plmn] ?? PLMN_RU[v.ISP] ?? v.ISP;
+
+	const mode = (v.network_mode ?? '') + ' ' + (v['Network Type'] ?? '');
+	const nr = match(mode, /NR|5G/) ? true : false;
+	const nsa = match(mode, /NSA|EN-DC/) ? true : false;
+
+	/* the bands: every carrier from AT+QCAINFO on Quectel, else the EARFCN */
+	let bands = [], scc = 0, idle = 0;
+	if (v.at_port && match(lc(v.manufacturer ?? ''), /quectel/)) {
+		const r = ubus_json('qmodem', 'send_at', { config_section: sec, params: { port: v.at_port, at: 'AT+QCAINFO' } });
+		for (let line in split(r?.at_cfg?.res ?? '', '\n')) {
+			const m = match(line, /\+QCAINFO:\s*"(PCC|SCC)",(\d+),(\d+),"(LTE|NR5G) BAND (\d+)"(.*)$/);
+			if (!m) continue;
+			const is_nr = m[4] == 'NR5G';
+			const rest = split(trim(m[6]), ',');
+			const active = m[1] == 'PCC' || is_nr || trim(rest[1] ?? '') == '2';
+			push(bands, { band: (is_nr ? 'n' : 'B') + m[5], nr: is_nr, pcc: m[1] == 'PCC', active: active,
+				bw: is_nr ? null : LTE_RB[m[3]] });
+			if (m[1] == 'SCC') { scc++; if (!active) idle++; }
+		}
+	}
+	if (!length(bands)) {
+		const ear = num('EARFCN');
+		if (ear != null)
+			for (let b in LTE_EARFCN)
+				if (ear >= b[1] && ear <= b[2]) { push(bands, { band: 'B' + b[0], nr: false, pcc: true, active: true }); break; }
+	}
+
+	/* PCC first, then LTE, then NR */
+	bands = sort(bands, (a, b) => (b.pcc - a.pcc) || (a.nr - b.nr));
+	res.bands = bands;
+	if (length(bands)) {
+		const head = bands[0];
+		let s = (head.nr ? 'NR ' : 'LTE ') + head.band;
+		for (let i = 1; i < length(bands); i++)
+			s += '+' + (bands[i].nr == head.nr ? substr(bands[i].band, 1) : bands[i].band);
+		res.combo = s;
+	}
+
+	res.kind = nr && !nsa ? '5G' : (nsa ? '5G NSA' : (scc ? '4G+' : (match(mode, /LTE/) || res.rsrp != null ? 'LTE' : (match(mode, /WCDMA|UMTS|HSPA/) ? '3G' : null))));
+	res.ca = scc > 0;
+	res.ca_idle = scc > 0 && idle == scc;
+
+	/* 0…4 bars and a 0…100 score from RSRP and SINR */
+	if (res.rsrp != null) {
+		const p = (x, lo, hi) => x == null ? null : (x <= lo ? 0 : (x >= hi ? 1 : (x - lo) * 1.0 / (hi - lo)));
+		const a = p(res.rsrp, -120, -75), b = p(res.sinr, -3, 25);
+		res.score = int(100 * (b == null ? a : a * 0.6 + b * 0.4) + 0.5);
+		res.bars = res.rsrp >= -85 ? 4 : (res.rsrp >= -95 ? 3 : (res.rsrp >= -105 ? 2 : (res.rsrp >= -115 ? 1 : 0)));
+	}
+	return res;
+}
+
+function sys_brief() {
+	const up = +split(readfile('/proc/uptime') ?? '0', ' ')[0];
+	const la = split(readfile('/proc/loadavg') ?? '', ' ');
+	const mem = {};
+	for (let line in split(readfile('/proc/meminfo') ?? '', '\n')) {
+		const m = match(line, /^(MemTotal|MemAvailable):\s+(\d+)/);
+		if (m) mem[m[1]] = +m[2];
+	}
+	let temp = null;
+	for (let z = 0; z < 4 && temp == null; z++) {
+		const t = trim(readfile('/sys/class/thermal/thermal_zone' + z + '/temp') ?? '');
+		if (length(t)) temp = int(+t / 100) / 10;
+	}
+	return {
+		host: trim(readfile('/proc/sys/kernel/hostname') ?? ''),
+		model: trim(readfile('/tmp/sysinfo/model') ?? ''),
+		uptime: int(up),
+		load: +la[0],
+		mem_total: mem.MemTotal ? int(mem.MemTotal / 1024) : null,
+		mem_used: mem.MemTotal ? int((mem.MemTotal - (mem.MemAvailable ?? 0)) / 1024) : null,
+		temp: temp
+	};
+}
+
+function status_all() {
+	const net = cached('net', 15, net_probe);
+	const link = uplink();
+	if (link) {
+		net.via = link.iface ?? link.dev;
+		net.dev = link.dev;
+		net.down = link.down;
+		net.up = link.up;
+	}
+	return {
+		v: 1,
+		ts: time(),
+		net: net,
+		proxy: cached('proxy', 5, proxy_brief),
+		cell: cached('cell', 6, modem_brief),
+		sys: sys_brief()
+	};
+}
+
+function app_token(rotate) {
+	let t = trim(readfile(TOKEN_FILE) ?? '');
+	if (rotate || !match(t, /^[0-9a-f]{32}$/)) {
+		const raw = readfile('/dev/urandom', 16) ?? '';
+		t = '';
+		for (let i = 0; i < length(raw); i++)
+			t += sprintf('%02x', ord(raw, i));
+		if (!match(t, /^[0-9a-f]{32}$/))
+			return null;
+		system('mkdir -p ' + APP_DIR + ' && chmod 700 ' + APP_DIR);
+		writefile(TOKEN_FILE, t + '\n');
+		system('chmod 600 ' + TOKEN_FILE);
+	}
+	return t;
+}
+
+function app_info(rotate) {
+	const domain = trim(readfile(DOMAIN_FILE) ?? '');
+	const crt = trim(uci_get('uhttpd.main.cert'));
+	let expires = null;
+	if (length(domain) && length(crt)) {
+		const out = sh('openssl x509 -noout -enddate -in ' + shellquote(crt) + ' 2>/dev/null');
+		const m = match(out, /notAfter=(.*)/);
+		if (m) expires = trim(m[1]);
+	}
+	return {
+		token: app_token(rotate),
+		domain: length(domain) ? domain : null,
+		expires: expires,
+		lan: split(uci_get('network.lan.ipaddr'), '/')[0] || null,
+		app: !!access('/www/app/index.html'),
+		cgi: !!access('/www/cgi-bin/404status', 'x')
+	};
+}
+
 return {
 	'404mode': {
 		weather: {
@@ -541,6 +875,19 @@ return {
 
 		ttl: {
 			call: function() { return ttl_state(); }
+		},
+
+		status: {
+			call: function() { return status_all(); }
+		},
+
+		app: {
+			call: function() { return app_info(false); }
+		},
+
+		app_set: {
+			args: { action: 'action' },
+			call: function(req) { return req.args?.action == 'rotate' ? app_info(true) : { error: 'action' }; }
 		},
 
 		ttl_set: {

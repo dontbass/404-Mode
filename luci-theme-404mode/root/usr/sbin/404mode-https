@@ -1,0 +1,178 @@
+#!/bin/sh
+# 404 Mode — HTTPS for the router with a real Let's Encrypt certificate.
+#
+#   404mode-https <domain> <dns_api> [KEY=VALUE ...]
+#   404mode-https router.example.ru dns_cf CF_Token=xxxxxxxx
+#   404mode-https router.example.ru dns_regru REGRU_API_Username=me REGRU_API_Password=xxx
+#   404mode-https --status
+#   404mode-https --remove
+#
+# The certificate is issued through DNS (acme.sh dns-01): the router asks the
+# DNS provider's API for a TXT record, nothing is opened to the internet and
+# no public A record is needed. The router then answers <domain> with its own
+# LAN address (dnsmasq and mihomo read /etc/hosts), so phones reach it at
+# home with or without internet. acme.sh renews the certificate from cron.
+#
+# DNS API names and their variables: https://github.com/acmesh-official/acme.sh/wiki/dnsapi
+# https://github.com/dontbass/404-Mode — Apache-2.0
+
+set -e
+
+DIR=/etc/404mode
+HOME_ACME=$DIR/acme
+CRT=$DIR/https.crt
+KEY=$DIR/https.key
+HOSTS_TAG='# 404mode-https'
+
+say() { printf '\033[36m[404mode-https]\033[0m %s\n' "$*"; }
+die() { printf '\033[31m[404mode-https]\033[0m %s\n' "$*" >&2; exit 1; }
+
+lan_ip() {
+	ip="$(uci -q get network.lan.ipaddr | cut -d/ -f1)"
+	[ -n "$ip" ] || ip="$(ip -4 addr show br-lan 2>/dev/null | sed -n 's/.*inet \([0-9.]*\).*/\1/p' | head -n1)"
+	echo "${ip:-192.168.1.1}"
+}
+
+find_acme() {
+	for p in "$HOME_ACME/acme.sh" /usr/lib/acme/client/acme.sh /usr/lib/acme/acme.sh; do
+		[ -x "$p" ] && { echo "$p"; return 0; }
+	done
+	return 1
+}
+
+hosts_set() {
+	sed -i "/$HOSTS_TAG\$/d" /etc/hosts
+	[ -n "$1" ] && printf '%s\t%s\t%s\n' "$(lan_ip)" "$1" "$HOSTS_TAG" >> /etc/hosts
+	/etc/init.d/dnsmasq reload >/dev/null 2>&1 || /etc/init.d/dnsmasq restart >/dev/null 2>&1 || true
+}
+
+case "$1" in
+	--status)
+		d="$(cat $DIR/domain 2>/dev/null)"
+		[ -n "$d" ] || { echo "HTTPS is not set up"; exit 0; }
+		echo "domain:   $d"
+		echo "LAN name: $(grep "$HOSTS_TAG\$" /etc/hosts | awk '{print $1}')"
+		openssl x509 -noout -enddate -in "$CRT" 2>/dev/null | sed 's/notAfter=/expires:  /' || echo "expires:  unknown"
+		echo "uhttpd:   $(uci -q get uhttpd.main.cert)"
+		exit 0
+		;;
+	--remove)
+		d="$(cat $DIR/domain 2>/dev/null)"
+		A="$(find_acme || true)"
+		[ -n "$A" ] && [ -n "$d" ] && "$A" --home "$HOME_ACME" --remove -d "$d" --ecc >/dev/null 2>&1 || true
+		sed -i '/404mode-https --cron\|acme.sh --cron --home \/etc\/404mode/d' /etc/crontabs/root 2>/dev/null || true
+		/etc/init.d/cron restart >/dev/null 2>&1 || true
+		hosts_set ""
+		if [ "$(uci -q get uhttpd.main.cert)" = "$CRT" ]; then
+			uci set uhttpd.main.cert=/etc/uhttpd.crt
+			uci set uhttpd.main.key=/etc/uhttpd.key
+			uci commit uhttpd
+			/etc/init.d/uhttpd restart
+		fi
+		rm -f "$DIR/domain" "$CRT" "$KEY"
+		say "HTTPS removed, uhttpd is back on its own certificate"
+		exit 0
+		;;
+	--cron)
+		A="$(find_acme)" || exit 0
+		exec "$A" --cron --home "$HOME_ACME" >/dev/null 2>&1
+		;;
+	''|-h|--help)
+		sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+		exit 0
+		;;
+esac
+
+DOMAIN="$1"
+DNSAPI="$2"
+shift 2 2>/dev/null || die "usage: 404mode-https <domain> <dns_api> [KEY=VALUE ...]"
+
+echo "$DOMAIN" | grep -Eq '^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$' || die "not a domain name: $DOMAIN"
+echo "$DNSAPI" | grep -Eq '^dns_[a-z0-9_]+$' || die "DNS API must look like dns_cf, dns_regru… (see acme.sh/wiki/dnsapi)"
+
+for kv in "$@"; do
+	case "$kv" in
+		*=*) export "${kv%%=*}=${kv#*=}" ;;
+		*) die "credentials go as KEY=VALUE, got: $kv" ;;
+	esac
+done
+
+mkdir -p "$DIR" "$HOME_ACME"
+chmod 700 "$DIR"
+
+# ---- acme.sh: the package if there is one, else the upstream script ----
+A="$(find_acme || true)"
+if [ -z "$A" ]; then
+	say "installing acme.sh"
+	if command -v opkg >/dev/null 2>&1; then
+		opkg update >/dev/null 2>&1 || true
+		opkg install acme-acmesh acme-acmesh-dnsapi >/dev/null 2>&1 || true
+	fi
+	A="$(find_acme || true)"
+fi
+if [ -z "$A" ] || [ ! -f "$(dirname "$A")/dnsapi/$DNSAPI.sh" ] && [ ! -f "$HOME_ACME/dnsapi/$DNSAPI.sh" ]; then
+	say "fetching acme.sh from GitHub"
+	TMP="$(mktemp -d /tmp/acme.XXXXXX)"
+	uclient-fetch -q -T 30 -O "$TMP/a.tgz" https://github.com/acmesh-official/acme.sh/archive/refs/heads/master.tar.gz \
+		|| curl -fsSL -m 60 -o "$TMP/a.tgz" https://github.com/acmesh-official/acme.sh/archive/refs/heads/master.tar.gz \
+		|| die "cannot download acme.sh"
+	tar -xzf "$TMP/a.tgz" -C "$TMP"
+	cp "$TMP"/acme.sh-*/acme.sh "$HOME_ACME/"
+	rm -rf "$HOME_ACME/dnsapi" "$HOME_ACME/deploy"
+	cp -R "$TMP"/acme.sh-*/dnsapi "$HOME_ACME/"
+	chmod +x "$HOME_ACME/acme.sh"
+	rm -rf "$TMP"
+	A="$HOME_ACME/acme.sh"
+fi
+[ -f "$(dirname "$A")/dnsapi/$DNSAPI.sh" ] || [ -f "$HOME_ACME/dnsapi/$DNSAPI.sh" ] || die "acme.sh has no $DNSAPI"
+
+command -v openssl >/dev/null 2>&1 || {
+	say "installing openssl-util (acme.sh needs it)"
+	opkg install openssl-util >/dev/null 2>&1 || die "opkg install openssl-util"
+}
+
+# ---- the name points home before the certificate exists ----
+say "$DOMAIN → $(lan_ip) for phones in this network"
+hosts_set "$DOMAIN"
+
+# ---- issue ----
+say "asking Let's Encrypt for $DOMAIN through $DNSAPI (a minute or two)"
+set +e
+"$A" --home "$HOME_ACME" --server letsencrypt --issue --dns "$DNSAPI" -d "$DOMAIN" --keylength ec-256 --dnssleep 30
+rc=$?
+set -e
+# 2 = the certificate is still fresh, nothing to renew
+[ $rc -eq 0 ] || [ $rc -eq 2 ] || die "issue failed (see above): check the DNS API name and the credentials"
+
+"$A" --home "$HOME_ACME" --install-cert -d "$DOMAIN" --ecc \
+	--key-file "$KEY" --fullchain-file "$CRT" \
+	--reloadcmd "/etc/init.d/uhttpd restart"
+chmod 600 "$KEY"
+
+# ---- uhttpd on the new certificate; plain http stays for the widget ----
+uci set uhttpd.main.cert="$CRT"
+uci set uhttpd.main.key="$KEY"
+uci -q get uhttpd.main.listen_https >/dev/null || {
+	uci add_list uhttpd.main.listen_https='0.0.0.0:443'
+	uci add_list uhttpd.main.listen_https='[::]:443'
+}
+uci commit uhttpd
+/etc/init.d/uhttpd restart
+
+echo "$DOMAIN" > "$DIR/domain"
+
+# ---- renewals ----
+touch /etc/crontabs/root
+sed -i '/404mode-https --cron/d' /etc/crontabs/root
+echo "17 4 * * * /usr/sbin/404mode-https --cron" >> /etc/crontabs/root
+/etc/init.d/cron enable >/dev/null 2>&1 || true
+/etc/init.d/cron restart >/dev/null 2>&1 || true
+
+# ---- mihomo answers DNS for phones when Nikki hijacks it: it reads /etc/hosts at start ----
+if pidof mihomo >/dev/null 2>&1 && [ -x /etc/init.d/nikki ]; then
+	say "restarting Nikki so mihomo learns the name (a few seconds without proxy)"
+	/etc/init.d/nikki restart >/dev/null 2>&1 || true
+fi
+
+say "done: https://$DOMAIN/app/  ·  LuCI: https://$DOMAIN/"
+"$0" --status

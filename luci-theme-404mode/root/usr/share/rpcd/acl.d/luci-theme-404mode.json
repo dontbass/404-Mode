@@ -9,7 +9,9 @@
 					"news",
 					"proxy",
 					"cell",
-					"ttl"
+					"ttl",
+					"status",
+					"app"
 				],
 				"qmodem": [
 					"info",
@@ -61,7 +63,8 @@
 			"ubus": {
 				"404mode": [
 					"proxy_set",
-					"ttl_set"
+					"ttl_set",
+					"app_set"
 				],
 				"qmodem": [
 					"set_sim_slot",

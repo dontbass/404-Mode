@@ -136,7 +136,10 @@ if [ "$ACTION" = "remove" ]; then
 	rm -rf "$WWW/$NAME" "$WWW/$NAME-dark" "$WWW/$NAME-light" "$WWW/$NAME-gost" \
 	       "$WWW/resources/menu-$NAME.js" "$WWW/resources/hud-$NAME.js" "$WWW/resources/nfx-$NAME.js" \
 	       "$WWW/resources/brief-$NAME.js" "$RPCD/ucode/$NAME.uc" "$RPCD/acl.d/luci-theme-$NAME.json" "$LIBEXEC/$NAME-brief" /tmp/404mode-brief \
-	       "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost"
+	       "$UCODE/$NAME" "$UCODE/$NAME-dark" "$UCODE/$NAME-light" "$UCODE/$NAME-gost" \
+	       /www/app /www/cgi-bin/404status "$WWW/resources/$NAME-qr.js" /tmp/404mode-status
+	# HTTPS (404mode-https) and the app key in /etc/404mode stay: run
+	# "404mode-https --remove" first to undo the certificate as well
 	reload_rpcd
 	# the TTL rule set from the modem page goes with the theme
 	if [ -f /etc/nftables.d/90-404mode-ttl.nft ]; then
@@ -201,6 +204,18 @@ if [ -d "$SRC/htdocs/luci-static/resources/view/$NAME" ]; then
 	mkdir -p /usr/share/luci/menu.d
 	cp "$SRC/root/usr/share/luci/menu.d/luci-theme-$NAME.json" /usr/share/luci/menu.d/
 	rm -f /tmp/404mode-mihomo.json
+fi
+
+# phone app (PWA at /app/), its status endpoint and the HTTPS helper
+if [ -d "$SRC/htdocs/app" ]; then
+	rm -rf /www/app
+	cp -R "$SRC/htdocs/app" /www/app
+	[ -f "$SRC/htdocs/luci-static/resources/$NAME-qr.js" ] && cp "$SRC/htdocs/luci-static/resources/$NAME-qr.js" "$WWW/resources/"
+	mkdir -p /www/cgi-bin /usr/sbin
+	cp "$SRC/root/www/cgi-bin/404status" /www/cgi-bin/404status
+	cp "$SRC/root/usr/sbin/$NAME-https" "/usr/sbin/$NAME-https"
+	chmod +x /www/cgi-bin/404status "/usr/sbin/$NAME-https"
+	rm -rf /tmp/404mode-status
 fi
 cp -R "$SRC/ucode/template/themes/$NAME" "$UCODE/"
 

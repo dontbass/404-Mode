@@ -1,0 +1,33 @@
+#!/bin/sh
+# 404 Mode — router status for the phone app and the Android widget.
+# GET /cgi-bin/404status with "Authorization: Bearer <token>" or ?t=<token>;
+# the token lives in /etc/404mode/token (LuCI: System › Phone app).
+# https://github.com/dontbass/404-Mode — Apache-2.0
+
+TOKEN="$(cat /etc/404mode/token 2>/dev/null)"
+
+given=""
+case "$HTTP_AUTHORIZATION" in
+	Bearer\ *) given="${HTTP_AUTHORIZATION#Bearer }" ;;
+esac
+if [ -z "$given" ]; then
+	given="$(printf '%s' "$QUERY_STRING" | tr '&' '\n' | sed -n 's/^t=//p' | head -n1)"
+fi
+
+reply() {
+	printf 'Status: %s\r\nContent-Type: application/json; charset=utf-8\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Headers: Authorization\r\n\r\n' "$1"
+}
+
+if [ "$REQUEST_METHOD" = "OPTIONS" ]; then
+	reply "204 No Content"
+	exit 0
+fi
+
+if [ -z "$TOKEN" ] || [ "$given" != "$TOKEN" ]; then
+	reply "403 Forbidden"
+	echo '{"error":"token"}'
+	exit 0
+fi
+
+reply "200 OK"
+ubus -t 25 call 404mode status 2>/dev/null || echo '{"error":"rpcd"}'

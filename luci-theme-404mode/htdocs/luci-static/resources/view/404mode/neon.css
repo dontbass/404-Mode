@@ -1623,3 +1623,46 @@ html.no-fx .xd-sweep { animation: none; stroke-opacity: 0; }
 	.xm-radar-sweep, .xm-banner-wave i, .xm-banner-bar, .xm-bchip-live, .xm-typing i, .xm-skel { animation: none; }
 	.xm-row, .xm-sms, .xm-fact, .xt, .xm-banner { animation-duration: .01s; }
 }
+
+/* ===================== System › Phone app ===================== */
+
+.xa-qr-card { grid-column: span 12; display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 28px; align-items: center; }
+.xa-https, .xa-key { grid-column: span 6; }
+
+.xa-qr { width: 240px; height: 240px; padding: 10px; background: #fff; border-radius: var(--xd-r-s); box-shadow: 0 0 0 1px var(--xd-line), 0 20px 50px -24px rgba(var(--xd-a-rgb), .7); }
+.xa-qr:empty { background: var(--xd-well); }
+.xa-qr svg { display: block; width: 100%; height: 100%; }
+
+.xa-qr-text h3 { margin: 0 0 10px !important; }
+.xa-steps { margin: 0 0 16px; padding-left: 20px; color: var(--xd-text); font-size: 14px; line-height: 1.6; }
+
+.xa-link { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.xa-link code, .xa-token {
+	flex: 1 1 auto;
+	min-width: 0;
+	padding: 9px 12px;
+	font-family: var(--xd-mono);
+	font-size: 12.5px;
+	color: var(--xd-ink);
+	background: var(--xd-well);
+	border: 1px solid var(--xd-line);
+	border-radius: var(--xd-r-s);
+	overflow-wrap: anywhere;
+}
+.xa-token { display: block; font-size: 15px; letter-spacing: .04em; }
+#maincontent .xd .xa-link .btn { flex: 0 0 auto; min-width: 0; }
+
+.xa-p { margin: 0 0 10px; font-size: 13.5px; line-height: 1.5; color: var(--xd-text); }
+.xa-pre { margin: 0; padding: 10px 12px; font: 13px var(--xd-mono); color: var(--xd-a); background: var(--xd-well); border: 1px solid var(--xd-line); border-radius: var(--xd-r-s); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.xd .xa-key .xm-confirm { color: var(--xd-bad) !important; border-color: var(--xd-bad) !important; }
+
+@media screen and (max-width: 1100px) {
+	.xa-https, .xa-key { grid-column: span 12; }
+}
+
+@media screen and (max-width: 640px) {
+	.xa-qr-card { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+	.xa-qr { width: min(240px, 100%); height: auto; aspect-ratio: 1; }
+	.xa-link { flex-direction: column; align-items: stretch; }
+}
