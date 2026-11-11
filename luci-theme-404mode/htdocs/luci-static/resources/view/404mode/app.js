@@ -91,7 +91,7 @@ return view.extend({
 				E('section', { 'class': 'xd-card xa-key' }, [
 					E('div', { 'class': 'xd-card-head' }, [ E('div', {}, [
 						E('h3', {}, [ T('Ключ доступа', 'Access key') ]),
-						E('div', { 'class': 'xd-muted' }, [ T('Приложение и виджет читают состояние роутера по этому ключу. Только чтение: изменить настройки с ним нельзя.', 'The app and the widget read the router status with this key. Read only: it cannot change settings.') ])
+						E('div', { 'class': 'xd-muted' }, [ T('Приложение и виджет читают состояние роутера по этому ключу. Кроме чтения ключ умеет только переключать ноду прокси: настройки роутера с ним не изменить.', 'The app and the widget read the router status with this key. Besides reading it can only switch the proxy node: it cannot change router settings.') ])
 					]) ]),
 					E('code', { 'class': 'xa-token', 'id': 'xa-token' }),
 					E('div', { 'class': 'xm-actions' }, [

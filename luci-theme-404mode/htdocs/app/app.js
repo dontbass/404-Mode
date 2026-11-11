@@ -107,6 +107,7 @@
 		const p = d.proxy || {};
 		const px = $('proxy');
 		px.hidden = !p.installed;
+		px.classList.toggle('off', !p.running || !!p.direct);
 		if (p.installed) {
 			set('pxMode', p.running ? (MODES[p.mode] || p.mode || '') : 'выключен');
 			if (!p.running) {
@@ -259,6 +260,251 @@
 	if (last) paint(last);
 	if (token) start(); else showSetup();
 	freshness();
+
+	/* ---------- theme: auto / dark / light, remembered on this phone ---------- */
+	const THEME_KEY = '404mode.app.theme';
+	const THEMES = {
+		auto: { label: 'авто', icon: '<path d="M12 3a9 9 0 1 0 0 18z" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="9"/>' },
+		dark: { label: 'тёмная', icon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>' },
+		light: { label: 'светлая', icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/>' }
+	};
+	const ORDER = [ 'auto', 'dark', 'light' ];
+
+	function applyTheme(mode) {
+		const root = document.documentElement;
+		if (mode == 'dark' || mode == 'light') root.setAttribute('data-theme', mode);
+		else root.removeAttribute('data-theme');
+
+		const b = $('themeBtn');
+		b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + THEMES[mode].icon + '</svg>';
+		b.title = b.ariaLabel = 'Тема: ' + THEMES[mode].label;
+		b.setAttribute('aria-label', b.title);
+
+		/* the status bar follows the page, not only the phone */
+		document.querySelectorAll('meta[name="theme-color"]').forEach(m => {
+			const sys = /light/.test(m.media) ? '#EEF2F7' : '#080B10';
+			m.content = mode == 'dark' ? '#080B10' : (mode == 'light' ? '#EEF2F7' : sys);
+		});
+	}
+
+	let theme = store.get(THEME_KEY);
+	if (!THEMES[theme]) theme = 'auto';
+	applyTheme(theme);
+	$('themeBtn').addEventListener('click', () => {
+		theme = ORDER[(ORDER.indexOf(theme) + 1) % ORDER.length];
+		store.set(THEME_KEY, theme == 'auto' ? null : theme);
+		applyTheme(theme);
+		toast('Тема: ' + THEMES[theme].label);
+	});
+
+	/* ---------- toast ---------- */
+	let toastTimer = null;
+	function toast(text, bad) {
+		const t = $('toast');
+		t.textContent = text;
+		t.className = 'toast' + (bad ? ' bad' : '');
+		t.hidden = false;
+		clearTimeout(toastTimer);
+		toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+	}
+
+	/* ---------- the router, with the key ---------- */
+	async function call(query, body) {
+		const ctl = new AbortController();
+		const timer = setTimeout(() => ctl.abort(), 20000);
+		try {
+			const r = await fetch(API + (query || ''), {
+				method: body ? 'POST' : 'GET',
+				headers: Object.assign({ 'Authorization': 'Bearer ' + token }, body ? { 'Content-Type': 'application/json' } : {}),
+				body: body ? JSON.stringify(body) : undefined,
+				cache: 'no-store',
+				signal: ctl.signal
+			});
+			if (r.status == 403) throw new Error('Ключ не подошёл');
+			const d = await r.json();
+			if (d.error) throw new Error(d.error == 'api' ? 'mihomo не отвечает' : d.error);
+			return d;
+		}
+		catch (e) {
+			throw new Error(e.name == 'AbortError' ? 'Роутер не ответил' : e.message);
+		}
+		finally {
+			clearTimeout(timer);
+		}
+	}
+
+	/* ---------- node picker ---------- */
+	const KIND = { Selector: 'ручной выбор', URLTest: 'авто по задержке', Fallback: 'резерв по порядку', LoadBalance: 'балансировка', Relay: 'цепочка' };
+	const CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+	const SPIN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 1-9 9"/></svg>';
+	const MORE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+	let px = null, path = [], sheetOpen = false;
+
+	const group = name => px && (px.groups || []).find(g => g.name == name);
+	const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+	function openSheet() {
+		if (sheetOpen || !last || !last.proxy || !last.proxy.running || last.proxy.direct) return;
+		sheetOpen = true;
+		$('sheetBack').hidden = false;
+		$('sheet').hidden = false;
+		$('sheetBack').classList.remove('out');
+		$('sheet').classList.remove('out');
+		history.pushState({ sheet: 1 }, '');
+		$('sheetTitle').textContent = 'Прокси';
+		$('sheetSub').textContent = 'Загружаем ноды…';
+		$('nodes').innerHTML = '<li class="empty">Спрашиваем mihomo…</li>';
+		$('sheetFilter').hidden = true;
+		$('sheetAuto').hidden = true;
+		$('sheetUp').hidden = true;
+
+		call('?a=proxies').then(d => {
+			px = d;
+			if (!d.api) throw new Error('mihomo не отвечает');
+			path = [ d.main ];
+			renderSheet();
+		}).catch(e => {
+			$('sheetSub').textContent = '';
+			$('nodes').innerHTML = '<li class="empty">' + esc(e.message) + '</li>';
+		});
+	}
+
+	function closeSheet(fromHistory) {
+		if (!sheetOpen) return;
+		sheetOpen = false;
+		$('sheet').classList.add('out');
+		$('sheetBack').classList.add('out');
+		setTimeout(() => { $('sheet').hidden = true; $('sheetBack').hidden = true; }, 220);
+		$('sheetFilter').value = '';
+		if (!fromHistory && history.state && history.state.sheet) history.back();
+	}
+
+	function renderSheet() {
+		const g = group(path[path.length - 1]);
+		if (!g) return;
+		const auto = g.type == 'URLTest' || g.type == 'Fallback';
+
+		$('sheetTitle').textContent = bare(g.name);
+		$('sheetSub').textContent = [ KIND[g.type] || g.type, g.all.length + ' ' + plural(g.all.length, 'вариант', 'варианта', 'вариантов') ].join(' · ');
+		$('sheetUp').hidden = path.length < 2;
+
+		const a = $('sheetAuto');
+		a.hidden = !auto;
+		a.classList.toggle('on', auto && !g.fixed);
+		a.textContent = !g.fixed ? 'Автовыбор включён · сейчас ' + bare(g.now) : 'Выбирать автоматически';
+
+		const f = $('sheetFilter');
+		f.hidden = g.all.length <= 10;
+		const q = f.value.trim().toLowerCase();
+
+		const list = g.all.filter(o => !q || o.name.toLowerCase().includes(q));
+		$('nodes').innerHTML = list.length ? list.map(o => {
+			const sel = o.name == g.now;
+			const isGroup = o.group;
+			const sub = isGroup
+				? 'группа' + (group(o.name) ? ' · сейчас ' + bare(group(o.name).now) : '')
+				: [ o.type, auto && g.fixed == o.name ? 'закреплена' : '' ].filter(Boolean).join(' · ');
+			const fl = isGroup ? '<span class="flag grp" aria-hidden="true">◎</span>' : '<span class="flag" aria-hidden="true">' + (flag(o.name) || '·') + '</span>';
+			const ms = o.delay ? '<span class="ms ' + delayClass(o.delay) + '">' + o.delay + ' мс</span>' : '<span class="ms none">—</span>';
+			return '<li class="node" role="option" tabindex="0" aria-selected="' + sel + '" data-name="' + esc(o.name) + '">' +
+				fl + '<span class="node-name"><b>' + esc(bare(o.name)) + '</b><small>' + esc(sub) + '</small></span>' + ms +
+				(isGroup ? '<button class="icon-btn" type="button" data-open="' + esc(o.name) + '" aria-label="Открыть группу">' + MORE + '</button>'
+				         : '<span class="mark">' + (sel ? CHECK : '') + '</span>') +
+				'</li>';
+		}).join('') : '<li class="empty">Ничего не нашлось</li>';
+	}
+
+	function plural(n, one, few, many) {
+		const a = n % 10, b = n % 100;
+		return a == 1 && b != 11 ? one : (a >= 2 && a <= 4 && (b < 10 || b >= 20) ? few : many);
+	}
+
+	async function choose(li) {
+		const g = group(path[path.length - 1]);
+		const name = li.getAttribute('data-name');
+		if (!g || name == g.now && (g.type == 'Selector' || g.fixed == name)) return;
+		li.classList.add('busy');
+		const mark = li.querySelector('.mark');
+		if (mark) mark.innerHTML = SPIN;
+		try {
+			await call('', { action: 'select', group: g.name, name: name });
+			g.now = name;
+			if (g.type != 'Selector') g.fixed = name;
+			renderSheet();
+			toast('Подключено: ' + bare(name));
+			load();
+		}
+		catch (e) {
+			li.classList.remove('busy');
+			if (mark) mark.innerHTML = '';
+			toast('Не переключилось: ' + e.message, true);
+		}
+	}
+
+	$('proxy').addEventListener('click', openSheet);
+	$('proxy').addEventListener('keydown', ev => { if (ev.key == 'Enter' || ev.key == ' ') { ev.preventDefault(); openSheet(); } });
+	$('sheetBack').addEventListener('click', () => closeSheet());
+	$('sheetClose').addEventListener('click', () => closeSheet());
+	window.addEventListener('popstate', () => closeSheet(true));
+	document.addEventListener('keydown', ev => { if (ev.key == 'Escape') closeSheet(); });
+
+	$('sheetUp').addEventListener('click', () => {
+		path.pop();
+		$('sheetFilter').value = '';
+		renderSheet();
+	});
+
+	$('nodes').addEventListener('click', ev => {
+		const open = ev.target.closest('[data-open]');
+		if (open) {
+			path.push(open.getAttribute('data-open'));
+			$('sheetFilter').value = '';
+			renderSheet();
+			$('nodes').scrollTop = 0;
+			return;
+		}
+		const li = ev.target.closest('.node');
+		if (li) choose(li);
+	});
+	$('nodes').addEventListener('keydown', ev => {
+		const li = ev.target.closest('.node');
+		if (li && ev.key == 'Enter') choose(li);
+	});
+
+	$('sheetFilter').addEventListener('input', renderSheet);
+
+	$('sheetAuto').addEventListener('click', async () => {
+		const g = group(path[path.length - 1]);
+		if (!g || !g.fixed) return;
+		try {
+			await call('', { action: 'unfix', group: g.name });
+			g.fixed = '';
+			renderSheet();
+			toast('Автовыбор включён');
+			setTimeout(load, 800);
+		}
+		catch (e) { toast('Не получилось: ' + e.message, true); }
+	});
+
+	$('sheetPing').addEventListener('click', async () => {
+		const g = group(path[path.length - 1]);
+		const b = $('sheetPing');
+		if (!g || b.classList.contains('spin')) return;
+		b.classList.add('spin');
+		try {
+			const r = await call('', { action: 'group_delay', group: g.name });
+			const delays = r.delays || {};
+			let alive = 0;
+			g.all.forEach(o => {
+				if (o.name in delays) { o.delay = delays[o.name] || 0; if (o.delay) alive++; }
+				else if (!o.group) o.delay = 0;
+			});
+			renderSheet();
+			toast('Отвечают ' + alive + ' из ' + g.all.length);
+		}
+		catch (e) { toast('Проверка не прошла: ' + e.message, true); }
+		finally { b.classList.remove('spin'); }
+	});
 
 	if ('serviceWorker' in navigator && window.isSecureContext)
 		navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});

@@ -13,7 +13,8 @@
 	<link rel="manifest" href="manifest.webmanifest">
 	<link rel="icon" href="icons/icon-192.png" sizes="192x192">
 	<link rel="apple-touch-icon" href="icons/apple-180.png">
-	<link rel="stylesheet" href="app.css?v=2">
+	<script>try { var t = localStorage.getItem('404mode.app.theme'); if (t == 'dark' || t == 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
+	<link rel="stylesheet" href="app.css?v=3">
 </head>
 <body>
 	<main class="app" id="app" aria-live="polite">
@@ -27,6 +28,7 @@
 				<b id="host">Роутер</b>
 				<small id="model"></small>
 			</div>
+			<button class="icon-btn" id="themeBtn" type="button" aria-label="Тема: авто" title="Тема: авто"></button>
 			<button class="fresh" id="fresh" type="button" aria-label="Обновить">
 				<i class="live" aria-hidden="true"></i><span id="age">…</span>
 			</button>
@@ -59,14 +61,17 @@
 				</div>
 			</section>
 
-			<section class="card proxy" id="proxy">
+			<section class="card proxy" id="proxy" role="button" tabindex="0" aria-label="Выбрать ноду прокси">
 				<div class="card-h"><span class="label">Прокси</span><span class="chip" id="pxMode"></span></div>
 				<div class="px-node">
 					<span class="flag" id="pxFlag" aria-hidden="true"></span>
 					<b id="pxNode">—</b>
 					<span class="ms" id="pxDelay"></span>
 				</div>
-				<small class="px-chain" id="pxChain"></small>
+				<div class="px-foot">
+					<small class="px-chain" id="pxChain"></small>
+					<span class="px-change" id="pxChange">Сменить ноду <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>
+				</div>
 			</section>
 
 			<section class="card cell" id="cell">
@@ -105,6 +110,25 @@
 			</nav>
 		</div>
 	</main>
-	<script src="app.js?v=2"></script>
+	<div class="sheet-back" id="sheetBack" hidden></div>
+	<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+		<i class="sheet-grip" aria-hidden="true"></i>
+		<header class="sheet-h">
+			<button class="icon-btn" id="sheetUp" type="button" aria-label="Назад" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+			<div class="sheet-title">
+				<b id="sheetTitle">Прокси</b>
+				<small id="sheetSub"></small>
+			</div>
+			<button class="icon-btn" id="sheetPing" type="button" aria-label="Проверить задержки" title="Проверить задержки"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h3l3-7 4 14 3-7h5"/></svg></button>
+			<button class="icon-btn" id="sheetClose" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+		</header>
+		<div class="sheet-tools">
+			<input id="sheetFilter" type="search" placeholder="Найти ноду" aria-label="Найти ноду" autocomplete="off" hidden>
+			<button class="auto-btn" id="sheetAuto" type="button" hidden>Выбирать автоматически</button>
+		</div>
+		<ul class="nodes" id="nodes" role="listbox" aria-labelledby="sheetTitle"></ul>
+	</section>
+	<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+	<script src="app.js?v=3"></script>
 </body>
 </html>
