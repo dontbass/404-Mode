@@ -232,4 +232,5 @@
 </script>
 {% endif %}
 
+<script>try { sessionStorage.removeItem('404mode.splash'); } catch (e) {}</script>
 {% include('footer', { blank_page: true }) %}

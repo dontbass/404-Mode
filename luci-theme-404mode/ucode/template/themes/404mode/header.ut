@@ -53,6 +53,7 @@
 		running: 'Работает',
 		menu: 'Меню',
 		collapse: 'Свернуть меню',
+		splash: [ 'Запускаем интерфейс', 'Загружаем модули', 'Собираем страницу', 'Почти готово', 'Готово' ],
 	} : {
 		uplink: 'UPLINK',
 		uplink_state: 'FILTERED',
@@ -67,6 +68,7 @@
 		running: 'Uptime',
 		menu: 'Menu',
 		collapse: 'Collapse menu',
+		splash: [ 'Starting the interface', 'Loading modules', 'Building the page', 'Almost there', 'Ready' ],
 	};
 
 	function updays(t) {
@@ -211,6 +213,9 @@
 	})(document.body, document.documentElement);
 </script>
 <div class="n-ambient" aria-hidden="true"><i class="n-amb-a"></i><i class="n-amb-b"></i><i class="n-amb-c"></i></div>
+{% if (!gost && !blank_page && ctx.authsession): %}
+{% include('themes/404mode/splash', { name: model || hostname, label: T.splash[0], steps: T.splash }) %}
+{% endif %}
 {% if (!blank_page): %}
 <header class="hud">
 	<button type="button" class="hud-toggle" id="nav-toggle" aria-label="{{ T.menu }}" aria-controls="sidebar" aria-expanded="false">

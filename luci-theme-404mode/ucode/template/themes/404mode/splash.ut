@@ -1,0 +1,172 @@
+{#
+ # 404 Mode — loading splash: the router itself, drawn for the theme
+ # (seven antennas on SMA connectors, five status lights). Shown once per
+ # login while LuCI loads; the lights and the bar follow real load stages.
+ #}
+<div id="x-splash" role="status" aria-live="polite" aria-label="{{ label }}">
+	<div class="sp-stage" aria-hidden="true">
+		<i class="sp-halo"></i>
+		<i class="sp-ring"></i>
+		<svg class="sp-router" viewBox="0 0 520 400" width="520" height="400">
+			<defs>
+				<linearGradient id="sp-edge" x1="0" y1="1" x2="1" y2="0"><stop offset="0" class="sp-s-volt"/><stop offset="1" class="sp-s-cyan"/></linearGradient>
+				<linearGradient id="sp-body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="sp-s-body-a"/><stop offset="1" class="sp-s-body-b"/></linearGradient>
+				<linearGradient id="sp-gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8A5A12"/><stop offset=".35" stop-color="#F6D27A"/><stop offset=".6" stop-color="#D9A441"/><stop offset="1" stop-color="#7A4E0E"/></linearGradient>
+				<linearGradient id="sp-rod" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0B0E13"/><stop offset=".45" stop-color="#2A313B"/><stop offset="1" stop-color="#07090C"/></linearGradient>
+				<linearGradient id="sp-sheen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+				<clipPath id="sp-clip-body"><rect x="56" y="204" width="408" height="170" rx="14"/></clipPath>
+				<clipPath id="sp-clip-sky"><rect x="0" y="-40" width="520" height="190"/></clipPath>
+			</defs>
+
+			<g class="sp-waves" clip-path="url(#sp-clip-sky)"><circle class="sp-wave" stroke="url(#sp-edge)" style="--i:0" cx="260" cy="150" r="150"/><circle class="sp-wave" stroke="url(#sp-edge)" style="--i:1" cx="260" cy="150" r="150"/><circle class="sp-wave" stroke="url(#sp-edge)" style="--i:2" cx="260" cy="150" r="150"/></g>
+
+			<g class="sp-ants">
+		<g class="sp-ant" style="--i:0">
+			<rect class="sp-rod" fill="url(#sp-rod)" x="100.0" y="52" width="24" height="126" rx="11"/>
+			<rect class="sp-rod-hi" x="104.5" y="60" width="4" height="108" rx="2"/>
+			<line class="sp-flow" x1="112.0" y1="172" x2="112.0" y2="60"/>
+			<circle class="sp-tip" cx="112.0" cy="54" r="5"/>
+			<rect class="sp-nut" fill="url(#sp-gold)" x="104.0" y="176" width="16" height="9" rx="1.5"/>
+			<rect class="sp-nut sp-nut-b" fill="url(#sp-gold)" x="101.0" y="184" width="22" height="13" rx="2.5"/>
+			<rect class="sp-nut-hi" x="103.0" y="186" width="5" height="9" rx="1"/>
+			<rect class="sp-nut sp-thread" x="104.5" y="196" width="15" height="9" rx="1"/>
+		</g>
+		<g class="sp-ant" style="--i:1">
+			<rect class="sp-rod" fill="url(#sp-rod)" x="149.4" y="52" width="24" height="126" rx="11"/>
+			<rect class="sp-rod-hi" x="153.9" y="60" width="4" height="108" rx="2"/>
+			<line class="sp-flow" x1="161.4" y1="172" x2="161.4" y2="60"/>
+			<circle class="sp-tip" cx="161.4" cy="54" r="5"/>
+			<rect class="sp-nut" fill="url(#sp-gold)" x="153.4" y="176" width="16" height="9" rx="1.5"/>
+			<rect class="sp-nut sp-nut-b" fill="url(#sp-gold)" x="150.4" y="184" width="22" height="13" rx="2.5"/>
+			<rect class="sp-nut-hi" x="152.4" y="186" width="5" height="9" rx="1"/>
+			<rect class="sp-nut sp-thread" x="153.9" y="196" width="15" height="9" rx="1"/>
+		</g>
+		<g class="sp-ant" style="--i:2">
+			<rect class="sp-rod" fill="url(#sp-rod)" x="198.8" y="52" width="24" height="126" rx="11"/>
+			<rect class="sp-rod-hi" x="203.3" y="60" width="4" height="108" rx="2"/>
+			<line class="sp-flow" x1="210.8" y1="172" x2="210.8" y2="60"/>
+			<circle class="sp-tip" cx="210.8" cy="54" r="5"/>
+			<rect class="sp-nut" fill="url(#sp-gold)" x="202.8" y="176" width="16" height="9" rx="1.5"/>
+			<rect class="sp-nut sp-nut-b" fill="url(#sp-gold)" x="199.8" y="184" width="22" height="13" rx="2.5"/>
+			<rect class="sp-nut-hi" x="201.8" y="186" width="5" height="9" rx="1"/>
+			<rect class="sp-nut sp-thread" x="203.3" y="196" width="15" height="9" rx="1"/>
+		</g>
+		<g class="sp-ant" style="--i:3">
+			<rect class="sp-rod" fill="url(#sp-rod)" x="248.2" y="52" width="24" height="126" rx="11"/>
+			<rect class="sp-rod-hi" x="252.7" y="60" width="4" height="108" rx="2"/>
+			<line class="sp-flow" x1="260.2" y1="172" x2="260.2" y2="60"/>
+			<circle class="sp-tip" cx="260.2" cy="54" r="5"/>
+			<rect class="sp-nut" fill="url(#sp-gold)" x="252.2" y="176" width="16" height="9" rx="1.5"/>
+			<rect class="sp-nut sp-nut-b" fill="url(#sp-gold)" x="249.2" y="184" width="22" height="13" rx="2.5"/>
+			<rect class="sp-nut-hi" x="251.2" y="186" width="5" height="9" rx="1"/>
+			<rect class="sp-nut sp-thread" x="252.7" y="196" width="15" height="9" rx="1"/>
+		</g>
+		<g class="sp-ant" style="--i:4">
+			<rect class="sp-rod" fill="url(#sp-rod)" x="297.6" y="52" width="24" height="126" rx="11"/>
+			<rect class="sp-rod-hi" x="302.1" y="60" width="4" height="108" rx="2"/>
+			<line class="sp-flow" x1="309.6" y1="172" x2="309.6" y2="60"/>
+			<circle class="sp-tip" cx="309.6" cy="54" r="5"/>
+			<rect class="sp-nut" fill="url(#sp-gold)" x="301.6" y="176" width="16" height="9" rx="1.5"/>
+			<rect class="sp-nut sp-nut-b" fill="url(#sp-gold)" x="298.6" y="184" width="22" height="13" rx="2.5"/>
+			<rect class="sp-nut-hi" x="300.6" y="186" width="5" height="9" rx="1"/>
+			<rect class="sp-nut sp-thread" x="302.1" y="196" width="15" height="9" rx="1"/>
+		</g>
+		<g class="sp-ant" style="--i:5">
+			<rect class="sp-rod" fill="url(#sp-rod)" x="347.0" y="52" width="24" height="126" rx="11"/>
+			<rect class="sp-rod-hi" x="351.5" y="60" width="4" height="108" rx="2"/>
+			<line class="sp-flow" x1="359.0" y1="172" x2="359.0" y2="60"/>
+			<circle class="sp-tip" cx="359.0" cy="54" r="5"/>
+			<rect class="sp-nut" fill="url(#sp-gold)" x="351.0" y="176" width="16" height="9" rx="1.5"/>
+			<rect class="sp-nut sp-nut-b" fill="url(#sp-gold)" x="348.0" y="184" width="22" height="13" rx="2.5"/>
+			<rect class="sp-nut-hi" x="350.0" y="186" width="5" height="9" rx="1"/>
+			<rect class="sp-nut sp-thread" x="351.5" y="196" width="15" height="9" rx="1"/>
+		</g>
+		<g class="sp-ant" style="--i:6">
+			<rect class="sp-rod" fill="url(#sp-rod)" x="396.4" y="52" width="24" height="126" rx="11"/>
+			<rect class="sp-rod-hi" x="400.9" y="60" width="4" height="108" rx="2"/>
+			<line class="sp-flow" x1="408.4" y1="172" x2="408.4" y2="60"/>
+			<circle class="sp-tip" cx="408.4" cy="54" r="5"/>
+			<rect class="sp-nut" fill="url(#sp-gold)" x="400.4" y="176" width="16" height="9" rx="1.5"/>
+			<rect class="sp-nut sp-nut-b" fill="url(#sp-gold)" x="397.4" y="184" width="22" height="13" rx="2.5"/>
+			<rect class="sp-nut-hi" x="399.4" y="186" width="5" height="9" rx="1"/>
+			<rect class="sp-nut sp-thread" x="400.9" y="196" width="15" height="9" rx="1"/>
+		</g>
+			</g>
+
+			<g class="sp-box">
+				<rect class="sp-lip" x="56" y="214" width="408" height="170" rx="14"/>
+				<rect class="sp-shell" fill="url(#sp-body)" stroke="url(#sp-edge)" x="56" y="204" width="408" height="170" rx="14"/>
+				<rect class="sp-inset" x="66" y="214" width="388" height="150" rx="9"/>
+				<g clip-path="url(#sp-clip-body)"><rect class="sp-sheen" fill="url(#sp-sheen)" x="-140" y="190" width="120" height="200" transform="skewX(-18)"/></g>
+				<g class="sp-emblem" transform="translate(212 247) scale(2)">
+					<path class="sp-emblem-glow" d="M8 24c0-5 4-8 8-8 7 0 9 16 16 16 4 0 8-3 8-8s-4-8-8-8c-7 0-9 16-16 16-4 0-8-3-8-8z"/>
+					<path class="sp-emblem-line" stroke="url(#sp-edge)" pathLength="100" d="M8 24c0-5 4-8 8-8 7 0 9 16 16 16 4 0 8-3 8-8s-4-8-8-8c-7 0-9 16-16 16-4 0-8-3-8-8z"/>
+				</g>
+				<g class="sp-leds"><circle class="sp-led" style="--i:0" cx="372" cy="352" r="3.6"/><circle class="sp-led" style="--i:1" cx="389" cy="352" r="3.6"/><circle class="sp-led" style="--i:2" cx="406" cy="352" r="3.6"/><circle class="sp-led" style="--i:3" cx="423" cy="352" r="3.6"/><circle class="sp-led" style="--i:4" cx="440" cy="352" r="3.6"/></g>
+			</g>
+		</svg>
+	</div>
+	<div class="sp-caption">
+		<b class="sp-name">{{ name }}</b>
+		<span class="sp-step" id="x-splash-step">{{ steps[0] }}</span>
+		<i class="sp-bar"><i></i></i>
+	</div>
+</div>
+<script>
+(function() {
+	var root = document.documentElement, el = document.getElementById('x-splash');
+	var seen = null;
+	try { seen = sessionStorage.getItem('404mode.splash'); } catch (e) { seen = '1'; }
+	if (seen && !/[?&#]splash\b/.test(location.href)) { el.parentNode.removeChild(el); return; }
+	try { sessionStorage.setItem('404mode.splash', '1'); } catch (e) {}
+
+	var steps = {{ sprintf('%J', steps) }};
+	var t0 = Date.now(), stage = 0, done = false;
+	var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+	var MIN = calm ? 600 : 2600, MAX = 8000;
+
+	root.classList.add('x-splash-on');
+
+	function set(n) {
+		if (n <= stage) return;
+		stage = n;
+		el.setAttribute('data-stage', n);
+		el.style.setProperty('--sp-p', [8, 30, 55, 82, 100][n] + '%');
+		var s = document.getElementById('x-splash-step');
+		if (s && steps[n]) s.textContent = steps[n];
+	}
+
+	function close() {
+		if (done) return;
+		done = true;
+		set(4);
+		window.setTimeout(function() {
+			el.classList.add('sp-out');
+			window.setTimeout(function() {
+				root.classList.remove('x-splash-on');
+				if (el.parentNode) el.parentNode.removeChild(el);
+			}, 650);
+		}, calm ? 0 : 420);
+	}
+
+	/* the view is in when LuCI took its spinner away */
+	function ready() {
+		var v = document.getElementById('view');
+		return document.readyState == 'complete' && window.L && (!v || (v.children.length && !v.querySelector('.spinning')));
+	}
+
+	el.setAttribute('data-stage', 0);
+	document.addEventListener('DOMContentLoaded', function() { set(1); });
+	window.addEventListener('load', function() { set(2); });
+
+	var tick = window.setInterval(function() {
+		var age = Date.now() - t0;
+		if (window.L && document.readyState == 'complete') set(2);
+		if (ready()) set(3);
+		if ((ready() && age >= MIN) || age >= MAX) { window.clearInterval(tick); close(); }
+	}, 120);
+
+	el.addEventListener('click', function() { window.clearInterval(tick); close(); });
+	document.addEventListener('keydown', function(ev) { if (ev.key == 'Escape' && !done) { window.clearInterval(tick); close(); } });
+})();
+</script>
