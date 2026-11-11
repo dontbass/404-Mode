@@ -12,7 +12,7 @@ LUCI_TITLE:=404 Mode — neon router console theme (dark, light, ГОСТ-24)
 LUCI_DEPENDS:=+luci-base +rpcd-mod-ucode +ucode-mod-fs
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=1.9.3
+PKG_VERSION:=1.9.4
 PKG_RELEASE:=1
 PKG_LICENSE:=Apache-2.0
 PKG_MAINTAINER:=Vladimir <dontbass@users.noreply.github.com>

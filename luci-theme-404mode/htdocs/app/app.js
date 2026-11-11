@@ -506,6 +506,12 @@
 		finally { b.classList.remove('spin'); }
 	});
 
-	if ('serviceWorker' in navigator && window.isSecureContext)
-		navigator.serviceWorker.register('sw.js', { scope: './' }).catch(() => {});
+	/* a new version took over: show it right away instead of on the next launch */
+	if ('serviceWorker' in navigator && window.isSecureContext) {
+		const had = !!navigator.serviceWorker.controller;
+		navigator.serviceWorker.addEventListener('controllerchange', () => { if (had) location.reload(); });
+		navigator.serviceWorker.register('sw.js', { scope: './', updateViaCache: 'none' })
+			.then(r => r.update())
+			.catch(() => {});
+	}
 })();

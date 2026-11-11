@@ -2,7 +2,7 @@
    the status itself always comes from the router. */
 'use strict';
 
-const CACHE = '404mode-app-3';
+const CACHE = '404mode-app-4';
 const SHELL = [
 	'./', 'index.html', 'app.css?v=3', 'app.js?v=3', 'manifest.webmanifest',
 	'icons/icon-192.png', 'icons/icon-512.png',
@@ -28,8 +28,10 @@ self.addEventListener('fetch', ev => {
 	if (ev.request.method !== 'GET' || url.origin !== location.origin || url.pathname.startsWith('/cgi-bin/'))
 		return;
 
-	/* the shell: network first so updates land, cache when the router is away */
-	ev.respondWith(fetch(ev.request).then(r => {
+	/* the shell: network first so updates land, cache when the router is away.
+	   no-cache: uhttpd sends no Cache-Control, and Chrome would otherwise keep
+	   an old index.html for hours by its own guess */
+	ev.respondWith(fetch(ev.request.url, { cache: 'no-cache', credentials: 'same-origin' }).then(r => {
 		if (r.ok) {
 			const copy = r.clone();
 			caches.open(CACHE).then(c => c.put(ev.request, copy));
