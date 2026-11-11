@@ -194,6 +194,7 @@
 			<div class="xl-name">{{ striptags(version?.distname ?? 'OpenWrt') }}</div>
 			<div class="xl-host">{{ model || host }}</div>
 		</div>
+		<span class="rt-slot">{% include('themes/404mode/router', { p: 'lg', cls: 'rt-live rt-on' }) %}</span>
 	</div>
 	<form method="post" class="xl-card" id="login-form" autocomplete="on">
 		<h2 class="xl-title">{{ hello }}</h2>
@@ -232,4 +233,5 @@
 </script>
 {% endif %}
 
+<script>try { sessionStorage.removeItem('404mode.splash'); } catch (e) {}</script>
 {% include('footer', { blank_page: true }) %}

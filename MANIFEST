@@ -49,4 +49,6 @@ luci-theme-404mode/ucode/template/themes/404mode/footer.ut
 luci-theme-404mode/ucode/template/themes/404mode/glyph.ut
 luci-theme-404mode/ucode/template/themes/404mode/header.ut
 luci-theme-404mode/ucode/template/themes/404mode/mark.ut
+luci-theme-404mode/ucode/template/themes/404mode/router.ut
+luci-theme-404mode/ucode/template/themes/404mode/splash.ut
 luci-theme-404mode/ucode/template/themes/404mode/sysauth.ut

@@ -1,0 +1,119 @@
+{#
+ # 404 Mode — loading splash: the router itself, drawn for the theme
+ # (seven antennas on SMA connectors, five status lights). Shown once per
+ # login while LuCI loads; the lights and the bar follow real load stages.
+ #}
+<div id="x-splash" role="status" aria-live="polite" aria-label="{{ label }}">
+	<div class="sp-stage" aria-hidden="true">
+		<i class="sp-halo"></i>
+		<i class="sp-ring"></i>
+		{% include('themes/404mode/router', { p: 'sp', cls: 'rt-live' }) %}
+	</div>
+	<div class="sp-caption">
+		<b class="sp-name">{{ name }}</b>
+		<span class="sp-step" id="x-splash-step">{{ steps[0] }}</span>
+		<i class="sp-bar"><i></i></i>
+	</div>
+</div>
+<script>
+(function() {
+	var root = document.documentElement, el = document.getElementById('x-splash');
+	var seen = null;
+	try { seen = sessionStorage.getItem('404mode.splash'); } catch (e) { seen = '1'; }
+	if (seen && !/[?&#]splash\b/.test(location.href)) { el.parentNode.removeChild(el); return; }
+	try { sessionStorage.setItem('404mode.splash', '1'); } catch (e) {}
+
+	var steps = {{ sprintf('%J', steps) }};
+	var t0 = Date.now(), stage = 0, done = false;
+	var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+	var MIN = calm ? 600 : 2600, MAX = 8000;
+
+	root.classList.add('x-splash-on');
+
+	function set(n) {
+		if (n <= stage) return;
+		stage = n;
+		el.setAttribute('data-stage', n);
+		el.style.setProperty('--sp-p', [8, 30, 55, 82, 100][n] + '%');
+		var s = document.getElementById('x-splash-step');
+		if (s && steps[n]) s.textContent = steps[n];
+	}
+
+	/* the router flies to its place in the sidebar and becomes the logo */
+	function close() {
+		if (done) return;
+		done = true;
+		set(4);
+		window.setTimeout(fly, calm ? 0 : 520);
+	}
+
+	function finish() {
+		root.classList.remove('x-splash-on');
+		root.classList.remove('x-splash-fly');
+		if (el.parentNode) el.parentNode.removeChild(el);
+		var slot = document.querySelector('.side-brand .rt-slot');
+		if (slot) {
+			slot.classList.add('rt-landed');
+			window.setTimeout(function() { slot.classList.remove('rt-landed'); }, 1200);
+		}
+	}
+
+	function fly() {
+		var stage = el.querySelector('.sp-stage');
+		var slot = document.querySelector('.side-brand .rt-slot');
+		var from = stage.getBoundingClientRect();
+		var to = slot ? slot.getBoundingClientRect() : null;
+		var seen = to && to.width > 4 && to.right > 0 && to.left < window.innerWidth && to.bottom > 0;
+
+		el.classList.add('sp-fly');
+		root.classList.add('x-splash-fly');
+
+		if (calm || !stage.animate) {
+			el.classList.add('sp-out');
+			return window.setTimeout(finish, 400);
+		}
+
+		/* no sidebar on screen (phone): leave through the top left corner */
+		var tw = seen ? to.width : 40;
+		var tx = seen ? to.left + to.width / 2 : 34;
+		var ty = seen ? to.top + to.height / 2 : 30;
+		var s = tw / from.width;
+		var dx = tx - (from.left + from.width / 2);
+		var dy = ty - (from.top + from.height / 2);
+		var start = getComputedStyle(stage).transform;
+		if (!start || start == 'none') start = 'translate(0px, 0px)';
+
+		stage.getAnimations().forEach(function(a) { a.cancel(); });
+		var a = stage.animate([
+			{ transform: start, offset: 0, easing: 'cubic-bezier(.5, 0, .7, .4)' },
+			{ transform: 'translate(' + (dx * .12) + 'px,' + (dy * .02 - 34) + 'px) scale(1.1) rotate(4deg)', offset: .28, easing: 'cubic-bezier(.3, .1, .2, 1)' },
+			{ transform: 'translate(' + dx + 'px,' + dy + 'px) scale(' + s + ') rotate(12deg)', offset: 1 }
+		], { duration: 1050, fill: 'forwards' });
+
+		a.onfinish = function() {
+			if (!seen) el.classList.add('sp-out');
+			window.setTimeout(finish, seen ? 60 : 300);
+		};
+	}
+
+	/* the view is in when LuCI took its spinner away */
+	function ready() {
+		var v = document.getElementById('view');
+		return document.readyState == 'complete' && window.L && (!v || (v.children.length && !v.querySelector('.spinning')));
+	}
+
+	el.setAttribute('data-stage', 0);
+	document.addEventListener('DOMContentLoaded', function() { set(1); });
+	window.addEventListener('load', function() { set(2); });
+
+	var tick = window.setInterval(function() {
+		var age = Date.now() - t0;
+		if (window.L && document.readyState == 'complete') set(2);
+		if (ready()) set(3);
+		if ((ready() && age >= MIN) || age >= MAX) { window.clearInterval(tick); close(); }
+	}, 120);
+
+	el.addEventListener('click', function() { window.clearInterval(tick); close(); });
+	document.addEventListener('keydown', function(ev) { if (ev.key == 'Escape' && !done) { window.clearInterval(tick); close(); } });
+})();
+</script>

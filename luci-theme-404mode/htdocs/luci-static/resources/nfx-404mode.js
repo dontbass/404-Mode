@@ -26,7 +26,7 @@
 	/* chrome and LuCI widgets the theme already paints */
 	var SKIP = [
 		'header.hud', '.sidebar', 'footer', '.hud-ticker', '.shell-mask', '.n-ambient', '.n-saver',
-		'.gd', '.gost-plate', '.gost-radar', '.login', '.login-mark', '.xd', '.xl', '.hud-search-results',
+		'.gd', '.gost-plate', '.gost-radar', '.login', '.login-mark', '.xd', '.xl', '#x-splash', '.hud-search-results',
 		'.alert-message', '.cbi-progressbar', '.ifacebox', '.zonebadge',
 		'.cbi-tooltip', '.cbi-dropdown', '.dropdown-menu', '.cbi-tabmenu',
 		'.tabs', '#tabmenu', '.cbi-page-actions', '.cbi-button.important',
@@ -371,7 +371,7 @@
 		'40101': [ 'Beeline', 'Beeline' ], '40102': [ 'Kcell', 'Kcell' ], '40107': [ 'Altel', 'Altel' ], '40177': [ 'Tele2', 'Tele2' ]
 	};
 
-	var OPSKIP = 'header.hud, .sidebar, footer, .n-saver, .n-ambient, .xd, script, style';
+	var OPSKIP = 'header.hud, .sidebar, footer, .n-saver, .n-ambient, .xd, #x-splash, script, style';
 
 	var PLMN_RE = /^\s*(\d{3})[\s-]?(\d{2,3})\s*$/;
 	var OPER_RE = /опера|operator|carrier|plmn|провайдер/i;
